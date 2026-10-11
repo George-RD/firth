@@ -23,9 +23,10 @@
 6. The audit refuses options that widen an author's tools, scoring refuses
    a link named as the answer directory, and the scan run before scoring
    Python finds planted copies of this tier's hidden files.
-7. A scored Firth answer that imports `stdlib/` is refused with
-   `firth.name.import-path`, and runs without the import, which is why the
-   Firth prompt says imports are not available.
+7. A Firth answer runs beside a copy of `stdlib/` (`tier.stage`): an import
+   of `stdlib/core.firth` works, an unexported word is refused, and the
+   Firth prompt shows the library and how to import it. Every task's input
+   and output names are valid in both Firth and Python.
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
@@ -1595,8 +1596,8 @@ STDLIB_IMPORT = ('import "../../stdlib/core.firth";\n'
 
 def import_problems(run) -> list[str]:
     """What is wrong if RUN (`tier.run_firth`'s shape) lets a scored answer
-    import stdlib: each answer runs from its own temporary file, so the
-    import must be refused as outside the source root."""
+    import a file by climbing out of its source root, the answer's own
+    directory: the import must be refused as not an import path."""
     out = run(STDLIB_IMPORT, (3,))
     if out.get("ok"):
         return [f"an answer importing stdlib ran: {out}"]
@@ -1634,19 +1635,166 @@ def messageless_diagnostics() -> None:
           "planted: a compact that keeps every code is caught")
 
 
-def stdlib_import_refused() -> None:
-    """Pins why the scored Firth prompt says imports are unavailable. Planted:
-    a runner that accepts the import, and one that refuses it with another
-    code, are each caught."""
+STDLIB_USE = STDLIB_IMPORT.replace("../../stdlib/core.firth", "stdlib/core.firth")
+
+
+def stdlib_problems(run) -> list[str]:
+    """What is wrong if RUN (`tier.run_firth`'s shape) does not stage the
+    standard library beside an answer: an answer that imports
+    `stdlib/core.firth` and calls one of its exported words must run, and
+    one that calls a word the library does not export must be refused."""
+    out = []
+    got = run(STDLIB_USE, (3,))
+    if not (got.get("ok") and got.get("stack") == [3]):
+        out.append(f"an answer importing stdlib/core.firth did not run: {str(got)[:200]}")
+    got = run(STDLIB_USE.replace("core.identity", "core.missing"), (3,))
+    if got.get("ok") or "code: firth.name.unresolved" not in got.get("error", ""):
+        out.append(f"an answer calling a word stdlib does not export was not refused as unresolved: "
+                   f"{str(got)[:200]}")
+    return out
+
+
+def stdlib_staged() -> None:
+    """Pins `todo.s7-stage-stdlib`: a scored Firth answer can import the
+    standard library, a word it does not export is refused, an import that
+    climbs out of the source root is still refused, and the library's files
+    are hashed with the scorer. Planted: `tier.run_firth` with nothing
+    staged (the scored run of 11 October's runner), a runner that accepts
+    every answer, and hashes without the library are each caught."""
+    check(stdlib_problems(tier.run_firth) == [],
+          "a scored answer that imports stdlib/core.firth runs, and an unexported word is refused")
     check(import_problems(tier.run_firth) == [],
-          "a scored answer that imports stdlib is refused with firth.name.import-path")
-    bare = STDLIB_IMPORT.replace('import "../../stdlib/core.firth";\n', "").replace("core.identity", "")
-    check(tier.run_firth(bare, (3,)) == {"ok": True, "stack": [3], "kernel_cost": 0, "vm_cost": 0},
-          "the same word without the import and its call to core.identity runs, so the refusal is the import's")
-    check(import_problems(lambda src, args: {"ok": True, "stack": [3]}) != [],
-          "planted: a runner that accepts a stdlib import is caught")
-    check(import_problems(lambda src, args: {"ok": False, "error": "code: firth.name.import-not-found"}) != [],
-          "planted: a stdlib import refused with another code is caught")
+          "an import that climbs out of the answer's source root is refused with firth.name.import-path")
+    saved = tier.STDLIB_FILES
+    tier.STDLIB_FILES = ()
+    try:
+        check(stdlib_problems(tier.run_firth) != [], "planted: run_firth with nothing staged is caught")
+    finally:
+        tier.STDLIB_FILES = saved
+    check(stdlib_problems(lambda src, args: {"ok": True, "stack": [3]}) != [],
+          "planted: a runner that accepts every answer is caught")
+    check(stdlib_hash_problems(tier.HASHED) == [], "every stdlib file is hashed with the scorer")
+    check(stdlib_hash_problems({k: v for k, v in tier.HASHED.items() if not k.startswith("stdlib/")}) != [],
+          "planted: hashes without the standard library are caught")
+
+
+def stdlib_hash_problems(hashed: dict) -> list[str]:
+    """What is missing from HASHED (`tier.HASHED`'s shape): every file under
+    `stdlib/` that `tier.stage` copies."""
+    root = harness.ROOT / "stdlib"
+    want = {str(f.relative_to(root.parent)) for f in root.rglob("*.firth")}
+    return [f"{n} is staged but not hashed" for n in sorted(want - set(hashed))] if want else ["stdlib is empty"]
+
+
+def stdlib_note_problems(firth: str, python: str) -> list[str]:
+    """What is wrong with a Firth prompt FIRTH and a Python prompt PYTHON
+    built by `tier.prompt`: the Firth one holds the stdlib note and every
+    stdlib file's text once, and the Python one holds neither."""
+    out = []
+    note = tier.stdlib_note()
+    if firth.count(note) != 1:
+        out.append(f"the Firth prompt holds the stdlib note {firth.count(note)} times, not once")
+    for f in tier.STDLIB_FILES:
+        rel = f.relative_to(tier.STDLIB.parent)
+        if f.read_text() not in firth:
+            out.append(f"the Firth prompt lacks {rel}")
+    out += missing_imports(firth)
+    if "stdlib/" in python:
+        out.append("the Python prompt mentions stdlib/")
+    return out
+
+
+def missing_imports(text: str) -> list[str]:
+    """Each staged library file whose import line TEXT does not give."""
+    return [f"no import line for {f.relative_to(tier.STDLIB.parent)}" for f in tier.STDLIB_FILES
+            if f'`import "{f.relative_to(tier.STDLIB.parent)}";`' not in text]
+
+
+def stdlib_prompt() -> None:
+    """The Firth prompt says how to import the staged library and shows it;
+    the Python prompt does not. Planted: a Firth prompt without the note,
+    and a Python prompt with it, are each caught."""
+    tasks = list(SETS["scored"])
+    firth, python = tier.prompt(tasks, "firth"), tier.prompt(tasks, "python")
+    check(stdlib_note_problems(firth, python) == [], "the Firth prompt shows the staged stdlib once; Python's does not")
+    check(stdlib_note_problems(firth.replace(tier.stdlib_note(), ""), python) != [],
+          "planted: a Firth prompt without the stdlib note is caught")
+    check(stdlib_note_problems(firth, python + tier.stdlib_note()) != [],
+          "planted: a Python prompt with the stdlib note is caught")
+    # Planted (Codex on #249): a second library file must get its own import
+    # line, not only core.firth's.
+    import tempfile
+    saved = (tier.STDLIB, tier.STDLIB_FILES)
+    with tempfile.TemporaryDirectory() as d:
+        lib = Path(d) / "stdlib"
+        lib.mkdir()
+        for f in saved[1]:
+            (lib / f.name).write_text(f.read_text())
+        (lib / "more.firth").write_text("export more.one;\nvocab more { : one ( -- r:Int ) 1; }\n")
+        tier.STDLIB, tier.STDLIB_FILES = lib, tuple(sorted(lib.rglob("*.firth")))
+        try:
+            two = tier.stdlib_note()
+            check('`import "stdlib/more.firth";`' in two and '`import "stdlib/core.firth";`' in two,
+                  "with a second library file, the note gives an import line for each")
+            check(missing_imports(two) == [], "with a second library file, no import line is missing")
+            check(missing_imports(two.replace('`import "stdlib/more.firth";`', "")) == ["no import line for stdlib/more.firth"],
+                  "planted: a note naming only core.firth's import, with a second file staged, is caught")
+        finally:
+            tier.STDLIB, tier.STDLIB_FILES = saved
+
+
+PY_KEYWORDS = frozenset(__import__("keyword").kwlist)
+FIRTH_TYPES = {"Int", "Bool", "Seq Int", "Seq Bool"}
+
+
+def name_problems(tasks, firth_check) -> list[str]:
+    """What is wrong with the input and output names of TASKS: each must be
+    a valid name in both languages, so both arms read the same names. A
+    Python name is an identifier and not a keyword; a Firth name is what
+    FIRTH_CHECK (source -> None or an error) accepts in a stack effect."""
+    out = []
+    words = []
+    for k, t in enumerate(tasks):
+        for side, names in (("input", t.inputs), ("output", t.outputs)):
+            for n, ty in names:
+                if not n.isidentifier() or n in PY_KEYWORDS:
+                    out.append(f"{t.id}: {side} {n!r} is not a Python name")
+            effect = " ".join(f"{n}:{ty}" for n, ty in names)
+            words.append(f": names-{k}-{side} ( forall \u03c1; \u03c1 {effect} -- \u03c1 {effect} ) ;")
+    err = firth_check("\n".join(words) + "\n")
+    if err:
+        out.append(f"the Firth checker refused the task names: {err[:300]}")
+    return out
+
+
+def firth_check(source: str) -> str | None:
+    """None if `firth_run.py check` accepts SOURCE, else its error."""
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "names.firth"
+        f.write_text(source)
+        p = subprocess.run([sys.executable, str(harness.RUNNER), "check", str(f)],
+                           cwd=harness.ROOT, capture_output=True, text=True, timeout=harness.TIMEOUT)
+    harness.toolchain_failure(p.stderr)
+    return None if p.returncode == 0 else (p.stdout + p.stderr).strip() or f"exit {p.returncode}"
+
+
+def task_names() -> None:
+    """Every task's input and output names are valid in Firth and in Python,
+    so neither arm's author copies a name its language refuses (the scored
+    run of 11 October's `white_took`). Planted: a task with `white_took`
+    (refused by Firth) and one with `white-took` (not a Python name) are
+    each caught."""
+    import dataclasses
+    tasks = [t for ts in SETS.values() for t in ts]
+    check(all(ty in FIRTH_TYPES for t in tasks for _, ty in t.inputs + t.outputs),
+          "every task name's type is one the names check spells")
+    check(name_problems(tasks, firth_check) == [], "every task's names are valid in Firth and in Python")
+    t = BY_ID["checkers"]
+    for bad, why in (("white_took", "Firth"), ("white-took", "Python")):
+        planted = dataclasses.replace(t, outputs=tuple((bad if n == "whiteTook" else n, ty) for n, ty in t.outputs))
+        check(name_problems([planted], firth_check) != [], f"planted: an output named {bad} is caught ({why})")
 
 
 def prompt_sentence_problems(text: str) -> list[str]:
@@ -1883,6 +2031,7 @@ def main() -> int:
     deepseek_sample_driver()
     take_rule()
     prompt_and_repair()
+    stdlib_prompt()
     pinned_prompts()
     messageless_diagnostics()
     if "--no-firth" not in sys.argv:
@@ -1890,7 +2039,8 @@ def main() -> int:
             firth_references()
         firth_hand_values()
         firth_mutant()
-        stdlib_import_refused()
+        stdlib_staged()
+        task_names()
         regex_drafted_rerun()
         deepseek_sample_scored()
     print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")

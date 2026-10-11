@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-10-11
 ---
 
@@ -25,3 +25,10 @@ name, and found none in any author's log (`scan-output.txt`, "others: 0").
 - Its self-test has a planted case it must flag: another Haiku author with
   the same number in the other language (`haiku-python-1` in
   `haiku-firth-1`'s log).
+
+## Done
+
+`SAMPLE_NAME` in `eval/s7/context_seen.py` now matches Haiku names too, so
+`haiku-python-1` in `haiku-firth-1`'s log is `cross_sample`. The number rule
+still runs, so nothing it flagged goes unflagged. The self-test plants that
+case; with Haiku dropped from `SAMPLE_NAME` it fails with `KeyError: 'sample_names'`.

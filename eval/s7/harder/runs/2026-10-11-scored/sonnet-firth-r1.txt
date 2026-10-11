@@ -1,0 +1,21 @@
+sonnet-firth-1	regex	ran: trap fuel-exhausted
+sonnet-firth-1	swiss	ran: trap primitive-fault
+sonnet-firth-2	regex	refused: firth.type.branch-mismatch
+sonnet-firth-2	swiss	ran: trap primitive-fault
+sonnet-firth-3	warehouse	refused: firth.type.branch-mismatch
+sonnet-firth-5	checkers	refused: firth.syntax.unexpected-token
+sonnet-firth-5	warehouse	refused: firth.syntax.unexpected-token
+sonnet-firth-5	cache-sim	refused: firth.syntax.unexpected-token
+sonnet-firth-6	sokoban	refused: firth.type.word-input-mismatch
+sonnet-firth-6	regex	refused: firth.type.word-input-mismatch
+sonnet-firth-7	checkers	refused: firth.syntax.invalid-name
+sonnet-firth-9	checkers	refused: firth.type.word-input-mismatch
+sonnet-firth-9	regex	refused: firth.type.word-input-mismatch
+
+13 tasks failed in round 1
+4	refused: firth.type.word-input-mismatch
+3	refused: firth.syntax.unexpected-token
+2	ran: trap primitive-fault
+2	refused: firth.type.branch-mismatch
+1	ran: trap fuel-exhausted
+1	refused: firth.syntax.invalid-name

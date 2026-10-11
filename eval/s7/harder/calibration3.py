@@ -260,15 +260,15 @@ def _month_days(y, m):
     return [31, 29 if _leap(y) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
 
 
-def _bank_days(year, month, day, days, balances, limits, credit_ppm, debit_ppm,
-               tx_day, tx_kind, tx_acct, tx_other, tx_amount,
-               so_dom, so_from, so_to, so_amount):
+def _bank_days(year, month, day, days, balances, limits, creditPpm, debitPpm,
+               txDay, txKind, txAcct, txOther, txAmount,
+               soDom, soFrom, soTo, soAmount):
     n = len(balances)
     bal = list(balances)
     acc = [0] * n
     went_negative = [False] * n
-    so_fails = [0] * len(so_dom)
-    cancelled = [False] * len(so_dom)
+    so_fails = [0] * len(soDom)
+    cancelled = [False] * len(soDom)
     rejected = paid = charged = fees = 0
     y, m, d = year, month, day
 
@@ -288,14 +288,14 @@ def _bank_days(year, month, day, days, balances, limits, credit_ppm, debit_ppm,
 
     for t in range(days):
         last = d == _month_days(y, m)
-        for k in range(len(tx_day)):
-            if tx_day[k] == t and not move(tx_kind[k], tx_acct[k], tx_other[k], tx_amount[k]):
+        for k in range(len(txDay)):
+            if txDay[k] == t and not move(txKind[k], txAcct[k], txOther[k], txAmount[k]):
                 rejected += 1
-        for k in range(len(so_dom)):
+        for k in range(len(soDom)):
             if cancelled[k]:
                 continue
-            if so_dom[k] == d or (last and so_dom[k] > d):
-                if move(3, so_from[k], so_to[k], so_amount[k]):
+            if soDom[k] == d or (last and soDom[k] > d):
+                if move(3, soFrom[k], soTo[k], soAmount[k]):
                     so_fails[k] = 0
                 else:
                     rejected += 1
@@ -304,9 +304,9 @@ def _bank_days(year, month, day, days, balances, limits, credit_ppm, debit_ppm,
                         cancelled[k] = True
         for i in range(n):
             if bal[i] > 0:
-                acc[i] += bal[i] * credit_ppm
+                acc[i] += bal[i] * creditPpm
             elif bal[i] < 0:
-                acc[i] += bal[i] * debit_ppm
+                acc[i] += bal[i] * debitPpm
                 went_negative[i] = True
         if last:
             for i in range(n):
@@ -442,12 +442,12 @@ def _op(x, args):
     return 1 if a == b else 0
 
 
-def _formula_sheet(lens, kinds, xs, ys, zs, edit_cells, edit_lens, e_kinds, e_xs, e_ys, e_zs):
+def _formula_sheet(lens, kinds, xs, ys, zs, editCells, editLens, eKinds, eXs, eYs, eZs):
     formulas = _parse(lens, kinds, xs, ys, zs)
-    edits = _parse(edit_lens, e_kinds, e_xs, e_ys, e_zs)
+    edits = _parse(editLens, eKinds, eXs, eYs, eZs)
     vals = _evaluate(formulas)
     changed = []
-    for cell, f in zip(edit_cells, edits):
+    for cell, f in zip(editCells, edits):
         formulas[cell] = f
         new = _evaluate(formulas)
         changed.append(sum(a != b for a, b in zip(vals, new)))
@@ -486,7 +486,7 @@ def _wants_hit(cards, up):
 def _blackjack_table(shoe, bankrolls, bets, rounds):
     bank = list(bankrolls)
     pos = 0
-    played = dealer_busts = naturals = 0
+    played = dealerBusts = naturals = 0
 
     def draw():
         nonlocal pos
@@ -556,10 +556,10 @@ def _blackjack_table(shoe, bankrolls, bets, rounds):
                 bank[i] += delta[i]
             played += 1
             naturals += nat
-            dealer_busts += busts
+            dealerBusts += busts
     except _OutOfCards:
         pass
-    return bank, played, dealer_busts, naturals
+    return bank, played, dealerBusts, naturals
 
 
 def _play(cards, up, bet, bankroll, committed, draw):
@@ -660,19 +660,19 @@ def _random_bank(seed):
     limits = [rng.choice([0, rng.randint(0, 1_000_000 if big else 5000)]) for _ in range(n)]
     credit, debit = rng.randint(0, 1000), rng.randint(0, 1000)
     t = rng.randint(0, 60)
-    tx_day = sorted(rng.randint(0, days - 1) for _ in range(t)) if rng.random() < 0.5 \
+    txDay = sorted(rng.randint(0, days - 1) for _ in range(t)) if rng.random() < 0.5 \
         else [rng.randint(0, days - 1) for _ in range(t)]
-    tx_kind = [rng.randint(1, 3) for _ in range(t)]
-    tx_acct = [rng.randint(0, n - 1) for _ in range(t)]
-    tx_other = [rng.randint(0, n - 1) if k == 3 else 0 for k in tx_kind]
-    tx_amount = [rng.randint(1, 1_000_000 if big else 5000) for _ in range(t)]
+    txKind = [rng.randint(1, 3) for _ in range(t)]
+    txAcct = [rng.randint(0, n - 1) for _ in range(t)]
+    txOther = [rng.randint(0, n - 1) if k == 3 else 0 for k in txKind]
+    txAmount = [rng.randint(1, 1_000_000 if big else 5000) for _ in range(t)]
     s = rng.randint(0, 6)
-    so_dom = [rng.choice([1, 15, 28, 29, 30, 31, rng.randint(1, 31)]) for _ in range(s)]
-    so_from = [rng.randint(0, n - 1) for _ in range(s)]
-    so_to = [rng.randint(0, n - 1) for _ in range(s)]
-    so_amount = [rng.randint(1, max(1, sum(balances) // (2 * n) + 1)) for _ in range(s)]
+    soDom = [rng.choice([1, 15, 28, 29, 30, 31, rng.randint(1, 31)]) for _ in range(s)]
+    soFrom = [rng.randint(0, n - 1) for _ in range(s)]
+    soTo = [rng.randint(0, n - 1) for _ in range(s)]
+    soAmount = [rng.randint(1, max(1, sum(balances) // (2 * n) + 1)) for _ in range(s)]
     return (year, month, day, days, balances, limits, credit, debit,
-            tx_day, tx_kind, tx_acct, tx_other, tx_amount, so_dom, so_from, so_to, so_amount)
+            txDay, txKind, txAcct, txOther, txAmount, soDom, soFrom, soTo, soAmount)
 
 
 def _expr(rng, n, before, budget):
@@ -1108,12 +1108,12 @@ _BANK = (
     "simulated is year-month-day in the Gregorian calendar (a year is a leap year when it "
     "divides by 4, except that years dividing by 100 are not unless they divide by 400), "
     "and days days are simulated, day 0 being the first. One-off transaction k is on day "
-    "number tx_day[k], is kind tx_kind[k] with account a = tx_acct[k], second account b = "
-    "tx_other[k] and amount tx_amount[k] (the five sequences have the same length). Kinds: "
+    "number txDay[k], is kind txKind[k] with account a = txAcct[k], second account b = "
+    "txOther[k] and amount txAmount[k] (the five sequences have the same length). Kinds: "
     "1 deposits the amount into a; 2 withdraws it from a; 3 transfers it from a to b. "
-    "Standing order k pays so_amount[k] from account so_from[k] to account so_to[k] on day "
-    "of the month so_dom[k] (the four sequences have the same length); in a month with "
-    "fewer than so_dom[k] days it pays on the month's last day instead. A withdrawal or "
+    "Standing order k pays soAmount[k] from account soFrom[k] to account soTo[k] on day "
+    "of the month soDom[k] (the four sequences have the same length); in a month with "
+    "fewer than soDom[k] days it pays on the month's last day instead. A withdrawal or "
     "transfer, one-off or standing, is rejected, and changes nothing, when it would leave "
     "the paying account's balance below minus its limit, or when it is a transfer from an "
     "account to itself; otherwise it is carried out. Deposits are never rejected. A "
@@ -1121,8 +1121,8 @@ _BANK = (
     "have been rejected (a payment carried out resets the count). Each day, in this order: "
     "first the day's one-off transactions, in the order of the sequences; then the "
     "standing orders due that day and not cancelled, in the order of the sequences; then "
-    "interest accrues: each account with a balance above 0 adds balance times credit_ppm "
-    "to its accrued sum, and each with a balance below 0 adds balance times debit_ppm "
+    "interest accrues: each account with a balance above 0 adds balance times creditPpm "
+    "to its accrued sum, and each with a balance below 0 adds balance times debitPpm "
     "(a negative amount) and is marked as having been overdrawn this month. Then, if the "
     "day is the last of its month: each account's accrued sum s is posted, by adding |s| "
     "divided by 1,000,000 rounded down to its balance when s is 0 or more and taking it "
@@ -1133,10 +1133,10 @@ _BANK = (
     "whether each standing order was cancelled; the total interest added to balances; the "
     "total interest taken away; and the total fees charged. n is 1 to 6; each starting "
     "balance is 0 to 1,000,000 and each limit 0 to 1,000,000; year is 1900 to 2100, month "
-    "1 to 12 and day a day of that month; days is 1 to 120; credit_ppm and debit_ppm are 0 "
-    "to 1,000; there are at most 60 one-off transactions, each with tx_day 0 to days - 1, "
-    "kind 1 to 3, accounts 0 to n - 1 (tx_other[k] is 0 and has no effect for kinds 1 and "
-    "2) and amount 1 to 1,000,000; and at most 6 standing orders, each with so_dom 1 to "
+    "1 to 12 and day a day of that month; days is 1 to 120; creditPpm and debitPpm are 0 "
+    "to 1,000; there are at most 60 one-off transactions, each with txDay 0 to days - 1, "
+    "kind 1 to 3, accounts 0 to n - 1 (txOther[k] is 0 and has no effect for kinds 1 and "
+    "2) and amount 1 to 1,000,000; and at most 6 standing orders, each with soDom 1 to "
     "31, accounts 0 to n - 1 and amount 1 to 1,000,000."
 )
 
@@ -1169,8 +1169,8 @@ _SHEET = (
     "references from it, one or more steps, can lead back to it; a cell that is in a "
     "cycle, or from which following references can reach a cell in a cycle, is an error, "
     "and every other cell's value is its formula's value. Edit e replaces the formula of "
-    "cell edit_cells[e] with a formula of edit_lens[e] tokens, listed one after another in "
-    "e_kinds, e_xs, e_ys and e_zs in the same way; after each edit the whole sheet is "
+    "cell editCells[e] with a formula of editLens[e] tokens, listed one after another in "
+    "eKinds, eXs, eYs and eZs in the same way; after each edit the whole sheet is "
     "evaluated again. Return each cell's final value (0 for an error), whether each cell's "
     "final value is an error, and for each edit how many cells' values changed with it, "
     "where an error and a number are always different. n is 1 to 20; each formula and each "
@@ -1247,7 +1247,7 @@ CALIBRATION3: tuple[Task, ...] = (
     _t("mini-cpu", _CPU,
        [("ops", SI), ("fa", SI), ("fb", SI), ("fc", SI), ("regs", SI), ("memory", SI), ("inputs", SI)],
        [("output", SI), ("status", I), ("executed", I), ("pc", I), ("registers", SI),
-        ("final_memory", SI), ("flags", SB)], _cpu, _CPU_EX,
+        ("finalMemory", SI), ("flags", SB)], _cpu, _CPU_EX,
        [*_cpu_cases(), *(_random_cpu(s) for s in (29, 57, 127, 279)), _random_cpu(314, 64)],
        ["seq", "loop", "rules", "state", "divmod", "bool-seq", "heavy"]),
     _t("stacker", _STACKER,
@@ -1260,22 +1260,22 @@ CALIBRATION3: tuple[Task, ...] = (
        ["seq", "nested-loop", "rules", "state", "bool-seq", "heavy"]),
     _t("bank-days", _BANK,
        [("year", I), ("month", I), ("day", I), ("days", I), ("balances", SI), ("limits", SI),
-        ("credit_ppm", I), ("debit_ppm", I), ("tx_day", SI), ("tx_kind", SI), ("tx_acct", SI),
-        ("tx_other", SI), ("tx_amount", SI), ("so_dom", SI), ("so_from", SI), ("so_to", SI),
-        ("so_amount", SI)],
-       [("final", SI), ("rejected", I), ("cancelled", SB), ("interest_added", I),
-        ("interest_taken", I), ("fees", I)], _bank_days, _BANK_EX,
+        ("creditPpm", I), ("debitPpm", I), ("txDay", SI), ("txKind", SI), ("txAcct", SI),
+        ("txOther", SI), ("txAmount", SI), ("soDom", SI), ("soFrom", SI), ("soTo", SI),
+        ("soAmount", SI)],
+       [("final", SI), ("rejected", I), ("cancelled", SB), ("interestAdded", I),
+        ("interestTaken", I), ("fees", I)], _bank_days, _BANK_EX,
        [*_bank_cases(), *(_random_bank(s) for s in range(5)), _largest_bank(19)],
        ["seq", "loop", "rules", "state", "divmod", "bool-seq", "heavy"]),
     _t("formula-sheet", _SHEET,
-       [("lens", SI), ("kinds", SI), ("xs", SI), ("ys", SI), ("zs", SI), ("edit_cells", SI),
-        ("edit_lens", SI), ("e_kinds", SI), ("e_xs", SI), ("e_ys", SI), ("e_zs", SI)],
+       [("lens", SI), ("kinds", SI), ("xs", SI), ("ys", SI), ("zs", SI), ("editCells", SI),
+        ("editLens", SI), ("eKinds", SI), ("eXs", SI), ("eYs", SI), ("eZs", SI)],
        [("values", SI), ("errors", SB), ("changed", SI)], _formula_sheet, _SHEET_EX,
        [*_sheet_cases(), *(_random_sheet(s) for s in range(5)), _random_sheet(5, 20, 4), _random_sheet(22, 20, 4)],
        ["seq", "nested-loop", "rules", "graph", "divmod", "bool-seq", "heavy"]),
     _t("blackjack", _BLACKJACK,
        [("shoe", SI), ("bankrolls", SI), ("bets", SI), ("rounds", I)],
-       [("final", SI), ("rounds_played", I), ("dealer_busts", I), ("naturals", I)],
+       [("final", SI), ("roundsPlayed", I), ("dealerBusts", I), ("naturals", I)],
        _blackjack_table, _BJ_EX,
        [*_bj_cases(), *(_random_blackjack(s) for s in range(4)), _largest_blackjack(39)],
        ["seq", "loop", "rules", "state", "heavy"]),
