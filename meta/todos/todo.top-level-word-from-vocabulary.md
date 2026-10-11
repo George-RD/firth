@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.elaborator
-status: open
+status: done
 created: 2026-10-10
 ---
 
@@ -30,3 +30,17 @@ Codex on PR #225 (`docs/firth-agent-guide.md`), where the guide now states the
 restriction. Reproduced on the PR head with
 `firth_run.py check` on `: top ( -- ) ; vocab v { : w ( -- ) top ; }`:
 `firth.name.unresolved` for `top` in `v.w`.
+
+## Resolution
+
+`dec.top-level-words-in-vocabularies` makes the top-level key one more
+unqualified candidate inside a vocabulary, under the existing
+exactly-one-candidate rule, and section 2 of `spec/surface/syntax.md` says
+so. `FirthNamesTest.lean` covers a same-file reference (declared before and
+after the vocabulary), the ambiguity beside the vocabulary's own word and
+beside a `use`d word, the qualified spelling that still resolves, and the
+known-bad references that stay refused (a sibling vocabulary's word, a name
+defined nowhere). `FirthImportsTest.lean` covers an imported top-level word,
+an unexported one (`firth.name.not-exported`) and the ambiguity beside a
+vocabulary word. Removing the new candidate, or letting the vocabulary's own
+word shadow it, fails these tests.

@@ -60,11 +60,13 @@ use <vocabulary> [as <alias>];
 ```
 
 The outer file is an implicit vocabulary. Within its file a word declared in a
-vocabulary is visible from every vocabulary by its qualified name, but a word
-declared outside any vocabulary is visible only outside them. Other files see a
+vocabulary is visible from every vocabulary by its qualified name, and a word
+declared outside any vocabulary is visible everywhere by its plain name. Other files see a
 word only if it is exported (below). A qualified reference is resolved by its canonical name.
 An unqualified reference is accepted only when exactly one visible candidate
-exists. Ambiguous or missing names are errors. Definitions in one vocabulary are visible
+exists. Ambiguous or missing names are errors: if a vocabulary `v` and the top
+level both define `w`, write `v.w` inside `v`. A top-level word has no qualified
+name, so to call it there, rename one of the two words. Definitions in one vocabulary are visible
 throughout that vocabulary, so recursive words may be declared without textual
 forward declarations.
 
