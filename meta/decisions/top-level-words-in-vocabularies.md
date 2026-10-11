@@ -30,7 +30,7 @@ one is still `firth.name.not-exported`. Words of other vocabularies are
 unchanged: they still need a qualified name or a `use`.
 
 This widens what resolves. Every program accepted before still resolves to
-the same keys, except one that defines a top-level `top` and refers to `top`
+the same keys, except one that defines or imports a top-level `top` and refers to `top`
 unqualified inside a vocabulary `v` where it already resolved to another
 word: to `v.top`, or to `u.top` through an active `use u`. That reference is
 now ambiguous. That is the same trade `use` already makes when a used vocabulary

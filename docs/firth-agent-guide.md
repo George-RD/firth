@@ -65,7 +65,8 @@ declared outside any vocabulary is visible everywhere by its plain name. Other f
 word only if it is exported (below). A qualified reference is resolved by its canonical name.
 An unqualified reference is accepted only when exactly one visible candidate
 exists. Ambiguous or missing names are errors: if a vocabulary `v` and the top
-level both define `w`, write `v.w` inside `v`. Definitions in one vocabulary are visible
+level both define `w`, write `v.w` inside `v`. A top-level word has no qualified
+name, so to call it there, rename one of the two words. Definitions in one vocabulary are visible
 throughout that vocabulary, so recursive words may be declared without textual
 forward declarations.
 
