@@ -15,7 +15,8 @@ was voided. Of the two real probe logs in
 `runs/2026-10-11-tool-probe/`, the built-in type with Read and Edit is
 refused for its type and its Edit, and the `s7-harder-author` passes. Its
 calls must show it read `probe-prompt.md` and wrote `tools-seen.txt`; an
-altered copy of either, a tampered Write input and an extra call each fail.
+altered copy of either, a tampered Write input, an extra call, a Read of
+another file, a Write to another file and a failed Write each fail.
 
     python3 eval/s7/harder/test_author_tools.py
 """
@@ -72,19 +73,32 @@ def expect(name: str, argv: list[str], code: int, needle: str, failures: list[st
 
 def provenance(lines: list[dict], prompt: str, seen: str) -> list[str]:
     """Why the probe log's calls do not show that the author read `prompt`
-    and wrote `seen` (empty if they do)."""
+    from the path its task named and wrote `seen` to the path the prompt
+    named (empty if they do)."""
     calls = [c for l in lines for c in l.get("tool_calls", [])]
-    results = [r["content"] for l in lines if isinstance(l.get("content"), list)
+    results = [r for l in lines if isinstance(l.get("content"), list)
                for r in l["content"] if r.get("type") == "tool_result"]
+    task = next(l["content"] for l in lines
+                if l.get("type") == "user" and isinstance(l.get("content"), str))
     names = [c["name"] for c in calls]
-    if names != ["Read", "Write", "SubagentHandback"]:
-        return [f"real s7-harder-author probe: calls {names}"]
+    if names != ["Read", "Write", "SubagentHandback"] or len(results) != 3:
+        return [f"real s7-harder-author probe: calls {names}, {len(results)} results"]
     errors = []
-    shown = "".join(l.split("\t", 1)[1] + "\n" for l in results[0].split("\n") if "\t" in l)
+    read_path = calls[0]["input"]["file_path"]
+    write_path = calls[1]["input"]["file_path"]
+    if task != f"Read {read_path} and follow it.":
+        errors.append(f"real s7-harder-author probe: Read path {read_path} is not the task's")
+    if f"to the file {write_path} with the Write tool" not in prompt:
+        errors.append(f"real s7-harder-author probe: Write path {write_path} is not the prompt's")
+    if any(r.get("is_error") for r in results):
+        errors.append("real s7-harder-author probe: a call failed")
+    shown = "".join(l.split("\t", 1)[1] + "\n" for l in results[0]["content"].split("\n") if "\t" in l)
     if shown.rstrip("\n") != prompt.rstrip("\n"):
         errors.append("real s7-harder-author probe: Read result is not probe-prompt.md")
     if calls[1]["input"]["content"] != seen:
         errors.append("real s7-harder-author probe: Write content is not tools-seen.txt")
+    if not str(results[1]["content"]).startswith(f"File created successfully at: {write_path} "):
+        errors.append("real s7-harder-author probe: Write did not report the file created")
     return errors
 
 
@@ -101,6 +115,15 @@ def tamper(lines: list[dict], tool: str, key, value) -> list[dict]:
                     c["input"][key] = value
                 return out
     raise AssertionError(f"no {tool} call to tamper with")
+
+
+def failed_write(lines: list[dict]) -> list[dict]:
+    """A copy of `lines` whose Write result is an error."""
+    out = json.loads(json.dumps(lines))
+    results = [r for l in out if isinstance(l.get("content"), list)
+               for r in l["content"] if r.get("type") == "tool_result"]
+    results[1].update(content="Error writing file", is_error=True)
+    return out
 
 
 def main() -> int:
@@ -238,11 +261,24 @@ def main() -> int:
          "Write content is not tools-seen.txt"),
         ("extra call", tamper(lines, "Write", None, None), prompt, seen,
          "calls ['Read', 'Write', 'Write', 'SubagentHandback']"),
+        ("Read of another file", tamper(lines, "Read", "file_path", "/tmp/other.md"), prompt, seen,
+         "Read path /tmp/other.md is not the task's"),
     ]
     for name, ls, pr, sn, needle in planted:
         got = provenance(ls, pr, sn)
         if len(got) != 1 or needle not in got[0]:
             failures.append(f"planted {name}: wanted only {needle!r}, got {got}")
+    # These two also break a second check, so they need their own needles.
+    multi = [
+        ("Write to another file", tamper(lines, "Write", "file_path", "/tmp/other.txt"),
+         ["Write path /tmp/other.txt is not the prompt's", "did not report the file created"]),
+        ("failed Write", failed_write(lines),
+         ["a call failed", "did not report the file created"]),
+    ]
+    for name, ls, needles in multi:
+        got = provenance(ls, prompt, seen)
+        if len(got) != len(needles) or not all(n in g for n, g in zip(needles, got)):
+            failures.append(f"planted {name}: wanted {needles}, got {got}")
 
     for f in failures:
         print("FAIL", f)
