@@ -131,7 +131,7 @@
     {"source": "refused/closed-effect-value-below.firth", "entry": "value-below", "stack": [5, 7], "expect_error": "firth.type.word-input-mismatch"},
     {"source": "refused/nested-quotation-result.firth", "entry": "nested-quotation-result", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
     {"source": "refused/if-branch-shape.firth", "entry": "keep-positive", "stack": [5], "expect_error": "firth.type.branch-mismatch"},
-    {"source": "refused/reserved-type-name.firth", "entry": "reserved-type-name", "stack": [], "expect_error": "firth.compile.invalid-word-type"},
+    {"source": "refused/reserved-type-name.firth", "entry": "reserved-type-name", "stack": [], "expect_error": "firth.type.unknown-type"},
     {"source": "refused/bool-plus.firth", "entry": "count-positive", "stack": [0, 5], "expect_error": "firth.type.primitive-input-mismatch"},
     {"source": "refused/text-literal.firth", "entry": "greeting-length", "stack": [], "expect_error": "firth.elaboration.unsupported-literal"},
     {"source": "refused/char-literal.firth", "entry": "initial", "stack": [], "expect_error": "firth.elaboration.unsupported-literal"},

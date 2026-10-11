@@ -379,6 +379,20 @@ class ExecutionWiringTests(unittest.TestCase):
             with self.subTest(cost=cost), self.assertRaises(self.gate.GateError):
                 self.gate.compare(reference, target, "bad")
 
+    def test_an_entry_input_of_another_type_is_named_as_firth_writes_it(self) -> None:
+        # A word declared over `Seq` alone, given a `Seq Int`: the refusal names
+        # the declared type in Firth syntax, not as the boundary's JSON record.
+        elaboration = {"erased_word_types": [{"word": "main", "type": {"input": {
+            "row": None, "items": [{"kind": "base", "name": "Seq", "usage": "many"}]}}}]}
+        stack = [{"literal": {"type": "seq-int", "value": [1]}}]
+        with self.assertRaises(self.gate.GateError) as refused:
+            self.gate.validate_initial_stack(elaboration, "main", stack)
+        message = str(refused.exception)
+        self.assertIn("declared as `Seq`, but the case gives `Seq Int`", message)
+        self.assertNotIn("'kind'", message)
+        self.assertEqual(self.gate.firth_type({"kind": "base", "name": "World", "usage": "linear"}),
+                         "World^linear")
+
     def test_two_missing_stacks_do_not_count_as_agreement(self) -> None:
         reference, target = self.observations()
         del reference["stack"]

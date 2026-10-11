@@ -88,6 +88,22 @@ def worldPrimitiveSchemes : List (String × Firth.Elaborator.StackEffect.Scheme)
         (.base "Handle" .linear)) (.base "Bytes" .linear)
       output := .snoc row (.base "World" .linear) })]
 
+/-- The base type names in a scheme stack, bottom to top. -/
+private def stackBaseNames : Firth.Elaborator.StackEffect.AStack → List String
+  | .snoc rest (.base name _) => stackBaseNames rest ++ [name]
+  | .snoc rest _ => stackBaseNames rest
+  | .empty | .row _ => []
+
+/-- The base types a source stack effect may declare: the four value types a
+literal or a surface primitive gives (`Int`, `Bool`, `Seq Int`, `Seq Bool`),
+then the nominal types `worldPrimitiveSchemes` threads (`World`, `Handle`,
+`Bytes`). The kernel's `Unit` is not one: no literal or primitive a program
+can write gives a `Unit` value (`dec.source-type-names`). -/
+def sourceTypes : List String :=
+  ["Int", "Bool", "Seq Int", "Seq Bool"] ++
+    (worldPrimitiveSchemes.flatMap fun entry =>
+      stackBaseNames entry.2.input ++ stackBaseNames entry.2.output).eraseDups
+
 /-- The names in `worldPrimitiveSchemes`. -/
 def worldPrimitives : List String := worldPrimitiveSchemes.map (·.1)
 
@@ -233,6 +249,15 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
     | "firth.syntax.overlong-character" =>
         ("A character literal holds exactly one character between its quotes, as in `'a'`.",
           "Write exactly one character between the quotes, and close the literal with `'`.")
+    | "firth.syntax.underscore-in-name" =>
+        let written := error.actual.getD "This name"
+        let renamed := error.expected.getD written
+        (s!"`{written}` is not a name: a name cannot contain `_`.",
+          s!"Names join their parts with `-`. Write `{renamed}` in place of `{written}`, and the same everywhere else it appears.")
+    | "firth.syntax.unnamed-stack-item" =>
+        let type := error.actual.getD "Int"
+        (s!"`{type}` here is a type with no name: every item in a stack effect is written `name:Type`.",
+          s!"Give it a name, as in `{error.expected.getD s!"name:{type}"}`. Any name will do: stack-effect names only document the stack.")
     | "firth.syntax.quote-in-name" =>
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
           "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
@@ -1172,6 +1197,16 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   | "firth.type.expected-bool", _, _ =>
       (s!"`if`{inWord} needs a Bool condition under its two quotations, but the stack before it is {before}.",
         "Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.")
+  | "firth.type.unknown-type", _, _ =>
+      let types := s!"The types a stack effect can declare are {listing ((sourceTypes.take 4).map (s!"`{·}`"))}, and {listing ((sourceTypes.drop 4).map (s!"`{·}`"))} for effects."
+      let place := match diagnostic.word with
+        | some word => s!" in the stack effect of `{word}`"
+        | none => ""
+      if at_ == "Seq" then
+        (s!"`Seq`{place} needs its element type.", s!"Write `Seq Int` or `Seq Bool`. {types}")
+      else if at_.startsWith "Seq " then
+        (s!"`{at_}`{place} is not a type: a sequence holds `Int` or `Bool`.", types)
+      else (s!"`{at_}`{place} is not a type.", types)
   | "firth.type.expected-quotation", _, _ =>
       (s!"`{at_}`{inWord} needs a quotation, but the stack before it is {before}.",
         "Put a `[ ... ]` quotation where the operation expects one.")
