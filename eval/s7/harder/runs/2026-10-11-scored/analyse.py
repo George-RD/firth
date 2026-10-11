@@ -230,6 +230,23 @@ def void_cause(d: Path, scans: dict) -> str | None:
     return None
 
 
+def models(d: Path) -> list[str]:
+    """The model id each author's record names: `transcript.json`'s `models`
+    for a sub-agent, each response's `model` for DeepSeek."""
+    if d.name.startswith("deepseek-"):
+        out = []
+        for f in sorted(d.glob("response-[12].json")):
+            try:
+                m = json.loads(f.read_text()).get("model")
+            except ValueError:  # a void round's raw reply
+                continue
+            if m and m not in out:
+                out.append(m)
+        return out
+    t = d / "transcript.json"
+    return json.loads(t.read_text()).get("models", []) if t.exists() else []
+
+
 def started(d: Path) -> str:
     if d.name.startswith("deepseek-"):
         try:  # a void round's response is the raw reply, not JSON
@@ -246,7 +263,7 @@ def load(run: Path, results: Path) -> dict:
     for d in sorted(p for p in run.iterdir() if p.is_dir() and re.match(r"^[a-z]+-(python|firth)-\d+$", p.name)):
         subj, lang, num = d.name.split("-")
         s = {"name": d.name, "subject": subj, "lang": lang, "number": int(num),
-             "void": void_cause(d, scans), "started": started(d)}
+             "void": void_cause(d, scans), "started": started(d), "models": models(d)}
         if s["void"] is None:
             r = [json.loads(f.read_text()) for f in sorted((results / d.name).glob("results-[12].json"))]
             if not r:
@@ -359,16 +376,22 @@ def report(samples: dict, results_dir: str) -> str:
         out.append(f"## {subj}\n")
         for lang, a in arms.items():
             out.append(f"### {lang} ({len(a)} kept), in run order\n")
-            out.append("| sample | started | round 1 | within two | lengths | per task (within two) |")
-            out.append("| --- | --- | --- | --- | --- | --- |")
+            out.append("| sample | model | started | round 1 | within two | lengths | "
+                       "per task, round 1 | per task, round 2 |")
+            out.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
             for s in a:
-                causes = []
-                for t in TASKS:
-                    k, counts = task_cause(lang, s["results"][-1]["tasks"][t])
-                    causes.append(t + ": " + (k if k in ("passed", "no answer") else
-                                              k + " " + json.dumps({x: y for x, y in counts.items() if x != "passed"})))
-                out.append(f"| {s['name']} | {s['started'][:19]} | {s['round1']} | {s['within_two']} | "
-                           f"{s['lengths']} | {'; '.join(causes)} |")
+                per_round = []
+                for r in s["results"]:
+                    causes = []
+                    for t in TASKS:
+                        k, counts = task_cause(lang, r["tasks"][t])
+                        causes.append(t + ": " + (k if k in ("passed", "no answer") else
+                                                  k + " " + json.dumps({x: y for x, y in counts.items() if x != "passed"})))
+                    per_round.append("; ".join(causes))
+                if len(per_round) == 1:
+                    per_round.append("no round 2 (every example passed)")
+                out.append(f"| {s['name']} | {', '.join(s['models'])} | {s['started'][:19]} | {s['round1']} | "
+                           f"{s['within_two']} | {s['lengths']} | {per_round[0]} | {per_round[1]} |")
             out.append(f"\nTotal: round 1 {sum(s['round1'] for s in a)}, within two {sum(s['within_two'] for s in a)}.\n")
             if subj == "deepseek":
                 out.append("DeepSeek rounds (prompt_eval_count, done_reason): " + "; ".join(
