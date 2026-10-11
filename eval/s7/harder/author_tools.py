@@ -14,6 +14,12 @@ session log and refuses the run unless, for every author:
 - every log line was written with the working directory the driver fixed
   before the first author (`--cwd`).
 
+With `--ids`, the list must also name every sub-agent that ran: each
+`agent-<id>.meta.json` in the log directory must be a row of
+`agent-ids.txt` (the probe author is the row named `probe`), and no name or
+agent id may be listed twice. So an author left out of the list, or listed
+under another author's id, refuses the run instead of going unchecked.
+
 It prints one line per author with its agent type, model, working directory
 and tool list, which the driver commits as the run's record of each author's
 tools. A voided author is checked like any other: the claim is that every
@@ -99,6 +105,18 @@ def main(argv: list[str]) -> int:
             print(f"refused: {a.ids} names no author")
             return 1
     refused = 0
+    if a.ids:
+        for col, what in ((0, "name"), (1, "agent id")):
+            seen = [row[col] for row in authors]
+            for v in sorted({v for v in seen if seen.count(v) > 1}):
+                print(f"refused: {what} {v} is listed twice in {a.ids}")
+                refused += 1
+        listed = {agent for _, agent in authors}
+        for meta in sorted(a.logs.glob("agent-*.meta.json")):
+            agent = meta.name[len("agent-"):-len(".meta.json")]
+            if agent not in listed:
+                print(f"refused: agent {agent} ran in this session but is not in {a.ids}")
+                refused += 1
     for name, agent in authors:
         record, errors = check_log(a.logs, agent, a.cwd)
         print(f"{name} {agent}: type={record['type']} model={record['model']} "
@@ -107,7 +125,8 @@ def main(argv: list[str]) -> int:
             print(f"  refused: {e}")
         refused += bool(errors)
     if refused:
-        print(f"refused: {refused} author(s) did not have exactly {', '.join(ALLOWED)}")
+        print(f"refused: {refused} problem(s); not every author is shown to have had "
+              f"exactly {', '.join(ALLOWED)}")
         return 1
     print(f"ok: every author had exactly {', '.join(ALLOWED)}")
     return 0

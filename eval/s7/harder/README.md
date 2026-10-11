@@ -186,7 +186,10 @@ hand-back (`todo.s7-author-tool-set`).
    which prints, for every author so far, its agent type, model, working
    directory and tool list, and refuses unless every author, voided or
    kept, had exactly Read, Write and `SubagentHandback`, no deferred tool,
-   and only that working directory. The last output is committed as
+   and only that working directory. `agent-ids.txt` lists the probe as the
+   row `probe <id>` and every author; a sub-agent log in `LOG_DIR` that the
+   list leaves out, or a name or id listed twice, also refuses the run, so
+   an author cannot go unchecked by being left off the list. The last output is committed as
    `author-tools.txt`, the run's record of each author's tools. A refusal
    stops the run before the next author starts; the next tier's
    pre-registration says how a refused author counts.

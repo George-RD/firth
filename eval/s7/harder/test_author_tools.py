@@ -7,7 +7,8 @@ log (`agent-<id>.meta.json` and `agent-<id>.jsonl`), not made by the check.
 A clean author passes, and each planted log is refused for its own reason:
 an extra session-messaging tool, a deferred tool, a missing Write, the wrong
 agent type, no tool list, a moved working directory, a missing log, and an
-empty id list. A bad author is refused even if its sample was voided.
+empty id list, an author that ran but is not listed, and a name or id
+listed twice. A bad author is refused even if its sample was voided.
 The real probe log in
 `runs/2026-10-11-tool-probe/` (a built-in agent type with Read and Edit) is
 refused for its type and its Edit.
@@ -95,28 +96,45 @@ def main() -> int:
         probe("elsewhere", 1, "working directory ['/home/user/firth-ds']")
         probe("absent", 1, "no log for agent absent")
 
-        ids = logs / "agent-ids.txt"
-        voids = logs / "voids.txt"
-        ids.write_text("# name agent\nsonnet-firth-1 good\nsonnet-python-1 good2\n")
-        expect("run", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 0,
+        # A run directory holds only the logs of the sub-agents that ran.
+        rd = logs / "run"
+        rd.mkdir()
+        r = str(rd)
+        ids = rd.parent / "agent-ids.txt"
+        voids = rd.parent / "voids.txt"
+        for agent in ("p1", "good", "good2"):
+            write_log(rd, agent)
+        ids.write_text("# name agent\nprobe p1\nsonnet-firth-1 good\nsonnet-python-1 good2\n")
+        expect("run", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 0,
                "ok: every author", failures)
-        # One bad author among good ones refuses the run.
-        ids.write_text("sonnet-firth-1 good\nhaiku-firth-2 extra\nsonnet-python-1 good2\n")
-        expect("run with a bad author", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 1,
-               "refused: 1 author(s)", failures)
+        # An author that ran with a bad tool list but was left out of the list.
+        write_log(rd, "extra", tools=GOOD + ["mcp__claude-code-remote__send_message"])
+        expect("omitted bad author", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "agent extra ran in this session but is not in", failures)
+        # Listed under another author's id, so its own log is never read.
+        ids.write_text("probe p1\nsonnet-firth-1 good\nhaiku-firth-2 good\nsonnet-python-1 good2\n")
+        expect("duplicate id", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "agent id good is listed twice", failures)
+        ids.write_text("probe p1\nsonnet-firth-1 good\nsonnet-firth-1 extra\nsonnet-python-1 good2\n")
+        expect("duplicate name", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "name sonnet-firth-1 is listed twice", failures)
+        # Listed, the bad author refuses the run.
+        ids.write_text("probe p1\nsonnet-firth-1 good\nhaiku-firth-2 extra\nsonnet-python-1 good2\n")
+        expect("run with a bad author", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "refused: 1 problem(s)", failures)
         # A voided sample's author is still checked: the run had a wrong tool
         # list whether or not that sample counts. --voids is not an option.
         voids.write_text("haiku-firth-2 audit flag\n")
-        expect("voided bad author", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 1,
-               "refused: 1 author(s)", failures)
+        expect("voided bad author", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "refused: 1 problem(s)", failures)
         try:
             with contextlib.redirect_stderr(io.StringIO()):
-                run(["--logs", t, "--cwd", CWD, "--ids", str(ids), "--voids", str(voids)])
+                run(["--logs", r, "--cwd", CWD, "--ids", str(ids), "--voids", str(voids)])
             failures.append("--voids accepted: it would let a voided author skip the check")
         except SystemExit:
             pass
         ids.write_text("# nothing\n")
-        expect("empty ids", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 1,
+        expect("empty ids", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
                "names no author", failures)
 
     real = HERE / "runs" / "2026-10-11-tool-probe"
