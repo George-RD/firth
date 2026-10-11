@@ -17,7 +17,8 @@ writes into DIR (which must not already hold `request-ROUND.json`):
 - `answer-ROUND.md`, the reply's `message.content`, byte for byte, or
   `cut-ROUND.md` instead when the reply was cut off at the length limit;
 - `response-ROUND.json`, the whole API reply, `thinking` included (kept, never
-  scored or shown to the scorer);
+  scored or shown to the scorer). The reply is streamed, and its chunks are
+  joined into the one reply a non-streamed request gives (`join`);
 - `request-ROUND.json`, what was sent (the proxy adds the key; no key is ever
   in it), and the outcome: the HTTP status or error, the verdict (`result`:
   `answer`, `cut-off` or `void`) and why.
@@ -37,8 +38,8 @@ message whose role is not `assistant`, text that cannot be written as UTF-8
 `done_reason` other than `stop` or `length`. Either way the round records what came back and is
 never asked again, so no answer is ever asked for twice.
 
-`python3 deepseek.py --self-test` runs the driver against planted replies, with no
-network.
+`python3 deepseek.py --self-test` runs the driver against planted replies, and
+`join` against planted streams, with no network.
 """
 from __future__ import annotations
 
@@ -55,13 +56,65 @@ TIMEOUT = 3600
 
 
 def post(body: dict) -> tuple[int, str]:
+    """Send one request. A streamed reply (`"stream": true`) is read line by
+    line and joined (`join`) into the one reply a non-streamed request would
+    give. The reply is streamed because a request that sends no response
+    bytes for about 30 seconds is cut with HTTP 502 "upstream request failed"
+    while the model is still thinking (measured on 11 October 2026, during
+    the scored run: `runs/2026-10-11-scored/probes.log`); streamed chunks keep
+    the connection busy."""
     req = urllib.request.Request(URL, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            return r.status, r.read().decode()
+            if not body.get("stream"):
+                return r.status, r.read().decode()
+            return r.status, join([line.decode() for line in r])
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode(errors="replace")
+
+
+def join(lines: list[str]) -> str:
+    """The streamed chunks (one JSON object per line) joined into one reply:
+    `message.content` and `message.thinking` are the chunks' text in order,
+    and every other field is the last chunk's (`done`, `done_reason`, the
+    token counts). Each chunk must be a chat chunk from the same model and
+    role, and only the last may be `done`. Anything else (a line that is not
+    a JSON object, an `error` chunk, a chunk after the done one, mixed models
+    or roles, no chunks) is returned as the raw text, which `run` cannot read
+    as one chat reply and so voids; a stream that ends before its done chunk
+    joins to a reply whose `done` is not `true`, which `run` voids too."""
+    raw = "".join(lines)
+    chunks = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            chunk = json.loads(line)
+        except ValueError:
+            return raw
+        if not isinstance(chunk, dict) or "error" in chunk or not isinstance(chunk.get("message"), dict):
+            return raw
+        chunks.append(chunk)
+    if not chunks or any(c.get("done") is True for c in chunks[:-1]):
+        return raw
+    first = chunks[0]
+    if any(c.get("model") != first.get("model") or c["message"].get("role") != first["message"].get("role")
+           for c in chunks):
+        return raw
+    parts = {"content": [], "thinking": []}
+    for c in chunks:
+        for k in parts:
+            if k not in c["message"]:
+                continue
+            v = c["message"][k]
+            if not isinstance(v, str):
+                return raw
+            parts[k].append(v)
+    reply = dict(chunks[-1])
+    reply["message"] = {"role": first["message"].get("role"), "content": "".join(parts["content"]),
+                        "thinking": "".join(parts["thinking"])}
+    return json.dumps(reply)
 
 
 def text(path: Path) -> str:
@@ -89,7 +142,7 @@ def messages(prompt: Path, d: Path, rnd: int) -> list[dict]:
 
 
 def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
-    body = {"model": MODEL, "messages": messages(prompt, d, rnd), "stream": False}
+    body = {"model": MODEL, "messages": messages(prompt, d, rnd), "stream": True}
     record = {"body": body}
     try:
         # Created before the request is sent: a round is asked once, whatever happened to it.
@@ -142,6 +195,68 @@ def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
     return done("answer", "a complete answer", 0)
 
 
+def join_problems(joiner) -> list[str]:
+    """What `joiner` gets wrong on planted streams. `join` gives none; each
+    mutant in the self-test gives at least one."""
+    def chunk(content="", thinking=None, done=False, model=MODEL, role="assistant", **last):
+        m = {"role": role, "content": content}
+        if thinking is not None:
+            m["thinking"] = thinking
+        return json.dumps({"model": model, "message": m, "done": done, **last}) + "\n"
+    end = dict(done=True, done_reason="stop", prompt_eval_count=22632, eval_count=9)
+    def joined(lines):
+        try:
+            return json.loads(joiner(lines))
+        except ValueError:
+            return None
+    def reply_of(lines):
+        """`run`'s reading of the joined text: (content, role, model, done,
+        done_reason), or None where `run` voids the round as not a chat reply."""
+        r = joined(lines)
+        try:
+            m = r["message"]
+            return m["content"], m.get("role"), r.get("model"), r.get("done"), r.get("done_reason")
+        except (KeyError, TypeError):
+            return None
+    out = []
+    whole = [chunk(thinking="Let me "), chunk(thinking="think."), chunk("```firth\r\n"),
+             chunk("main\n```\n"), chunk(**end)]
+    r = joined(whole)
+    if reply_of(whole) != ("```firth\r\nmain\n```\n", "assistant", MODEL, True, "stop"):
+        out.append(f"a whole stream joins to {reply_of(whole)!r}")
+    if not r or r.get("prompt_eval_count") != 22632 or r["message"].get("thinking") != "Let me think.":
+        out.append("the joined reply loses the last chunk's counts or the thinking")
+    # Field by field: a non-streamed reply and the stream of the same reply
+    # (as the API sends it: text in the chunks, counts and timings in the
+    # done one) give the same record.
+    timings = dict(created_at="2026-10-11T05:00:00Z", total_duration=5, load_duration=1,
+                   prompt_eval_duration=2, eval_duration=3)
+    reply = {"model": MODEL, "message": {"role": "assistant", "content": "```firth\r\nmain\n```\n",
+                                         "thinking": "Let me think."}, **end, **timings}
+    stream = [json.loads(line) for line in whole[:-1]] + [
+        {"model": MODEL, "message": {"role": "assistant", "content": ""}, **end, **timings}]
+    for c in stream[:-1]:
+        c["created_at"] = timings["created_at"]
+    if joined([json.dumps(c) + "\n" for c in stream]) != reply:
+        out.append("the joined stream differs from the non-streamed reply")
+    if reply_of([chunk("ma"), chunk("in", done=True, done_reason="length")]) != (
+            "main", "assistant", MODEL, True, "length"):
+        out.append("a stream cut off at the length limit does not join to a length reply")
+    # Each of these must not join to a complete answer from the scored model.
+    for why, lines in (("a stream that ends before its done chunk", whole[:-1]),
+                       ("an error chunk mid-stream", whole[:2] + ['{"error": "upstream"}\n'] + whole[2:]),
+                       ("a line that is not JSON", whole[:2] + ["data: x\n"] + whole[2:]),
+                       ("a chunk after the done one", whole + [chunk("more")]),
+                       ("a chunk from another model", whole[:2] + [chunk("x", model="deepseek-v4-pro")] + whole[2:]),
+                       ("a chunk in another role", whole[:2] + [chunk("x", role="user")] + whole[2:]),
+                       ("a chunk whose content is not text", whole[:2] + [chunk(None)] + whole[2:]),
+                       ("no chunks", [])):
+        got = reply_of(lines)
+        if got is not None and got[2:] == (MODEL, True, "stop") and got[1] == "assistant":
+            out.append(f"{why} joins to a complete answer")
+    return out
+
+
 def self_test() -> None:
     import tempfile
     def reply(content, reason="stop", model=MODEL, done=True, role="assistant"):
@@ -173,6 +288,8 @@ def self_test() -> None:
         assert run(p, d, 1, send) == 0
         assert (d / "answer-1.md").read_bytes() == b"```firth\r\nmain\n```\n"
         assert sent[0]["messages"] == [{"role": "user", "content": "Write `main`."}]
+        # Streamed, so a long think is not cut at the ~30 s idle limit.
+        assert sent[0]["stream"] is True
         assert json.loads((d / "request-1.json").read_text())["outcome"] == {
             "status": 200, "result": "answer", "why": "a complete answer"}
         # A round is asked once.
@@ -230,6 +347,38 @@ def self_test() -> None:
             assert outcome["result"] == ("cut-off" if code == 2 else "void"), planted
             assert (d / "cut-1.md").exists() == (code == 2), planted
             assert refused(p, d, 1), planted
+    assert join_problems(join) == [], join_problems(join)
+    # Planted: joiners that drop the last chunk, ignore its done_reason, drop
+    # the thinking, drop the prompt token count (the pre-reg's prompt check
+    # reads it), keep only the fields `run` reads, or keep the chunks after a
+    # done one are each caught.
+    def drops_last(lines):
+        return join(lines[:-1])
+    def says_stop(lines):
+        r = json.loads(join(lines))
+        return json.dumps({**r, "done_reason": "stop"}) if isinstance(r, dict) else join(lines)
+    def no_thinking(lines):
+        r = json.loads(join(lines))
+        if isinstance(r, dict) and isinstance(r.get("message"), dict):
+            r["message"].pop("thinking", None)
+        return json.dumps(r)
+    def drops_counts(lines):
+        r = json.loads(join(lines))
+        if isinstance(r, dict):
+            r.pop("prompt_eval_count", None)
+        return json.dumps(r)
+    def scored_fields_only(lines):
+        r = json.loads(join(lines))
+        if isinstance(r, dict):
+            r = {k: v for k, v in r.items() if k in ("model", "message", "done", "done_reason",
+                                                     "prompt_eval_count", "eval_count")}
+        return json.dumps(r)
+    def keeps_after_done(lines):
+        cut = next((i for i, l in enumerate(lines) if '"done": true' in l), len(lines) - 1)
+        return join(lines[:cut + 1])
+    for mutant in (drops_last, says_stop, no_thinking, drops_counts, scored_fields_only,
+                   keeps_after_done):
+        assert join_problems(mutant) != [], mutant.__name__
     print("self-test ok")
 
 
