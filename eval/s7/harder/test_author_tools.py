@@ -187,6 +187,20 @@ def main() -> int:
     _, out = run(["--logs", str(real), "--cwd", "/home/user/firth", "--probe", "aeaa153e26921b4be"])
     if out != (real / "tool-probe.txt").read_text():
         failures.append("real s7-harder-author probe: output differs from tool-probe.txt")
+    # Its log's own calls show where probe-prompt.md and tools-seen.txt came
+    # from: the Read result is the prompt, and the Write content is the list.
+    lines = [json.loads(l) for l in (real / "agent-aeaa153e26921b4be.jsonl").read_text().splitlines()]
+    calls = [c for l in lines for c in l.get("tool_calls", [])]
+    results = [r["content"] for l in lines if isinstance(l.get("content"), list)
+               for r in l["content"] if r.get("type") == "tool_result"]
+    if [c["name"] for c in calls] != ["Read", "Write", "SubagentHandback"]:
+        failures.append(f"real s7-harder-author probe: calls {[c['name'] for c in calls]}")
+    else:
+        shown = "".join(l.split("\t", 1)[1] + "\n" for l in results[0].split("\n") if "\t" in l)
+        if shown.rstrip("\n") != (real / "probe-prompt.md").read_text().rstrip("\n"):
+            failures.append("real s7-harder-author probe: Read result is not probe-prompt.md")
+        if calls[1]["input"]["content"] != (real / "tools-seen.txt").read_text():
+            failures.append("real s7-harder-author probe: Write content is not tools-seen.txt")
 
     for f in failures:
         print("FAIL", f)

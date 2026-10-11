@@ -42,10 +42,13 @@ which refuses it for its type and its Edit, as it should.
 
 A few minutes after #248 was opened (13:47Z), the session reloaded its
 agent types and listed "s7-harder-author ... (Tools: Read, Write)". The
-second probe was started as that type, with model `haiku` and the prompt
-in `probe-prompt.md` (name every tool, write the list, hand back). It
-called Read on the prompt, Write on its list and `SubagentHandback`
-("done"), and nothing else.
+second probe was started as that type, with model `haiku`, told to read a
+prompt file in the session's scratchpad (`probe-prompt.md` is a copy: name
+every tool, write the list, hand back). It called Read on that file, Write
+on its list and `SubagentHandback` ("done"), and nothing else. The log
+keeps each call's input and each tool result, so the Read result is the
+prompt and the Write content is `tools-seen.txt`; `test_author_tools.py`
+checks both.
 
 - `agent-aeaa153e26921b4be.meta.json`: agent type `s7-harder-author`,
   model `haiku`.
@@ -57,8 +60,9 @@ called Read on the prompt, Write on its list and `SubagentHandback`
   `SubagentHandback`.
 
 `agent-aeaa153e26921b4be.jsonl` is its log trimmed as above, keeping also
-the tool-call names and each hook error's name, event, command, exit code,
-stdout and stderr. `tool-probe.txt` is
+each tool call's name and input, the content of each user turn (the task
+text, a system reminder and the tool results), and each hook error's name,
+event, command, exit code, stdout and stderr. `tool-probe.txt` is
 
     python3 eval/s7/harder/author_tools.py \
       --logs eval/s7/harder/runs/2026-10-11-tool-probe \
@@ -86,6 +90,8 @@ Fixing the tools does not fix everything the author is shown. The
   with "not found" on stderr (the two lines are kept whole, apart from the
   tool-use id and duration, in `agent-aeaa153e26921b4be.jsonl`; they hold
   local paths and no credential);
+- a system reminder before its first call, telling it to report through
+  `SubagentHandback` (in the log's second user turn);
 - `total_tokens_reminder` items, and the session's environment, model,
   instructions, session context, date, credential and session-change
   attachments at the start.
