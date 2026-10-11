@@ -1,0 +1,132 @@
+\ Earliest arrivals by rounds of trains. All state lives in one Seq Int `d`
+\ of ten fields of 64 slots each: field f, index i is d[f*64+i].
+\ Fields: 0 fromSt, 1 toSt, 2 dep, 3 arr, 4 train, 5 misc (0 stations,
+\ 1 change, 2 origin, 3 start, 4 connections, 5 improved this round),
+\ 6 best arrival per station (1000000 when unreached), 7 trains used per
+\ station (-1 when unreached), 8 arrivals being built in this round,
+\ 9 trains already boarded in this round.
+\ Round k+1 boards each train at its first connection that can be caught from
+\ the best arrivals of round k, and rides it to the end of its run.
+
+: get
+  (forall ρ; ρ d:Seq Int^many f:Int^many i:Int^many -- ρ r:Int^many)
+  locals { d f i }
+  { d f 64 prim * i prim + prim seq-int.at };
+
+: put
+  (forall ρ; ρ d:Seq Int^many f:Int^many i:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { d f i v }
+  { d f 64 prim * i prim + v prim seq-int.set };
+
+: min
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a b prim < [ a ] [ b ] if };
+
+\ d with src[k..] pushed, padded with zeros to 64 more slots.
+: pad-from
+  (forall ρ; ρ d:Seq Int^many src:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { d src k }
+  { k 64 prim <
+    [ d
+      k src prim seq-int.len prim <
+      [ src k prim seq-int.at ] [ 0 ] if
+      prim seq-int.push
+      src k 1 prim + pad-from ]
+    [ d ] if };
+
+: build
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many c:Seq Int^many e:Seq Int^many f:Seq Int^many m:Seq Int^many -- ρ d:Seq Int^many)
+  locals { a b c e f m }
+  { prim seq-int.empty a 0 pad-from b 0 pad-from c 0 pad-from
+    e 0 pad-from f 0 pad-from m 0 pad-from
+    prim seq-int.empty 0 pad-from
+    prim seq-int.empty 0 pad-from
+    prim seq-int.empty 0 pad-from
+    prim seq-int.empty 0 pad-from };
+
+\ Sets best arrival 1000000 and trains -1 for stations s on.
+: init
+  (forall ρ; ρ d:Seq Int^many s:Int^many -- ρ r:Seq Int^many)
+  locals { d s }
+  { s d 5 0 get prim <
+    [ d 6 s 1000000 put 7 s -1 put s 1 prim + init ]
+    [ d 6 d 5 2 get d 5 3 get put 7 d 5 2 get 0 put ] if };
+
+\ The time from which the traveller can board at station s.
+: ready
+  (forall ρ; ρ d:Seq Int^many s:Int^many -- ρ r:Int^many)
+  locals { d s }
+  { s d 5 2 get prim =
+    [ d 5 3 get ]
+    [ d 6 s get d 5 1 get prim + ] if };
+
+\ Offers connections c on to the round being built.
+: scan
+  (forall ρ; ρ d:Seq Int^many c:Int^many -- ρ r:Seq Int^many)
+  locals { d c }
+  { c d 5 4 get prim <
+    [ d 9 d 4 c get get 1 prim =
+      d 2 c get d d 0 c get ready prim >= prim or
+      [ d 9 d 4 c get 1 put
+        8 d 1 c get d 8 d 1 c get get d 3 c get min put
+        c 1 prim + scan ]
+      [ d c 1 prim + scan ] if ]
+    [ d ] if };
+
+\ Starts a round: copies the best arrivals, clears boarded trains and flag.
+: prep
+  (forall ρ; ρ d:Seq Int^many s:Int^many -- ρ r:Seq Int^many)
+  locals { d s }
+  { s 12 prim <
+    [ d 8 s d 6 s get put 9 s 0 put s 1 prim + prep ]
+    [ d 5 5 0 put ] if };
+
+\ Takes the improvements of round k1 into the best arrivals.
+: merge
+  (forall ρ; ρ d:Seq Int^many s:Int^many k1:Int^many -- ρ r:Seq Int^many)
+  locals { d s k1 }
+  { s d 5 0 get prim <
+    [ d 8 s get d 6 s get prim <
+      [ d 6 s d 8 s get put 7 s k1 put 5 5 1 put s 1 prim + k1 merge ]
+      [ d s 1 prim + k1 merge ] if ]
+    [ d ] if };
+
+\ Round k + 1, and the rounds after it while arrivals improve.
+: rounds
+  (forall ρ; ρ d:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { d k }
+  { d 0 prep 0 scan 0 k 1 prim + merge
+    locals { d2 }
+    { d2 5 5 get 1 prim = k 60 prim < prim and
+      [ d2 k 1 prim + rounds ]
+      [ d2 ] if } };
+
+: outarr
+  (forall ρ; ρ d:Seq Int^many s:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { d s out }
+  { s d 5 0 get prim <
+    [ d s 1 prim + out
+      d 6 s get 1000000 prim <
+      [ d 6 s get ] [ -1 ] if
+      prim seq-int.push
+      outarr ]
+    [ out ] if };
+
+: outcnt
+  (forall ρ; ρ d:Seq Int^many s:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { d s out }
+  { s d 5 0 get prim <
+    [ d s 1 prim + out d 7 s get prim seq-int.push outcnt ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ stations:Int^many change:Int^many origin:Int^many start:Int^many fromSt:Seq Int^many toSt:Seq Int^many dep:Seq Int^many arr:Seq Int^many train:Seq Int^many -- ρ arrive:Seq Int^many trains:Seq Int^many)
+  locals { ns chg org strt a b c e f }
+  { a b c e f
+    prim seq-int.empty ns prim seq-int.push chg prim seq-int.push
+    org prim seq-int.push strt prim seq-int.push a prim seq-int.len prim seq-int.push
+    build 0 init 0 rounds
+    locals { d }
+    { d 0 prim seq-int.empty outarr
+      d 0 prim seq-int.empty outcnt } };

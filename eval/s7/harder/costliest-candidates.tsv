@@ -1,0 +1,287 @@
+order-match	_random_order_book(100, 30)	93087	True
+order-match	_random_order_book(101, 30)	109692	True
+order-match	_random_order_book(102, 30)	112145	True
+order-match	_random_order_book(103, 30)	119810	True
+order-match	_random_order_book(104, 30)	107552	True
+order-match	_random_order_book(105, 30)	101840	True
+order-match	_random_order_book(106, 30)	105101	True
+order-match	_random_order_book(107, 30)	127959	True
+order-match	_random_order_book(108, 30)	124341	True
+order-match	_random_order_book(109, 30)	87697	True
+order-match	_random_order_book(110, 30)	96008	True
+order-match	_random_order_book(111, 30)	100839	True
+order-match	_random_order_book(112, 30)	131362	True
+order-match	_random_order_book(113, 30)	111977	True
+order-match	_random_order_book(114, 30)	119468	True
+order-match	_random_order_book(115, 30)	102789	True
+order-match	_random_order_book(116, 30)	127246	True
+order-match	_random_order_book(117, 30)	129992	True
+order-match	_random_order_book(118, 30)	106418	True
+order-match	_random_order_book(119, 30)	110063	True
+order-match	_random_order_book(120, 30)	115599	True
+order-match	_random_order_book(121, 30)	147209	True
+order-match	_random_order_book(122, 30)	105490	True
+order-match	_random_order_book(123, 30)	105415	True
+order-match	_random_order_book(124, 30)	111799	True
+order-match	_random_order_book(125, 30)	119793	True
+order-match	_random_order_book(126, 30)	103661	True
+order-match	_random_order_book(127, 30)	132834	True
+order-match	_random_order_book(128, 30)	105796	True
+order-match	_random_order_book(129, 30)	117937	True
+order-match	a market buy sweeping 29 sells	223807	True
+order-match	fill or kill buys against 22 sells	201175	True
+go-game	_random_go(100, 7, 60)	59498	True
+go-game	_random_go(101, 7, 60)	73576	True
+go-game	_random_go(102, 7, 60)	74975	True
+go-game	_random_go(103, 7, 60)	61360	True
+go-game	_random_go(104, 7, 60)	67555	True
+go-game	_random_go(105, 7, 60)	62259	True
+go-game	_random_go(106, 7, 60)	29270	True
+go-game	_random_go(107, 7, 60)	65860	True
+go-game	_random_go(108, 7, 60)	59333	True
+go-game	_random_go(109, 7, 60)	67018	True
+go-game	_random_go(110, 7, 60)	51976	True
+go-game	_random_go(111, 7, 60)	66262	True
+go-game	_random_go(112, 7, 60)	62394	True
+go-game	_random_go(113, 7, 60)	64946	True
+go-game	_random_go(114, 7, 60)	65391	True
+go-game	_random_go(115, 7, 60)	70901	True
+go-game	_random_go(116, 7, 60)	59262	True
+go-game	_random_go(117, 7, 60)	49011	True
+go-game	_random_go(118, 7, 60)	70978	True
+go-game	_random_go(119, 7, 60)	71876	True
+go-game	_random_go(120, 7, 60)	64053	True
+go-game	_random_go(121, 7, 60)	72967	True
+go-game	_random_go(122, 7, 60)	43634	True
+go-game	_random_go(123, 7, 60)	67792	True
+go-game	_random_go(124, 7, 60)	64410	True
+go-game	_random_go(125, 7, 60)	59884	True
+go-game	_random_go(126, 7, 60)	63070	True
+go-game	_random_go(127, 7, 60)	64716	True
+go-game	_random_go(128, 7, 60)	47421	True
+go-game	_random_go(129, 7, 60)	51488	True
+go-game	_random_go(100, 6, 60)	54990	True
+go-game	_random_go(101, 6, 60)	63197	True
+go-game	_random_go(102, 6, 60)	65389	True
+go-game	_random_go(103, 6, 60)	57391	True
+go-game	_random_go(104, 6, 60)	55768	True
+stack-vm	_random_stack_vm(100, 60, 800)	10309	True
+stack-vm	_random_stack_vm(101, 60, 800)	10289	True
+stack-vm	_random_stack_vm(102, 60, 800)	33762	True
+stack-vm	_random_stack_vm(103, 60, 800)	9631	True
+stack-vm	_random_stack_vm(104, 60, 800)	9631	True
+stack-vm	_random_stack_vm(105, 60, 800)	10291	True
+stack-vm	_random_stack_vm(106, 60, 800)	9810	True
+stack-vm	_random_stack_vm(107, 60, 800)	11315	True
+stack-vm	_random_stack_vm(108, 60, 800)	9869	True
+stack-vm	_random_stack_vm(109, 60, 800)	10390	True
+stack-vm	_random_stack_vm(110, 60, 800)	9630	True
+stack-vm	_random_stack_vm(111, 60, 800)	38130	True
+stack-vm	_random_stack_vm(112, 60, 800)	22058	True
+stack-vm	_random_stack_vm(113, 60, 800)	37375	True
+stack-vm	_random_stack_vm(114, 60, 800)	11061	True
+stack-vm	_random_stack_vm(115, 60, 800)	9631	True
+stack-vm	_random_stack_vm(116, 60, 800)	9810	True
+stack-vm	_random_stack_vm(117, 60, 800)	9869	True
+stack-vm	_random_stack_vm(118, 60, 800)	11476	True
+stack-vm	_random_stack_vm(119, 60, 800)	9594	True
+stack-vm	_random_stack_vm(120, 60, 800)	189609	True
+stack-vm	_random_stack_vm(121, 60, 800)	15010	True
+stack-vm	_random_stack_vm(122, 60, 800)	10289	True
+stack-vm	_random_stack_vm(123, 60, 800)	10971	True
+stack-vm	_random_stack_vm(124, 60, 800)	9816	True
+stack-vm	_random_stack_vm(125, 60, 800)	9647	True
+stack-vm	_random_stack_vm(126, 60, 800)	34212	True
+stack-vm	_random_stack_vm(127, 60, 800)	20773	True
+stack-vm	_random_stack_vm(128, 60, 800)	9647	True
+stack-vm	_random_stack_vm(129, 60, 800)	10289	True
+stack-vm	_random_stack_vm(130, 60, 800)	25351	True
+stack-vm	_random_stack_vm(131, 60, 800)	19863	True
+stack-vm	_random_stack_vm(132, 60, 800)	17225	True
+stack-vm	_random_stack_vm(133, 60, 800)	18568	True
+stack-vm	_random_stack_vm(134, 60, 800)	189834	True
+stack-vm	_random_stack_vm(135, 60, 800)	10289	True
+stack-vm	_random_stack_vm(136, 60, 800)	14663	True
+stack-vm	_random_stack_vm(137, 60, 800)	17391	True
+stack-vm	_random_stack_vm(138, 60, 800)	10372	True
+stack-vm	_random_stack_vm(139, 60, 800)	11567	True
+stack-vm	an 800-step loop	48779	True
+josephus	_random_josephus(100, 3)	9340	True
+josephus	_random_josephus(101, 3)	30026	True
+josephus	_random_josephus(102, 3)	122215	True
+josephus	_random_josephus(103, 3)	38171	True
+josephus	_random_josephus(104, 3)	9272	True
+josephus	_random_josephus(105, 3)	46435	True
+josephus	_random_josephus(106, 3)	92939	True
+josephus	_random_josephus(107, 3)	82539	True
+josephus	_random_josephus(108, 3)	23408	True
+josephus	_random_josephus(109, 3)	57531	True
+josephus	_random_josephus(110, 3)	42887	True
+josephus	_random_josephus(111, 3)	53541	True
+josephus	_random_josephus(112, 3)	112166	True
+josephus	_random_josephus(113, 3)	31686	True
+josephus	_random_josephus(114, 3)	137301	True
+josephus	_random_josephus(115, 3)	103375	True
+josephus	_random_josephus(116, 3)	80532	True
+josephus	_random_josephus(117, 3)	50027	True
+josephus	_random_josephus(118, 3)	131050	True
+josephus	_random_josephus(119, 3)	33685	True
+josephus	1e12 counting by 12 to 10	190296	True
+josephus	near 1e12 counting by 12	207883	True
+perm-rank	_random_perm_rank(100)	4497	True
+perm-rank	_random_perm_rank(101)	24813	True
+perm-rank	_random_perm_rank(102)	7883	True
+perm-rank	_random_perm_rank(103)	12423	True
+perm-rank	_random_perm_rank(104)	1269	True
+perm-rank	_random_perm_rank(105)	25073	True
+perm-rank	_random_perm_rank(106)	13311	True
+perm-rank	_random_perm_rank(107)	1779	True
+perm-rank	_random_perm_rank(108)	3174	True
+perm-rank	_random_perm_rank(109)	6865	True
+perm-rank	_random_perm_rank(110)	12223	True
+perm-rank	_random_perm_rank(111)	6103	True
+perm-rank	_random_perm_rank(112)	25335	True
+perm-rank	_random_perm_rank(113)	1705	True
+perm-rank	_random_perm_rank(114)	8383	True
+perm-rank	_random_perm_rank(115)	8819	True
+perm-rank	_random_perm_rank(116)	17702	True
+perm-rank	_random_perm_rank(117)	7138	True
+perm-rank	_random_perm_rank(118)	7795	True
+perm-rank	_random_perm_rank(119)	9417	True
+perm-rank	two of each digit, largest first, last k	26609	True
+perm-rank	two of each digit, smallest first, k 1e15	30421	True
+wire-decode	_random_wire(100, 200)	8182	True
+wire-decode	_random_wire(101, 200)	25509	True
+wire-decode	_random_wire(102, 200)	6137	True
+wire-decode	_random_wire(103, 200)	15923	True
+wire-decode	_random_wire(104, 200)	3332	True
+wire-decode	_random_wire(105, 200)	2275	True
+wire-decode	_random_wire(106, 200)	13195	True
+wire-decode	_random_wire(107, 200)	25394	True
+wire-decode	_random_wire(108, 200)	27846	True
+wire-decode	_random_wire(109, 200)	26708	True
+wire-decode	_random_wire(110, 200)	11875	True
+wire-decode	_random_wire(111, 200)	5750	True
+wire-decode	_random_wire(112, 200)	5691	True
+wire-decode	_random_wire(113, 200)	11253	True
+wire-decode	_random_wire(114, 200)	4257	True
+wire-decode	_random_wire(115, 200)	14217	True
+wire-decode	_random_wire(116, 200)	25285	True
+wire-decode	_random_wire(117, 200)	27781	True
+wire-decode	_random_wire(118, 200)	25394	True
+wire-decode	_random_wire(119, 200)	8995	True
+wire-decode	_random_wire(120, 200)	2759	True
+wire-decode	_random_wire(121, 200)	4505	True
+wire-decode	_random_wire(122, 200)	9390	True
+wire-decode	_random_wire(123, 200)	1042	True
+wire-decode	_random_wire(124, 200)	28439	True
+wire-decode	_random_wire(125, 200)	23342	True
+wire-decode	_random_wire(126, 200)	10941	True
+wire-decode	_random_wire(127, 200)	9064	True
+wire-decode	_random_wire(128, 200)	22814	True
+wire-decode	_random_wire(129, 200)	23322	True
+wire-decode	100 two-byte records	47341	True
+wire-decode	22 nine-byte records	26771	True
+tennis	_random_tennis(100, 400)	14619	True
+tennis	_random_tennis(101, 400)	56746	True
+tennis	_random_tennis(102, 400)	12425	True
+tennis	_random_tennis(103, 400)	26312	True
+tennis	_random_tennis(104, 400)	26524	True
+tennis	_random_tennis(105, 400)	21758	True
+tennis	_random_tennis(106, 400)	19007	True
+tennis	_random_tennis(107, 400)	27278	True
+tennis	_random_tennis(108, 400)	11819	True
+tennis	_random_tennis(109, 400)	31126	True
+tennis	_random_tennis(110, 400)	15192	True
+tennis	_random_tennis(111, 400)	20694	True
+tennis	_random_tennis(112, 400)	48313	True
+tennis	_random_tennis(113, 400)	17667	True
+tennis	_random_tennis(114, 400)	27559	True
+tennis	_random_tennis(115, 400)	21381	True
+tennis	_random_tennis(116, 400)	15323	True
+tennis	_random_tennis(117, 400)	18172	True
+tennis	_random_tennis(118, 400)	30305	True
+tennis	_random_tennis(119, 400)	29325	True
+tennis	_random_tennis(120, 400)	24310	True
+tennis	_random_tennis(121, 400)	12163	True
+tennis	_random_tennis(122, 400)	22612	True
+tennis	_random_tennis(123, 400)	14963	True
+tennis	_random_tennis(124, 400)	15585	True
+tennis	_random_tennis(125, 400)	24142	True
+tennis	_random_tennis(126, 400)	21070	True
+tennis	_random_tennis(127, 400)	17452	True
+tennis	_random_tennis(128, 400)	18345	True
+tennis	_random_tennis(129, 400)	14701	True
+tennis	400 alternating points	52580	True
+timetable	_random_timetable(100, 60)	43452	True
+timetable	_random_timetable(101, 60)	39961	True
+timetable	_random_timetable(102, 60)	48758	True
+timetable	_random_timetable(103, 60)	60237	True
+timetable	_random_timetable(104, 60)	40318	True
+timetable	_random_timetable(105, 60)	38138	True
+timetable	_random_timetable(106, 60)	29520	True
+timetable	_random_timetable(107, 60)	53294	True
+timetable	_random_timetable(108, 60)	60741	True
+timetable	_random_timetable(109, 60)	32714	True
+timetable	_random_timetable(110, 60)	59021	True
+timetable	_random_timetable(111, 60)	48238	True
+timetable	_random_timetable(112, 60)	58157	True
+timetable	_random_timetable(113, 60)	49528	True
+timetable	_random_timetable(114, 60)	63753	True
+timetable	_random_timetable(115, 60)	40410	True
+timetable	_random_timetable(116, 60)	60806	True
+timetable	_random_timetable(117, 60)	33336	True
+timetable	_random_timetable(118, 60)	31292	True
+timetable	_random_timetable(119, 60)	32910	True
+timetable	_random_timetable(120, 60)	31567	True
+timetable	_random_timetable(121, 60)	36402	True
+timetable	_random_timetable(122, 60)	35466	True
+timetable	_random_timetable(123, 60)	39082	True
+timetable	_random_timetable(124, 60)	62299	True
+timetable	_random_timetable(125, 60)	42069	True
+timetable	_random_timetable(126, 60)	29384	True
+timetable	_random_timetable(127, 60)	47686	True
+timetable	_random_timetable(128, 60)	43144	True
+timetable	_random_timetable(129, 60)	34400	True
+timetable	_random_timetable(130, 60)	51360	True
+timetable	_random_timetable(131, 60)	39878	True
+timetable	_random_timetable(132, 60)	29892	True
+timetable	_random_timetable(133, 60)	54318	True
+timetable	_random_timetable(134, 60)	50720	True
+timetable	_random_timetable(135, 60)	37770	True
+timetable	_random_timetable(136, 60)	50448	True
+timetable	_random_timetable(137, 60)	32662	True
+timetable	_random_timetable(138, 60)	47900	True
+timetable	_random_timetable(139, 60)	45570	True
+expr-eval	_random_expr(100, 60)	13544	True
+expr-eval	_random_expr(101, 60)	19550	True
+expr-eval	_random_expr(102, 60)	14295	True
+expr-eval	_random_expr(103, 60)	16430	True
+expr-eval	_random_expr(104, 60)	11044	True
+expr-eval	_random_expr(105, 60)	17522	True
+expr-eval	_random_expr(106, 60)	16695	True
+expr-eval	_random_expr(107, 60)	22442	True
+expr-eval	_random_expr(108, 60)	24503	True
+expr-eval	_random_expr(109, 60)	18295	True
+expr-eval	_random_expr(110, 60)	22558	True
+expr-eval	_random_expr(111, 60)	17667	True
+expr-eval	_random_expr(112, 60)	19309	True
+expr-eval	_random_expr(113, 60)	16130	True
+expr-eval	_random_expr(114, 60)	18470	True
+expr-eval	_random_expr(115, 60)	22408	True
+expr-eval	_random_expr(116, 60)	20599	True
+expr-eval	_random_expr(117, 60)	18870	True
+expr-eval	_random_expr(118, 60)	15283	True
+expr-eval	_random_expr(119, 60)	24131	True
+expr-eval	_random_expr(120, 60)	18498	True
+expr-eval	_random_expr(121, 60)	20166	True
+expr-eval	_random_expr(122, 60)	12963	True
+expr-eval	_random_expr(123, 60)	14920	True
+expr-eval	_random_expr(124, 60)	20287	True
+expr-eval	_random_expr(125, 60)	21741	True
+expr-eval	_random_expr(126, 60)	19870	True
+expr-eval	_random_expr(127, 60)	18958	True
+expr-eval	_random_expr(128, 60)	19084	True
+expr-eval	_random_expr(129, 60)	17817	True
+expr-eval	29 nested parentheses	32894	True
+expr-eval	powers near the bound	56261	True

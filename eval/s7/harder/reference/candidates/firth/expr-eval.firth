@@ -1,0 +1,258 @@
+\ Expression language evaluator: recursive descent, run twice per statement.
+\
+\ Each statement is first parsed in "dry" mode (ev = 0: grammar check only, no
+\ values, no assignments); if that fails the statement is code 1 and does
+\ nothing. Otherwise it is parsed again in "wet" mode (ev = 1), which
+\ evaluates left before right and stops at the first error.
+\
+\ Memory: one Seq Int "m". m[0..7] variable values, m[8..15] 1 if assigned,
+\ m[16..] the tokens encoded as kind * 10000 + value (so a number is itself,
+\ a variable 10000 + n, a symbol 20000 + s), then two ';' sentinels (20010).
+\ Every parse word takes (m p ev) and returns (m' p' value code).
+
+: tok
+  (forall ρ; ρ m:Seq Int^many p:Int^many -- ρ t:Int^many)
+  16 prim + prim seq-int.at;
+
+: zeros
+  (forall ρ; ρ s:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { s n }
+  { n 0 prim <= [ s ] [ s 0 prim seq-int.push n 1 prim - zeros ] if };
+
+: abs
+  (forall ρ; ρ a:Int^many -- ρ r:Int^many)
+  dup 0 prim < [ 0 swap prim - ] [ ] if;
+
+: in-range
+  (forall ρ; ρ r:Int^many -- ρ ok:Bool^many)
+  locals { r } { r 1000000000000 prim > r -1000000000000 prim < prim or prim not };
+
+\ Truncating division.
+: tdiv
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ q:Int^many)
+  locals { a b }
+  { a b prim div
+    locals { q }
+    { a 0 prim < a b prim mod 0 prim > prim and
+      [ b 0 prim > [ q 1 prim + ] [ q 1 prim - ] if ]
+      [ q ] if } };
+
+\ a * b, or code 5 when the product is out of range (never overflows).
+: safe-mul
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many e:Int^many)
+  locals { a b }
+  { a 0 prim = b 0 prim = prim or
+    [ 0 0 ]
+    [ b abs 1000000000000 a abs prim div prim >
+      [ 0 5 ]
+      [ a b prim * 0 ] if ] if };
+
+: pow-loop
+  (forall ρ; ρ a:Int^many acc:Int^many k:Int^many -- ρ r:Int^many e:Int^many)
+  locals { a acc k }
+  { k 0 prim =
+    [ acc 0 ]
+    [ acc a safe-mul
+      locals { r e }
+      { e 0 prim = [ a r k 1 prim - pow-loop ] [ 0 e ] if } ] if };
+
+: pow-val
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many e:Int^many)
+  locals { a b }
+  { b 0 prim <
+    [ 0 4 ]
+    [ b 0 prim =
+      [ 1 0 ]
+      [ a 0 prim =
+        [ 0 0 ]
+        [ a 1 prim =
+          [ 1 0 ]
+          [ a -1 prim =
+            [ b 2 prim mod 0 prim = [ 1 0 ] [ -1 0 ] if ]
+            [ b 40 prim > [ 0 5 ] [ a 1 b pow-loop ] if ] if ] if ] if ] if ] if };
+
+: set-var
+  (forall ρ; ρ m:Seq Int^many i:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { m i v } { m i v prim seq-int.set 8 i prim + 1 prim seq-int.set };
+
+: read-var
+  (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many e:Int^many)
+  locals { m i }
+  { m 8 i prim + prim seq-int.at 1 prim =
+    [ m i prim seq-int.at 0 ] [ 0 2 ] if };
+
+\ ---------------------------------------------------------------- grammar
+
+: atom
+  (forall ρ; ρ m:Seq Int^many p:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many v:Int^many e:Int^many)
+  locals { m p ev }
+  { m p tok
+    locals { t }
+    { t 10000 prim <
+      [ m p 1 prim + t 0 ]
+      [ t 10008 prim <
+        [ ev 0 prim =
+          [ m p 1 prim + 0 0 ]
+          [ m p 1 prim + m t 10000 prim - read-var ] if ]
+        [ t 20007 prim =
+          [ m p 1 prim + ev expr
+            locals { m1 p1 v e }
+            { e 0 prim =
+              [ m1 p1 tok 20008 prim =
+                [ m1 p1 1 prim + v 0 ]
+                [ m1 p1 0 1 ] if ]
+              [ m1 p1 v e ] if } ]
+          [ m p 0 1 ] if ] if ] if } };
+
+: power
+  (forall ρ; ρ m:Seq Int^many p:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many v:Int^many e:Int^many)
+  locals { m p ev }
+  { m p ev atom
+    locals { m1 p1 v e }
+    { e 0 prim =
+      [ m1 p1 tok 20006 prim =
+        [ m1 p1 1 prim + ev factor
+          locals { m2 p2 w e2 }
+          { e2 0 prim =
+            [ ev 0 prim =
+              [ m2 p2 0 0 ]
+              [ m2 p2 v w pow-val ] if ]
+            [ m2 p2 0 e2 ] if } ]
+        [ m1 p1 v 0 ] if ]
+      [ m1 p1 v e ] if } };
+
+: factor
+  (forall ρ; ρ m:Seq Int^many p:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many v:Int^many e:Int^many)
+  locals { m p ev }
+  { m p tok 20002 prim =
+    [ m p 1 prim + ev factor
+      locals { m1 p1 v e }
+      { e 0 prim = [ m1 p1 0 v prim - 0 ] [ m1 p1 0 e ] if } ]
+    [ m p ev power ] if };
+
+\ v w t -- value code, for t = * / %.
+: arith2
+  (forall ρ; ρ v:Int^many w:Int^many t:Int^many -- ρ r:Int^many e:Int^many)
+  locals { v w t }
+  { t 20003 prim =
+    [ v w safe-mul ]
+    [ w 0 prim =
+      [ 0 3 ]
+      [ t 20004 prim =
+        [ v w tdiv 0 ]
+        [ v w v w tdiv prim * prim - 0 ] if ] if ] if };
+
+: product-rest
+  (forall ρ; ρ m:Seq Int^many p:Int^many v:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many r:Int^many e:Int^many)
+  locals { m p v ev }
+  { m p tok
+    locals { t }
+    { t 20003 prim >= t 20005 prim <= prim and
+      [ m p 1 prim + ev factor
+        locals { m1 p1 w e }
+        { e 0 prim =
+          [ ev 0 prim =
+            [ m1 p1 0 ev product-rest ]
+            [ v w t arith2
+              locals { r e2 }
+              { e2 0 prim = [ m1 p1 r ev product-rest ] [ m1 p1 0 e2 ] if } ] if ]
+          [ m1 p1 0 e ] if } ]
+      [ m p v 0 ] if } };
+
+: product
+  (forall ρ; ρ m:Seq Int^many p:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many v:Int^many e:Int^many)
+  locals { m p ev }
+  { m p ev factor
+    locals { m1 p1 v e }
+    { e 0 prim = [ m1 p1 v ev product-rest ] [ m1 p1 v e ] if } };
+
+: sum-rest
+  (forall ρ; ρ m:Seq Int^many p:Int^many v:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many r:Int^many e:Int^many)
+  locals { m p v ev }
+  { m p tok
+    locals { t }
+    { t 20001 prim = t 20002 prim = prim or
+      [ m p 1 prim + ev product
+        locals { m1 p1 w e }
+        { e 0 prim =
+          [ ev 0 prim =
+            [ m1 p1 0 ev sum-rest ]
+            [ t 20001 prim = [ v w prim + ] [ v w prim - ] if
+              locals { r }
+              { r in-range [ m1 p1 r ev sum-rest ] [ m1 p1 0 5 ] if } ] if ]
+          [ m1 p1 0 e ] if } ]
+      [ m p v 0 ] if } };
+
+: sum
+  (forall ρ; ρ m:Seq Int^many p:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many v:Int^many e:Int^many)
+  locals { m p ev }
+  { m p ev product
+    locals { m1 p1 v e }
+    { e 0 prim = [ m1 p1 v ev sum-rest ] [ m1 p1 v e ] if } };
+
+: expr
+  (forall ρ; ρ m:Seq Int^many p:Int^many ev:Int^many -- ρ m2:Seq Int^many p2:Int^many v:Int^many e:Int^many)
+  locals { m p ev }
+  { m p tok
+    locals { t }
+    { t 10000 prim >= t 10008 prim < prim and m p 1 prim + tok 20009 prim = prim and
+      [ m p 2 prim + ev expr
+        locals { m1 p1 v e }
+        { e 0 prim = ev 1 prim = prim and
+          [ m1 t 10000 prim - v set-var p1 v 0 ]
+          [ m1 p1 v e ] if } ]
+      [ m p ev sum ] if } };
+
+\ ------------------------------------------------------------- statements
+
+: next-semi
+  (forall ρ; ρ m:Seq Int^many s:Int^many -- ρ i:Int^many)
+  locals { m s } { m s tok 20010 prim = [ s ] [ m s 1 prim + next-semi ] if };
+
+: stmt-run
+  (forall ρ; ρ m:Seq Int^many s:Int^many -- ρ m2:Seq Int^many v:Int^many c:Int^many)
+  locals { m s }
+  { m s 0 expr
+    locals { m1 p v e }
+    { e 0 prim = m1 p tok 20010 prim = prim and
+      [ m s 1 expr
+        locals { m2 p2 v2 e2 }
+        { m2 e2 0 prim = [ v2 ] [ 0 ] if e2 } ]
+      [ m 0 1 ] if } };
+
+: stmts
+  (forall ρ; ρ m:Seq Int^many s:Int^many n:Int^many vals:Seq Int^many codes:Seq Int^many -- ρ m2:Seq Int^many vals2:Seq Int^many codes2:Seq Int^many)
+  locals { m s n vals codes }
+  { s n prim >
+    [ m vals codes ]
+    [ m s tok 20010 prim =
+      [ m s 1 prim + n vals codes stmts ]
+      [ m s stmt-run
+        locals { m1 v c }
+        { m1 m s next-semi 1 prim + n vals v prim seq-int.push codes c prim seq-int.push stmts } ] if ] if };
+
+: encode
+  (forall ρ; ρ m:Seq Int^many kinds:Seq Int^many vals:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m kinds vals i }
+  { i kinds prim seq-int.len prim >=
+    [ m ]
+    [ m kinds i prim seq-int.at 10000 prim * vals i prim seq-int.at prim + prim seq-int.push
+      kinds vals i 1 prim + encode ] if };
+
+: var-values
+  (forall ρ; ρ m:Seq Int^many acc:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m acc i }
+  { i 8 prim >= [ acc ] [ m acc m i prim seq-int.at prim seq-int.push i 1 prim + var-values ] if };
+
+: var-flags
+  (forall ρ; ρ m:Seq Int^many acc:Seq Bool^many i:Int^many -- ρ r:Seq Bool^many)
+  locals { m acc i }
+  { i 8 prim >= [ acc ] [ m acc m 8 i prim + prim seq-int.at 1 prim = prim seq-bool.push i 1 prim + var-flags ] if };
+
+: main
+  (forall ρ; ρ kinds:Seq Int^many vals:Seq Int^many -- ρ values:Seq Int^many codes:Seq Int^many vars:Seq Int^many assigned:Seq Bool^many)
+  locals { kinds vals }
+  { prim seq-int.empty 16 zeros kinds vals 0 encode 20010 prim seq-int.push 20010 prim seq-int.push
+    0 kinds prim seq-int.len prim seq-int.empty prim seq-int.empty stmts
+    locals { m values codes }
+    { values codes m prim seq-int.empty 0 var-values m prim seq-bool.empty 0 var-flags } };

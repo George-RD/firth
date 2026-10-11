@@ -614,8 +614,9 @@ def ints(v):
 def bounds() -> None:
     """Every pool-2, pool-3 and scored input keeps to its description's stated
     bounds, and every input and expected integer of every task fits in an `Int`."""
-    check(set(BOUNDS) == {t.id for t in SETS["calibration2"] + SETS["calibration3"] + SETS["scored"]},
-          "every pool-2, pool-3 and scored task has its bounds")
+    check(set(BOUNDS) == {t.id for t in SETS["calibration2"] + SETS["calibration3"] + SETS["scored"]
+                          + SETS["candidates"]},
+          "every pool-2, pool-3, scored and candidate task has its bounds")
     for tid, check_args in BOUNDS.items():
         t = BY_ID[tid]
         every = [*cases(t), *(a for i, a, _ in HAND if i == tid)]
@@ -648,6 +649,7 @@ def bounds() -> None:
           and not bj([14], [0], [1], 1) and not bj([1], [0], [0], 1),
           "the bounds check refuses a 121-card shoe, a 21st round, a card of 14 and a bet of 0")
     scored_planted()
+    candidates_planted()
     for name, tasks in SETS.items():
         big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
                if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
@@ -1029,17 +1031,18 @@ def scored_readings() -> None:
         check(n > 0, f"{tid}, {what}: told apart by {n} hidden test(s)")
 
 
-def costliest_problems(record: str) -> list[str]:
-    """What is wrong with the scored set's last hidden tests, given a recorded
-    output of `costliest.py`: each must be the costliest candidate it ran."""
+def costliest_problems(record: str, set_name: str = "scored", budget: int | None = None) -> list[str]:
+    """What is wrong with a set's last hidden tests, given a recorded output
+    of `costliest.py`: each must be the costliest candidate it ran, and,
+    with BUDGET, cost at most that many steps."""
     import costliest
-    every = costliest.candidates()
+    every = costliest.candidate_inputs() if set_name == "candidates" else costliest.candidates()
     rows: dict[str, dict[str, tuple[int | None, bool]]] = {}
     for line in record.splitlines():
         tid, name, cost, ok = line.split("\t")
         rows.setdefault(tid, {})[name] = (None if cost == "None" else int(cost), ok == "True")
     problems = []
-    for t in SETS["scored"]:
+    for t in SETS[set_name]:
         got = rows.get(t.id, {})
         if set(got) != {name for name, _ in every[t.id]}:
             problems.append(f"{t.id}: the record does not cover exactly the candidates")
@@ -1052,7 +1055,44 @@ def costliest_problems(record: str) -> list[str]:
         args = dict(every[t.id])[top]
         if json.dumps(list(t.hidden[-1])) != json.dumps(list(args)):
             problems.append(f"{t.id}: the last hidden test is not the costliest candidate, {top}")
+        if budget is not None and got[top][0] > budget:
+            problems.append(f"{t.id}: {top} costs {got[top][0]} steps, above {budget}")
     return problems
+
+
+def candidates_costliest() -> None:
+    """The candidate set's last hidden tests are its recorded costliest
+    inputs (costliest-candidates.tsv), each within a quarter of the budget."""
+    record = (HERE / "costliest-candidates.tsv").read_text()
+    quarter = tier.FUEL // 4
+    check(costliest_problems(record, "candidates", quarter) == [],
+          "each candidate's last hidden test is its costliest recorded input, within a quarter of the budget")
+    lines = record.splitlines()
+    # Planted: another input recorded as costlier than the one kept.
+    import costliest
+    every = costliest.candidate_inputs()
+    k = next(i for i, line in enumerate(lines) if line.startswith("josephus\t")
+             and json.dumps(list(dict(every["josephus"])[line.split("\t")[1]]))
+             != json.dumps(list(BY_ID["josephus"].hidden[-1])))
+    tid, name, _, ok = lines[k].split("\t")
+    planted = lines[:k] + [f"{tid}\t{name}\t{quarter}\t{ok}"] + lines[k + 1:]
+    check(any(p.startswith("josephus: the last hidden test is not") for p in
+              costliest_problems("\n".join(planted), "candidates", quarter)),
+          "a record with a costlier josephus input than the last hidden test is refused")
+    # Planted: the kept input recorded above a quarter of the budget.
+    k = next(i for i, line in enumerate(lines) if line.startswith("josephus\t")
+             and json.dumps(list(dict(every["josephus"])[line.split("\t")[1]]))
+             == json.dumps(list(BY_ID["josephus"].hidden[-1])))
+    tid, name, _, ok = lines[k].split("\t")
+    planted = lines[:k] + [f"{tid}\t{name}\t{quarter + 1}\t{ok}"] + lines[k + 1:]
+    check(any(p.startswith("josephus: ") and p.endswith(f"above {quarter}") for p in
+              costliest_problems("\n".join(planted), "candidates", quarter)),
+          "a record whose costliest josephus input is above a quarter of the budget is refused")
+    # Planted: a row where the reference disagreed with the meaning.
+    planted = lines[:k] + [f"{tid}\t{name}\t100\tFalse"] + lines[k + 1:]
+    check(any(p.startswith("josephus: the reference failed or disagreed") for p in
+              costliest_problems("\n".join(planted), "candidates", quarter)),
+          "a record where the josephus reference disagreed is refused")
 
 
 def scored_costliest() -> None:
@@ -1586,6 +1626,18 @@ def firth_mutant() -> None:
           "a Firth sokoban reference that counts a box in a corner on a goal as dead passes the example "
           f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
 
+    # The candidate set: a record with field number 0 read as valid.
+    src = (HERE / "reference/candidates/firth/wire-decode.firth").read_text()
+    t = BY_ID["wire-decode"]
+    field0 = "tag 8 prim div 0 prim ="
+    mutant = src.replace(field0, "false", 1)
+    check(src.count(field0) == 1 and mutant != src, "the wire-decode mutant changes the reference")
+    res = tier.score({"wire-decode": mutant}, "firth", [t])["tasks"]["wire-decode"]
+    check(all(c["ok"] for c in res["cases"]), "the wire-decode mutant checks and runs on every case")
+    check(res["cases"][0]["pass"] and not res["pass"],
+          "a Firth wire-decode reference that accepts field number 0 passes the example "
+          f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
+
 # The scored run's Firth prompt says this once, appended after `tier.py
 # prompt` builds it (preregistration.md, "Pre-pin amendment").
 NO_IMPORTS = ("Imports are not available in this run: an `import` cannot reach `stdlib/`, "
@@ -2000,6 +2052,248 @@ def ci_matrix(path: Path) -> None:
           "planted: --only calibration against a ci.yml without rest fails")
 
 
+# --- the candidate set (candidates.py) ---------------------------------------------
+
+CAND_EX = {t.id: t.example for t in SETS["candidates"]}
+
+# The candidates' examples, which an author is shown, worked out by hand.
+HAND += [
+    # Order 2 buys 6 at up to 101: it takes order 1 (3 at 100, the lower price) then 3 of
+    # order 0 at 101: 2 trades, 6 units, 300 + 303. Order 0 keeps 2 until the first cancel;
+    # the second cancel finds nothing. The market sell finds no buy and is dropped; order 6
+    # rests.
+    ("order-match", CAND_EX["order-match"], (2, 6, 603, 0, 1, 1, 0, [6], [2])),
+    # Black 4, white 0, black 1, white 2, black 3 takes white's 0 (its neighbours 1 and 3
+    # are black). Two passes end it after 7 moves. Black has 1, 3, 4 and the empty corner 0;
+    # the empty 5, 6, 7, 8 touch both colours. 4 - 1 = 3.
+    ("go-game", CAND_EX["go-game"], ([0, 1, 2, 1, 1, 0, 0, 0, 0], 1, 0, 0, 7, 3)),
+    # Push 6; call 6: dup, multiply (36), return to 2; try with handler 9 at length 1; push
+    # 0; divide by 0 throws 1: the stack is cut to [36], 1 pushed, jump to 9: push 1, add
+    # gives [36, 2]; instruction 11 is past the end. 10 run, 1 caught, at most 3 values.
+    ("stack-vm", CAND_EX["stack-vm"], ([36, 2], 0, 0, 10, 1, 3)),
+    # 7 people counting by 3 are removed in the order 2, 5, 1, 6, 4, 0, leaving 3; 10
+    # counting by 2: 1, 3, 5, 7, 9, 2, 6, 0, 8, leaving 4; one person is the survivor.
+    ("josephus", CAND_EX["josephus"], ([3, 4, 0], [5, 4, 0])),
+    # 1 1 2 < 1 2 1 < 2 1 1: three, 1 2 1 is number 1, number 2 is 2 1 1, and so is the next.
+    ("perm-rank", CAND_EX["perm-rank"], (3, 1, [2, 1, 1], [2, 1, 1])),
+    # 8 = field 1 wire 0, value 22 + 128 = 150; 17 = field 2 wire 1, u = 3, value -2; 26 =
+    # field 3 wire 2, length 2, two bytes skipped; at byte 9, 8 then 128 0 ends a two-byte
+    # varint with 0: error 2.
+    ("wire-decode", CAND_EX["wire-decode"], ([1, 2, 3], [0, 1, 2], [150, -2, 2], 2, 9)),
+    # Server 0. Game 1 to 0 (hold), game 2 to 0 (break), game 3 to 1 at 4-1 (break), game
+    # 4 to 0 after deuce, served by 1 (break); 0 1 in game 5, served by 0.
+    ("tennis", CAND_EX["tennis"], ([3, 1], -1, 23, [1, 1], 0, [2, 1])),
+    # Station 1 at 10 by train 0. Train 1 leaves 1 at 11, less than 2 after 10; train 2 at
+    # 12 reaches 2 at 18 (two trains), before train 3 at 19 (one). Train 4 leaves 2 at 20,
+    # 2 after 18: station 3 at 30 with three trains.
+    ("timetable", CAND_EX["timetable"], ([5, 10, 18, 30], [0, 1, 2, 3])),
+    # x0 = 7; x1 = 14 - 9 = 5; 5 / 0 is code 3; -5 % 3 = -5 - 3 * (-1) = -2.
+    ("expr-eval", CAND_EX["expr-eval"], ([7, 5, 0, -2], [0, 0, 3, 0], [7, 5, 0, 0, 0, 0, 0, 0],
+                                         [T, T, F, F, F, F, F, F])),
+]
+
+
+def _om_ok(kind, side, price, qty, trader, tif):
+    return (len(kind) <= 30 and _same_len(kind, side, price, qty, trader, tif) and _all_in(kind, 0, 2)
+            and _all_in(side, 0, 1) and _all_in(tif, 0, 2) and _all_in(qty, 1, 1000) and _all_in(trader, 0, 9)
+            and all(_in(p, 0, 29) if k == 2 else _in(p, 1, 1000) for k, p in zip(kind, price)))
+
+
+def _vm_ok(ops, args, limit):
+    return (_in(len(ops), 1, 60) and _same_len(ops, args) and _all_in(ops, 0, 16) and _in(limit, 1, 800)
+            and all(_in(a, -1000, 1000) if o == 0 else _in(a, 0, 60) if o in (9, 10, 11, 13) else a == 0
+                    for o, a in zip(ops, args)))
+
+
+def _tt_ok(stations, change, origin, start, fr, to, dep, arr, train):
+    if not (_in(stations, 2, 12) and _in(change, 0, 10) and _in(origin, 0, stations - 1) and _in(start, 0, 1440)
+            and len(fr) <= 60 and _same_len(fr, to, dep, arr, train) and _all_in(fr + to, 0, stations - 1)
+            and all(a != b for a, b in zip(fr, to)) and all(0 <= d < a <= 1440 for d, a in zip(dep, arr))
+            and _all_in(train, 0, 11) and dep == sorted(dep)):
+        return False
+    for t in set(train):
+        legs = sorted((i for i in range(len(train)) if train[i] == t), key=lambda i: dep[i])
+        if any(fr[j] != to[i] or dep[j] < arr[i] for i, j in zip(legs, legs[1:])):
+            return False
+    return True
+
+
+BOUNDS |= {
+    "order-match": _om_ok,
+    "go-game": lambda size, moves: (_in(size, 2, 7) and len(moves) <= 60
+                                    and all(m == -1 or _in(m, 0, size * size - 1) for m in moves)),
+    "stack-vm": _vm_ok,
+    "josephus": lambda n, k, m: (_in(len(n), 1, 3) and _same_len(n, k, m) and _all_in(n, 1, 10 ** 12)
+                                 and _all_in(k, 1, 12) and all(_in(c, 1, min(200, a)) for a, c in zip(n, m))),
+    "perm-rank": lambda items, perm, k: (_in(len(items), 1, 20) and len(perm) <= 20 and _all_in(items + perm, 0, 9)
+                                         and _in(k, 0, 10 ** 16)),
+    "wire-decode": lambda data: len(data) <= 200 and _all_in(data, 0, 255),
+    "tennis": lambda points, best_of, final_set, no_ad, server: (
+        len(points) <= 400 and _all_in(points, 0, 1) and best_of in (3, 5) and _in(final_set, 0, 2)
+        and isinstance(no_ad, bool) and _in(server, 0, 1)),
+    "timetable": _tt_ok,
+    "expr-eval": lambda kinds, vals: (len(kinds) <= 60 and _same_len(kinds, vals) and _all_in(kinds, 0, 2)
+                                      and all(_in(v, 0, 9999) if k == 0 else _in(v, 0, 7) if k == 1
+                                              else _in(v, 1, 10) for k, v in zip(kinds, vals))),
+}
+
+
+def candidates_planted() -> None:
+    """Each kind of candidate constraint, shown to refuse a known-bad input."""
+    def refuses(tid, good, bad, what):
+        check(BOUNDS[tid](*good) and not any(BOUNDS[tid](*b) for b in bad), f"the bounds check refuses {what}")
+    om = ([0, 2], [1, 0], [10, 0], [5, 1], [3, 0], [0, 0])
+    refuses("order-match", om, [([0, 2], [1, 0], [10, 30], [5, 1], [3, 0], [0, 0]),
+                                ([0, 0], [1, 0], [10, 0], [5, 1], [3, 0], [0, 0]),
+                                ([0, 2], [1, 0], [10, 0], [5, 1], [10, 0], [0, 0]),
+                                ([0] * 31, [0] * 31, [1] * 31, [1] * 31, [0] * 31, [0] * 31),
+                                ([0, 2], [1, 0], [10, 0], [5], [3, 0], [0, 0])],
+            "a cancel naming order 30, a limit price of 0, trader 10, 31 orders and unequal lengths")
+    refuses("go-game", (3, [8, -1]), [(3, [9]), (8, []), (3, [-2]), (2, [0] * 61)],
+            "a point off the board, size 8, a move of -2 and 61 moves")
+    refuses("stack-vm", ([0, 9], [5, 2], 10), [([0, 9], [5, 61], 10), ([1], [3], 10), ([0], [5], 801),
+                                               ([], [], 1), ([17], [0], 1), ([0], [1001], 1)],
+            "a jump to 61, an argument on add, a limit of 801, an empty program, op 17 and a push of 1,001")
+    refuses("josephus", ([5], [2], [5]), [([5], [2], [6]), ([5], [13], [1]), ([10 ** 12 + 1], [2], [1]),
+                                          ([300], [2], [201]), ([1] * 4, [1] * 4, [1] * 4)],
+            "m above n, k of 13, n above 10^12, m of 201 and four questions")
+    refuses("perm-rank", ([1, 2], [2, 1], 0), [([], [], 0), ([10], [10], 0), ([1] * 21, [], 0),
+                                               ([1], [1], 10 ** 16 + 1)],
+            "no items, a digit of 10, 21 items and k above 10^16")
+    refuses("wire-decode", ([0, 255],), [([256],), ([-1],), ([0] * 201,)], "a byte of 256 or -1 and 201 bytes")
+    refuses("tennis", ([0, 1], 3, 0, False, 0), [([2], 3, 0, False, 0), ([], 4, 0, False, 0),
+                                                ([], 3, 3, False, 0), ([], 3, 0, 0, 0), ([0] * 401, 3, 0, False, 0)],
+            "a point won by player 2, best of 4, final-set rule 3, a no-ad that is not a Bool and 401 points")
+    tt = (3, 1, 0, 0, [0, 1], [1, 2], [0, 10], [5, 20], [0, 0])
+    refuses("timetable", tt, [(3, 1, 0, 0, [0, 2], [1, 0], [0, 10], [5, 20], [0, 0]),
+                              (3, 1, 0, 0, [0, 1], [1, 2], [0, 4], [5, 20], [0, 0]),
+                              (3, 1, 0, 0, [0, 1], [1, 2], [10, 0], [20, 5], [1, 0]),
+                              (3, 1, 0, 0, [0, 1], [1, 1], [0, 10], [5, 20], [0, 1]),
+                              (3, 1, 0, 0, [0, 1], [1, 2], [0, 10], [5, 1441], [0, 1])],
+            "a train leaving from where it did not arrive, one leaving before it arrived, departures out "
+            "of order, a connection to its own station and an arrival after 1,440")
+    refuses("expr-eval", ([0, 2, 1], [5, 1, 7]), [([1], [8]), ([2], [11]), ([0], [10000]), ([3], [1]),
+                                                ([0] * 61, [1] * 61)],
+            "variable 8, symbol 11, number 10,000, kind 3 and 61 tokens")
+
+
+PY_MUTANTS |= {
+    "order-match": ("a fill or kill order counting its own trader's orders as available",
+                    meaning_mutant("_order_book", "if crosses(r) and r[4] != who) < left", "if crosses(r)) < left",
+                                   "candidates.py")),
+    "go-game": ("no ko rule", meaning_mutant("_go_game", "        if b == before[3 - player]:",
+                                              "        if False:", "candidates.py")),
+    "stack-vm": ("division rounding down instead of toward zero",
+                 meaning_mutant("_stack_vm", "else _trunc_div(x, y) if op == 4", "else x // y if op == 4",
+                                "candidates.py")),
+    "josephus": ("counting by 1 leaving person n instead of n - 1",
+                 meaning_mutant("_josephus", "    if k == 1:\n        return n - 1\n    sizes",
+                                "    if k == 1:\n        return n\n    sizes", "candidates.py")),
+    "perm-rank": ("the arrangement after the last one wrapping round to the first",
+                  meaning_mutant("_perm_rank", "nxt = unrank(rank + 1) if rank != -1 and rank + 1 < total else []",
+                                 "nxt = unrank((rank + 1) % total) if rank != -1 else []", "candidates.py")),
+    "wire-decode": ("a varint of nine bytes accepted",
+                    meaning_mutant("_wire_decode", "        for i in range(8):", "        for i in range(9):",
+                                   "candidates.py")),
+    "tennis": ("no-ad ignored", meaning_mutant("_tennis", "(no_ad and pts", "(False and pts", "candidates.py")),
+    "timetable": ("connections leaving the origin before start boarded",
+                  meaning_mutant("_timetable", "ready = start if s == origin else reach[s] + change",
+                                 "ready = 0 if s == origin else reach[s] + change", "candidates.py")),
+    "expr-eval": ("a power's exponent read as an atom, so 2^-1 is a syntax error",
+                  meaning_mutant("_expr_eval", "                return (6, node, unary())",
+                                 "                return (6, node, atom())", "candidates.py")),
+}
+
+
+def cand_reading(name: str, *edits: tuple[str, str]) -> str:
+    """A candidate's meaning as another reading of its description would have it."""
+    src = (HERE / "candidates.py").read_text()
+    for old, new in edits:
+        assert src.count(old) == 1, f"the reading's text is not in candidates.py once: {old!r}"
+        src = src.replace(old, new)
+    future = "from __future__ import annotations\n"
+    src = src.replace(future, future + f"__file__ = {str(HERE / 'candidates.py')!r}\n", 1)
+    return src + f"\n\ndef main(*args):\n    return {name}(*args)\n"
+
+
+# Sentences of the candidates a careful reader could take two ways, made explicit before
+# any author ran: each other reading must be told apart by a hidden test.
+CAND_READINGS = [
+    ("tennis", "an unfinished match tiebreak given as 0 and 0",
+     cand_reading("_tennis", ("            if target == 10:\n                g[0], g[1] = pts\n", ""),
+                  ("                if target != 10:\n                    g[w] += 1",
+                   "                if target == 10:\n                    g[0], g[1] = pts\n"
+                   "                else:\n                    g[w] += 1"))),
+    ("stack-vm", "the step limit checked before running off the end",
+     cand_reading("_stack_vm", ("    while 0 <= pc < len(ops):\n        if steps == limit:",
+                                "    while True:\n        if steps == limit:"),
+                  ("        op, a = ops[pc], args[pc]",
+                   "        if not 0 <= pc < len(ops):\n            steps -= 1\n            break\n"
+                   "        op, a = ops[pc], args[pc]"))),
+    ("stack-vm", "no value pushed by a handler onto 32 values",
+     cand_reading("_stack_vm", ("            stack.append(thrown)\n", "            if len(stack) < 32:\n"
+                                "                stack.append(thrown)\n"))),
+    ("go-game", "ko compared with the board before the player's own previous turn",
+     cand_reading("_go_game", ("        if b == before[3 - player]:", "        if b == before[player]:"))),
+    ("timetable", "the change time needed when staying aboard",
+     cand_reading("_timetable", ("                if not aboard and ready <= c_dep[i]:\n                    aboard = True",
+                                 "                aboard = ready <= c_dep[i]"))),
+    ("wire-decode", "the wire type checked before the field",
+     cand_reading("_wire_decode", ("            if field == 0:\n                raise _Bad(4)\n", ""),
+                  ("            else:\n                raise _Bad(5)",
+                   "            else:\n                raise _Bad(5)\n            if field == 0:\n"
+                   "                raise _Bad(4)"))),
+    ("expr-eval", "the right operand evaluated first",
+     cand_reading("_expr_eval", ("            a = run(node[1])\n            b = run(node[2])",
+                                 "            b = run(node[2])\n            a = run(node[1])"))),
+    ("order-match", "a fill or kill order's self-trade removals made even when it is killed",
+     cand_reading("_order_book", ("            killed += 1\n            continue",
+                                  "            killed += 1\n            for r in [r for r in book if crosses(r) "
+                                  "and r[4] == who]:\n                book.remove(r)\n"
+                                  "                self_cancelled += r[3]\n            continue"))),
+    ("perm-rank", "an empty perm taken as the arrangement before the first",
+     cand_reading("_perm_rank", ("    rank = rank_of(perm) if sorted(perm) == sorted(items) else -1",
+                                 "    rank = rank_of(perm) if sorted(perm) == sorted(items) else -1\n"
+                                 "    if not perm:\n        return total, -1, unrank(k) if k < total else [], "
+                                 "unrank(0)"))),
+]
+
+
+def candidates_readings() -> None:
+    check(told_apart("tennis", cand_reading("_tennis")) == 0,
+          "a candidate reading that is the meaning itself is told apart by no hidden test")
+    for tid, what, src in CAND_READINGS:
+        n = told_apart(tid, src)
+        check(n > 0, f"{tid}, {what}: told apart by {n} hidden test(s)")
+
+
+def candidates_random_agreement(n: int = 3000) -> None:
+    """The candidates' Python references, written from the descriptions alone, agree with
+    the meanings on n seeded random inputs per task, beyond the hidden tests."""
+    import candidates as c
+    gens = {"order-match": c._random_order_book, "go-game": c._random_go, "stack-vm": c._random_stack_vm,
+            "josephus": c._random_josephus, "perm-rank": c._random_perm_rank, "wire-decode": c._random_wire,
+            "tennis": c._random_tennis, "timetable": c._random_timetable,
+            "expr-eval": c._random_expr}
+    check(set(gens) == {t.id for t in SETS["candidates"]}, "every candidate has a generator")
+
+    def disagree(src: str, tid: str) -> int:
+        ns: dict = {}
+        exec(compile(src, f"{tid}.py", "exec"), ns)
+        t = BY_ID[tid]
+        return sum(not harness.same(json.loads(json.dumps(as_list(ns["main"](*a), t))), t.expected(a))
+                   for a in map(gens[tid], range(n)))
+    bad_inputs = [tid for tid in gens if not all(BOUNDS[tid](*gens[tid](s)) for s in range(200))]
+    check(not bad_inputs, f"every candidate's random inputs keep to its bounds (outside: {bad_inputs})")
+    for tid in gens:
+        src = (HERE / "reference" / "candidates" / "python" / f"{tid}.py").read_text()
+        check(disagree(src, tid) == 0, f"Python reference candidates/{tid} agrees with the meaning on {n} "
+              "seeded inputs")
+    # Planted: the tennis reference with no-ad ignored disagrees.
+    check(disagree(PY_MUTANTS["tennis"][1], "tennis") > 0,
+          "the seeded comparison catches a tennis answer that ignores no-ad")
+
+
 def main() -> int:
     if "--only" in sys.argv:
         i = sys.argv.index("--only")
@@ -2025,7 +2319,10 @@ def main() -> int:
     scored_random_agreement()
     python_mutants()
     scored_readings()
+    candidates_readings()
+    candidates_random_agreement()
     scored_costliest()
+    candidates_costliest()
     regex_drafted_bounds()
     deepseek_driver()
     deepseek_sample_driver()

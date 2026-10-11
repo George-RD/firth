@@ -1,0 +1,191 @@
+\ Order book matching. All state lives in one Seq Int `d` of eight fields of
+\ 64 slots each: field f, index i is d[f*64+i].
+\ Fields: 0 kind, 1 side, 2 price, 3 qty, 4 trader, 5 tif, 6 remaining
+\ quantity (above 0 only while the order rests), 7 statistics:
+\ 0 trades, 1 volume, 2 notional, 3 self-cancelled, 4 cancels, 5 rejected,
+\ 6 killed, 8 the number of orders.
+
+: get
+  (forall ρ; ρ d:Seq Int^many f:Int^many i:Int^many -- ρ r:Int^many)
+  locals { d f i }
+  { d f 64 prim * i prim + prim seq-int.at };
+
+: put
+  (forall ρ; ρ d:Seq Int^many f:Int^many i:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { d f i v }
+  { d f 64 prim * i prim + v prim seq-int.set };
+
+\ Statistic k grows by v.
+: bump
+  (forall ρ; ρ d:Seq Int^many k:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { d k v }
+  { d 7 k d 7 k get v prim + put };
+
+: min
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a b prim < [ a ] [ b ] if };
+
+\ d with src[k..] pushed, padded with zeros to 64 more slots.
+: pad-from
+  (forall ρ; ρ d:Seq Int^many src:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { d src k }
+  { k 64 prim <
+    [ d
+      k src prim seq-int.len prim <
+      [ src k prim seq-int.at ] [ 0 ] if
+      prim seq-int.push
+      src k 1 prim + pad-from ]
+    [ d ] if };
+
+: build
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many c:Seq Int^many e:Seq Int^many f:Seq Int^many g:Seq Int^many -- ρ d:Seq Int^many)
+  locals { a b c e f g }
+  { prim seq-int.empty a 0 pad-from b 0 pad-from c 0 pad-from
+    e 0 pad-from f 0 pad-from g 0 pad-from
+    prim seq-int.empty 0 pad-from
+    prim seq-int.empty 0 pad-from
+    8 a prim seq-int.len bump };
+
+\ Can resting order j trade with an incoming order of side s, market flag mk
+\ and limit price p?
+: compat?
+  (forall ρ; ρ d:Seq Int^many j:Int^many s:Int^many mk:Int^many p:Int^many -- ρ r:Bool^many)
+  locals { d j s mk p }
+  { d 6 j get 0 prim >
+    d 1 j get s prim = prim not prim and
+    mk 1 prim =
+    [ true ]
+    [ s 0 prim =
+      [ d 2 j get p prim <= ]
+      [ d 2 j get p prim >= ] if ] if
+    prim and };
+
+\ Sort key of resting order j for an incoming order of side s: lowest is best.
+: key
+  (forall ρ; ρ d:Seq Int^many j:Int^many s:Int^many -- ρ r:Int^many)
+  locals { d j s }
+  { s 0 prim =
+    [ d 2 j get 64 prim * j prim + ]
+    [ 2000 d 2 j get prim - 64 prim * j prim + ] if };
+
+\ Lowest key over orders j..end-1 that can trade, or best.
+: bestkey
+  (forall ρ; ρ d:Seq Int^many j:Int^many end:Int^many s:Int^many mk:Int^many p:Int^many best:Int^many -- ρ r:Int^many)
+  locals { d j end s mk p best }
+  { j end prim <
+    [ d j 1 prim + end s mk p
+      d j s mk p compat?
+      [ d j s key best min ] [ best ] if
+      bestkey ]
+    [ best ] if };
+
+\ Quantity (added to acc) of orders j..end-1 that can trade and are not tr's.
+: sumav
+  (forall ρ; ρ d:Seq Int^many j:Int^many end:Int^many s:Int^many mk:Int^many p:Int^many tr:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { d j end s mk p tr acc }
+  { j end prim <
+    [ d j 1 prim + end s mk p tr
+      d j s mk p compat? d 4 j get tr prim = prim not prim and
+      [ acc d 6 j get prim + ] [ acc ] if
+      sumav ]
+    [ acc ] if };
+
+: trade
+  (forall ρ; ρ d:Seq Int^many i:Int^many j:Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { d i j t }
+  { d 6 i d 6 i get t prim - put
+    6 j d 6 j get t prim - put
+    0 1 bump
+    1 t bump
+    2 t d 2 j get prim * bump
+    i matchloop };
+
+: step2
+  (forall ρ; ρ d:Seq Int^many i:Int^many j:Int^many -- ρ r:Seq Int^many)
+  locals { d i j }
+  { d 4 j get d 4 i get prim =
+    [ d 3 d 6 j get bump 6 j 0 put i matchloop ]
+    [ d i j d 6 i get d 6 j get min trade ] if };
+
+: step
+  (forall ρ; ρ d:Seq Int^many i:Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { d i k }
+  { k 1000000000 prim <
+    [ d i k 64 prim mod step2 ]
+    [ d ] if };
+
+\ Matches incoming order i while it has quantity and a resting order can trade.
+: matchloop
+  (forall ρ; ρ d:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { d i }
+  { d 6 i get 0 prim >
+    [ d i
+      d 0 i d 1 i get d 0 i get d 2 i get 1000000000 bestkey
+      step ]
+    [ d ] if };
+
+: cancel2
+  (forall ρ; ρ d:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { d k }
+  { k 0 prim >=
+    [ d 6 k get 0 prim > ] [ false ] if
+    [ d 6 k 0 put 4 1 bump ]
+    [ d 5 1 bump ] if };
+
+: finish
+  (forall ρ; ρ d:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { d i }
+  { d 0 i get 0 prim = d 5 i get 0 prim = prim and
+    [ d ] [ d 6 i 0 put ] if };
+
+: order
+  (forall ρ; ρ d:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { d i }
+  { d 5 i get 2 prim =
+    [ d 0 i d 1 i get d 0 i get d 2 i get d 4 i get 0 sumav
+      d 3 i get prim < ]
+    [ false ] if
+    [ d 6 1 bump ]
+    [ d 6 i d 3 i get put i matchloop i finish ] if };
+
+: proc
+  (forall ρ; ρ d:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { d i }
+  { d 0 i get 2 prim =
+    [ d d 2 i get cancel2 ]
+    [ d i order ] if };
+
+: runloop
+  (forall ρ; ρ d:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { d i }
+  { i d 7 8 get prim <
+    [ d i proc i 1 prim + runloop ]
+    [ d ] if };
+
+: collect2
+  (forall ρ; ρ d:Seq Int^many ids:Seq Int^many qs:Seq Int^many rs:Int^many k:Int^many -- ρ d2:Seq Int^many ids2:Seq Int^many qs2:Seq Int^many)
+  locals { d ids qs rs k }
+  { k 1000000000 prim <
+    [ d 6 k 64 prim mod 0 put
+      ids k 64 prim mod prim seq-int.push
+      qs d 6 k 64 prim mod get prim seq-int.push
+      rs collect ]
+    [ d ids qs ] if };
+
+\ Appends the resting orders of side rs, best first, with their quantities.
+: collect
+  (forall ρ; ρ d:Seq Int^many ids:Seq Int^many qs:Seq Int^many rs:Int^many -- ρ d2:Seq Int^many ids2:Seq Int^many qs2:Seq Int^many)
+  locals { d ids qs rs }
+  { d ids qs rs
+    d 0 d 7 8 get 1 rs prim - 1 0 1000000000 bestkey
+    collect2 };
+
+: main
+  (forall ρ; ρ kind:Seq Int^many side:Seq Int^many price:Seq Int^many qty:Seq Int^many trader:Seq Int^many tif:Seq Int^many -- ρ trades:Int^many volume:Int^many notional:Int^many selfc:Int^many cancels:Int^many rejected:Int^many killed:Int^many ids:Seq Int^many qs:Seq Int^many)
+  locals { a b c e f g }
+  { a b c e f g build 0 runloop
+    locals { d }
+    { d 7 0 get d 7 1 get d 7 2 get d 7 3 get d 7 4 get d 7 5 get d 7 6 get
+      d prim seq-int.empty prim seq-int.empty 0 collect 1 collect
+      locals { d2 ids qs } { ids qs } } };

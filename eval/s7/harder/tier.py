@@ -57,7 +57,7 @@ sys.path.insert(0, str(HERE))
 STDLIB = S7.parents[1] / "stdlib"
 STDLIB_FILES = tuple(sorted(STDLIB.rglob("*.firth")))
 HASHED = {f"harder/{n}": HERE / n for n in ("calibration.py", "calibration2.py", "calibration3.py",
-                                             "scored.py", "tier.py")} | {
+                                             "scored.py", "candidates.py", "tier.py")} | {
     n: S7 / n for n in ("task.py", "harness.py", "isolate.py")} | {
     str(p.relative_to(STDLIB.parent)): p for p in STDLIB_FILES}
 IMPORT_HASHES = {n: hashlib.sha256(p.read_bytes()).hexdigest() for n, p in HASHED.items()}
@@ -66,11 +66,13 @@ import isolate  # noqa: E402
 from calibration import CALIBRATION  # noqa: E402
 from calibration2 import CALIBRATION2  # noqa: E402
 from calibration3 import CALIBRATION3  # noqa: E402
+from candidates import CANDIDATES  # noqa: E402
 from scored import SCORED  # noqa: E402
 from task import Task  # noqa: E402
 
 SETS: dict[str, tuple[Task, ...]] = {"calibration": CALIBRATION, "calibration2": CALIBRATION2,
-                                     "calibration3": CALIBRATION3, "scored": SCORED}
+                                     "calibration3": CALIBRATION3, "scored": SCORED,
+                                     "candidates": CANDIDATES}
 BY_ID = {t.id: t for ts in SETS.values() for t in ts}
 SET_OF = {t.id: name for name, ts in SETS.items() for t in ts}
 assert len(BY_ID) == sum(len(ts) for ts in SETS.values()), "task ids must be unique across sets"

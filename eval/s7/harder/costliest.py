@@ -12,6 +12,7 @@ per candidate:
     task <TAB> candidate <TAB> kernel steps <TAB> agrees with the meaning
 
     costliest.py [TASK ...] > costliest.tsv
+    costliest.py --candidates [TASK ...] > costliest-candidates.tsv
 
 It takes about 15 seconds a candidate, so it is not run in CI. Its recorded
 output (`costliest.tsv`) is what `test_harder.py` (`scored_costliest`) checks
@@ -32,8 +33,9 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 
+import candidates as cand  # noqa: E402
 import scored  # noqa: E402
-from tier import harness  # noqa: E402
+from tier import BY_ID, SET_OF, harness  # noqa: E402
 
 ALPHABETS = {"a": lambda i: 0, "ab": lambda i: i % 2, "abc": lambda i: random.Random(i).randint(0, 2)}
 
@@ -77,11 +79,47 @@ def candidates() -> dict[str, list[tuple[str, tuple]]]:
     }
 
 
+def candidate_inputs() -> dict[str, list[tuple[str, tuple]]]:
+    """The same search for the candidate set (`candidates.py`): seeded random
+    inputs at the largest sizes each description allows, and a few built to be
+    slow for a straightforward program."""
+    sweep = cand._ob(*([(0, 1, 500 + i, 1, i % 10, 0) for i in range(29)] + [(1, 0, 1, 1000, 9, 0)]))
+    fok = cand._ob(*([(0, 1, 100 + i % 3, 2, i % 10, 0) for i in range(22)]
+                     + [(0, 0, 200, 40, i % 10, 2) for i in range(8)]))
+    j_max = ([10 ** 12] * 3, [12, 11, 10], [200] * 3)
+    j_twelve = ([10 ** 12, 10 ** 12 - 1, 999_999_999_989], [12] * 3, [200] * 3)
+    two_each = list(range(10)) * 2
+    deep = cand._ex(" ".join(["("] * 29 + ["2"] + [")"] * 29))
+    powers = cand._ex(" ; ".join(["2 ^ 39"] * 10) + " ; 9999 ^ 3 ^ 9")
+    return {
+        "order-match": [(f"_random_order_book({s}, 30)", cand._random_order_book(s, 30)) for s in range(100, 130)]
+        + [("a market buy sweeping 29 sells", sweep), ("fill or kill buys against 22 sells", fok)],
+        "go-game": [(f"_random_go({s}, 7, 60)", cand._random_go(s, 7, 60)) for s in range(100, 130)]
+        + [(f"_random_go({s}, 6, 60)", cand._random_go(s, 6, 60)) for s in range(100, 105)],
+        "stack-vm": [(f"_random_stack_vm({s}, 60, 800)", cand._random_stack_vm(s, 60, 800))
+                     for s in range(100, 140)]
+        + [("an 800-step loop", cand._vm((0, 30), (6,), (10, 7), (0, 1), (2,), (6,), (9, 1), (8,), limit=800))],
+        "josephus": [(f"_random_josephus({s}, 3)", cand._random_josephus(s, 3)) for s in range(100, 120)]
+        + [("1e12 counting by 12 to 10", j_max), ("near 1e12 counting by 12", j_twelve)],
+        "perm-rank": [(f"_random_perm_rank({s})", cand._random_perm_rank(s)) for s in range(100, 120)]
+        + [("two of each digit, largest first, last k", (two_each, sorted(two_each, reverse=True),
+                                                         2_375_880_867_359_999)),
+           ("two of each digit, smallest first, k 1e15", (two_each, sorted(two_each), 10 ** 15))],
+        "wire-decode": [(f"_random_wire({s}, 200)", cand._random_wire(s, 200)) for s in range(100, 130)]
+        + [("100 two-byte records", ([8, 1] * 100,)), ("22 nine-byte records", (([8] + [255] * 7 + [127]) * 22,))],
+        "tennis": [(f"_random_tennis({s}, 400)", cand._random_tennis(s, 400)) for s in range(100, 130)]
+        + [("400 alternating points", ([0, 1] * 200, 5, 2, False, 0))],
+        "timetable": [(f"_random_timetable({s}, 60)", cand._random_timetable(s, 60)) for s in range(100, 140)],
+        "expr-eval": [(f"_random_expr({s}, 60)", cand._random_expr(s, 60)) for s in range(100, 130)]
+        + [("29 nested parentheses", deep), ("powers near the bound", powers)],
+    }
+
+
 def agrees(tid: str, args, out: dict) -> bool:
     """Whether a `firth_run.py run` result OUT on ARGS ran to the end and left
     what the meaning says (`test_harder.py`, `scored_costliest`, plants a
     wrong stack and a run that did not finish)."""
-    t = {t.id: t for t in scored.SCORED}[tid]
+    t = BY_ID[tid]
     return out.get("status") == "success" and harness.same(out.get("stack"), t.expected(args))
 
 
@@ -89,7 +127,7 @@ def run(tid: str, name: str, args: tuple) -> tuple[str, str, int | None, bool]:
     args = json.loads(json.dumps(list(args)))
     try:
         p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run",
-                            str(HERE / "reference/scored/firth" / f"{tid}.firth"), "--entry", "main",
+                            str(HERE / "reference" / SET_OF[tid] / "firth" / f"{tid}.firth"), "--entry", "main",
                             "--stack", json.dumps(args), "--fuel", "1000000"],
                            cwd=ROOT, capture_output=True, text=True, timeout=1800)
         out = json.loads(p.stdout)
@@ -103,6 +141,8 @@ def run(tid: str, name: str, args: tuple) -> tuple[str, str, int | None, bool]:
 
 def main(argv: list[str]) -> int:
     every = candidates()
+    if argv[:1] == ["--candidates"]:
+        every, argv = candidate_inputs(), argv[1:]
     tasks = argv or list(every)
     jobs = [(tid, name, args) for tid in tasks for name, args in every[tid]]
     with cf.ThreadPoolExecutor(os.cpu_count() or 4) as ex:

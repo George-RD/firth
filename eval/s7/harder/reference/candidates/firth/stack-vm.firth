@@ -1,0 +1,269 @@
+\ Stack machine with exceptions.
+\
+\ All machine state lives in one Seq Int, "mem", so every word is
+\ mem -- mem (plus a few arguments). Layout:
+\   0 pc, 1 steps, 2 caught, 3 deepest, 4 status (-1 while running),
+\   5 uncaught value, 6 data stack length, 7 call stack length,
+\   8 handler count, 9 limit, 10 program length
+\   16.. ops, 80.. args, 144.. data stack (40 slots), 184.. call stack (16),
+\   200.. handlers (8 x 3: target, data length, call length)
+
+: min2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim <= [ a ] [ b ] if };
+
+: zeros
+  (forall ρ; ρ s:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { s n }
+  { n 0 prim <= [ s ] [ s 0 prim seq-int.push n 1 prim - zeros ] if };
+
+\ Push v on the data stack (no capacity check), tracking the deepest length.
+: ds-push
+  (forall ρ; ρ m:Seq Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { m v }
+  { m 6 prim seq-int.at
+    locals { l }
+    { m 144 l prim + v prim seq-int.set 6 l 1 prim + prim seq-int.set
+      locals { m2 }
+      { l 1 prim + m2 3 prim seq-int.at prim >
+        [ m2 3 l 1 prim + prim seq-int.set ] [ m2 ] if } } };
+
+: ds-top
+  (forall ρ; ρ m:Seq Int^many -- ρ v:Int^many)
+  dup 6 prim seq-int.at 143 prim + prim seq-int.at;
+
+: ds-second
+  (forall ρ; ρ m:Seq Int^many -- ρ v:Int^many)
+  dup 6 prim seq-int.at 142 prim + prim seq-int.at;
+
+: ds-pop
+  (forall ρ; ρ m:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { m n } { m 6 m 6 prim seq-int.at n prim - prim seq-int.set };
+
+\ Throw v.
+: do-throw
+  (forall ρ; ρ m:Seq Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { m v }
+  { m 8 prim seq-int.at 0 prim =
+    [ m 4 1 prim seq-int.set 5 v prim seq-int.set ]
+    [ m 8 m 8 prim seq-int.at 1 prim - prim seq-int.set
+      locals { m1 }
+      { 200 m1 8 prim seq-int.at 3 prim * prim +
+        locals { b }
+        { m1 b prim seq-int.at
+          m1 b 1 prim + prim seq-int.at
+          m1 b 2 prim + prim seq-int.at
+          locals { hpc hds hcs }
+          { m1 6 m1 6 prim seq-int.at hds min2 prim seq-int.set
+            7 m1 7 prim seq-int.at hcs min2 prim seq-int.set
+            2 m1 2 prim seq-int.at 1 prim + prim seq-int.set
+            0 hpc prim seq-int.set
+            v ds-push } } } ] if };
+
+: tdiv
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ q:Int^many)
+  locals { a b }
+  { a b prim div
+    locals { q }
+    { a 0 prim < a b prim mod 0 prim > prim and
+      [ b 0 prim > [ q 1 prim + ] [ q 1 prim - ] if ]
+      [ q ] if } };
+
+: arith
+  (forall ρ; ρ a:Int^many b:Int^many op:Int^many -- ρ r:Int^many)
+  locals { a b op }
+  { op 1 prim =
+    [ a b prim + ]
+    [ op 2 prim =
+      [ a b prim - ]
+      [ op 3 prim =
+        [ a b prim * ]
+        [ op 4 prim =
+          [ a b tdiv ]
+          [ a b a b tdiv prim * prim - ] if ] if ] if ] if };
+
+: binop
+  (forall ρ; ρ m:Seq Int^many op:Int^many -- ρ r:Seq Int^many)
+  locals { m op }
+  { m 6 prim seq-int.at 2 prim <
+    [ m 2 do-throw ]
+    [ m ds-second m ds-top
+      locals { a b }
+      { op 3 prim > b 0 prim = prim and
+        [ m 1 do-throw ]
+        [ a b op arith
+          locals { r }
+          { r 1000000000 prim > r -1000000000 prim < prim or
+            [ m 6 do-throw ]
+            [ m 2 ds-pop r ds-push ] if } ] if } ] if };
+
+: op-push
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m 6 prim seq-int.at 32 prim >=
+    [ m 4 do-throw ]
+    [ m a ds-push ] if };
+
+: op-dup
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m 6 prim seq-int.at 1 prim <
+    [ m 2 do-throw ]
+    [ m 6 prim seq-int.at 32 prim >=
+      [ m 4 do-throw ]
+      [ m m ds-top ds-push ] if ] if };
+
+: op-swap
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m 6 prim seq-int.at
+    locals { l }
+    { l 2 prim <
+      [ m 2 do-throw ]
+      [ m 142 l prim + m ds-top prim seq-int.set
+        143 l prim + m ds-second prim seq-int.set ] if } };
+
+: op-drop
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m 6 prim seq-int.at 1 prim <
+    [ m 2 do-throw ]
+    [ m 1 ds-pop ] if };
+
+: op-jz
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m 6 prim seq-int.at 1 prim <
+    [ m 2 do-throw ]
+    [ m ds-top
+      locals { v }
+      { m 1 ds-pop
+        v 0 prim = [ 0 a prim seq-int.set ] [ ] if } ] if };
+
+: op-call
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m 7 prim seq-int.at
+    locals { l }
+    { l 16 prim >=
+      [ m 4 do-throw ]
+      [ m 184 l prim + m 0 prim seq-int.at prim seq-int.set
+        7 l 1 prim + prim seq-int.set
+        0 a prim seq-int.set ] if } };
+
+: op-ret
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m 7 prim seq-int.at
+    locals { l }
+    { l 0 prim =
+      [ m 4 0 prim seq-int.set ]
+      [ m 7 l 1 prim - prim seq-int.set
+        0 m 183 l prim + prim seq-int.at prim seq-int.set ] if } };
+
+: op-try
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m 8 prim seq-int.at
+    locals { h }
+    { h 8 prim >=
+      [ m 4 do-throw ]
+      [ 200 h 3 prim * prim +
+        locals { b }
+        { m b a prim seq-int.set
+          b 1 prim + m 6 prim seq-int.at prim seq-int.set
+          b 2 prim + m 7 prim seq-int.at prim seq-int.set
+          8 h 1 prim + prim seq-int.set } ] if } };
+
+: op-endtry
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m 8 prim seq-int.at 0 prim =
+    [ m 3 do-throw ]
+    [ m 8 m 8 prim seq-int.at 1 prim - prim seq-int.set ] if };
+
+: op-throw
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m 6 prim seq-int.at 1 prim <
+    [ m 2 do-throw ]
+    [ m ds-top
+      locals { v }
+      { m 1 ds-pop v do-throw } ] if };
+
+: exec
+  (forall ρ; ρ m:Seq Int^many op:Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m op a }
+  { op 6 prim <
+    [ op 1 prim >=
+      [ m op binop ]
+      [ m a op-push ] if ]
+    [ op 11 prim <
+      [ op 8 prim <=
+        [ op 6 prim =
+          [ m op-dup ]
+          [ op 7 prim = [ m op-swap ] [ m op-drop ] if ] if ]
+        [ op 9 prim =
+          [ m 0 a prim seq-int.set ]
+          [ m a op-jz ] if ] if ]
+      [ op 13 prim <=
+        [ op 11 prim =
+          [ m a op-call ]
+          [ op 12 prim = [ m op-ret ] [ m a op-try ] if ] if ]
+        [ op 14 prim =
+          [ m op-endtry ]
+          [ op 15 prim = [ m op-throw ] [ m 4 0 prim seq-int.set ] if ] if ] if ] if ] if };
+
+: step
+  (forall ρ; ρ m:Seq Int^many pc:Int^many -- ρ r:Seq Int^many)
+  locals { m pc }
+  { m 1 m 1 prim seq-int.at 1 prim + prim seq-int.set
+    0 pc 1 prim + prim seq-int.set
+    locals { m2 }
+    { m2 m2 16 pc prim + prim seq-int.at m2 80 pc prim + prim seq-int.at exec } };
+
+: run
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m 4 prim seq-int.at -1 prim =
+    [ m 0 prim seq-int.at
+      locals { pc }
+      { pc 0 prim < pc m 10 prim seq-int.at prim >= prim or
+        [ m 4 0 prim seq-int.set ]
+        [ m 1 prim seq-int.at m 9 prim seq-int.at prim >=
+          [ m 4 2 prim seq-int.set ]
+          [ m pc step run ] if ] if } ]
+    [ m ] if };
+
+: copy
+  (forall ρ; ρ m:Seq Int^many src:Seq Int^many base:Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m src base i }
+  { i src prim seq-int.len prim >=
+    [ m ]
+    [ m base i prim + src i prim seq-int.at prim seq-int.set
+      src base i 1 prim + copy ] if };
+
+: collect
+  (forall ρ; ρ m:Seq Int^many acc:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m acc i }
+  { i m 6 prim seq-int.at prim >=
+    [ acc ]
+    [ m acc m 144 i prim + prim seq-int.at prim seq-int.push i 1 prim + collect ] if };
+
+: main
+  (forall ρ; ρ ops:Seq Int^many args:Seq Int^many limit:Int^many -- ρ stack:Seq Int^many status:Int^many uncaught:Int^many steps:Int^many caught:Int^many deepest:Int^many)
+  locals { ops args limit }
+  { prim seq-int.empty 224 zeros
+    9 limit prim seq-int.set
+    10 ops prim seq-int.len prim seq-int.set
+    4 -1 prim seq-int.set
+    ops 16 0 copy
+    args 80 0 copy
+    run
+    locals { m }
+    { m prim seq-int.empty 0 collect
+      m 4 prim seq-int.at
+      m 5 prim seq-int.at
+      m 1 prim seq-int.at
+      m 2 prim seq-int.at
+      m 3 prim seq-int.at } };
