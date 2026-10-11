@@ -556,6 +556,11 @@ private def runDeclaredInputsTests : IO Unit := do
     ["`g` in `f` needs 2 values, but only 1 value is on the stack before it. `f` declares no inputs, but its body takes 1 input.",
       "declare 1 more input in its stack effect. Otherwise push them before `g`."]
     (closedCallee ++ ": f ( a:Int^many -- r:Int^many ) 1 g ;\n")
+  -- The call named as the source writes it, not by its canonical name.
+  let inVocab := "vocab v {\n: g ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n}\nuse v as w;\n"
+  declaredCase "a call through an alias" (inVocab ++ ": f ( -- r:Int^many ) 1 w.g ;\n")
+    ["`w.g` in `f` needs 2 values", "Otherwise push them before `w.g`."]
+    (inVocab ++ ": f ( a:Int^many -- r:Int^many ) 1 w.g ;\n")
   -- Kernel atoms.
   declaredCase "swap" ": f ( -- x:Int^many y:Int^many ) swap ;\n"
     ["`swap` in `f` needs 2 values, but no value is on the stack before it. `f` declares no inputs, but its body takes 2 inputs.",

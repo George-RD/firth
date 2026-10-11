@@ -1688,7 +1688,12 @@ private partial def withDeclaredInputs (config : Firth.Elaborator.PipelineConfig
           | .effectUnderflow operation span (some account) short =>
               .erasure name (.effectUnderflow operation span (some { account with declaredInputs := inputs }) short)
           | .effectUnderflow operation span none (some short) =>
-              .erasure name (.effectUnderflow operation span none (some { short with inputs }))
+              -- Erasure has a word call's canonical name, `v.g`; the report
+              -- names it as the source writes it, `g` or `alias.g`.
+              let written := if ["swap", "dup", "drop", "quote", "call", "dip", "if"].contains short.operation ||
+                  short.operation.startsWith "prim " then short.operation
+                else sourceBytes source span.start.offset span.stop.offset
+              .erasure name (.effectUnderflow operation span none (some { short with inputs, operation := written }))
           | other => .erasure name other
       | _, _ => .erasure name error
   | .assumes word callees edits inner =>
