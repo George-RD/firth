@@ -84,7 +84,13 @@ in and reads back.
   tier. It reuses the MVP harness's runners, comparison, sandbox and
   diagnostics. Scoring records the hashes of the task set and the scorer as
   they were imported, and refuses if they or the Firth tree change while it
-  runs. Python answers run in the harness's sandbox, which needs root.
+  runs. Each Firth answer runs as `answer.firth` in its own source root,
+  beside a copy of `stdlib/`. So `import "stdlib/core.firth";` works, the
+  Firth prompt shows the library, and the library's files are among the
+  hashes (since the scored run of 11 October 2026, whose answers ran alone
+  and could import nothing). Every task's input and output names are valid
+  in both Firth and Python (no `_`, no `-`), so both arms see the same
+  names. Python answers run in the harness's sandbox, which needs root.
   The sandbox's own scan for copies of hidden files knows only the MVP
   tier's, so before scoring Python `tier.py` scans what the sandbox would
   show for copies of this tier's hidden files, committed runs and

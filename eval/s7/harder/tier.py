@@ -12,8 +12,9 @@ The protocol is the MVP tier's sub-agent protocol (`eval/s7/harness.py`,
 `prompt --rounds`): the author answers without tools, then is shown how each
 answer did on its task's visible example and may fix it, up to `--rounds`
 times. "Correct on the first attempt" is round 1; "correct within two
-attempts" is round 2. The Firth author gets the MVP documents and the MVP
-step budget. Hidden tests are never shown.
+attempts" is round 2. The Firth author gets the MVP documents, the MVP
+step budget and the standard library, which is staged beside every answer
+when it runs (`stage`) and shown in the prompt. Hidden tests are never shown.
 
 `take` builds each round's solutions: round 1's are the set's tasks answered
 in `answer-1.md`; a later round's are the earlier round's, with the answers
@@ -51,9 +52,14 @@ sys.path.insert(0, str(S7))
 sys.path.insert(0, str(HERE))
 # What scoring reads, hashed before any of it is imported, so a result names
 # the task definitions and scorer it was produced with.
+# The standard library is staged next to every Firth answer (`run_firth`), so
+# its files are hashed with the scorer.
+STDLIB = S7.parents[1] / "stdlib"
+STDLIB_FILES = tuple(sorted(STDLIB.rglob("*.firth")))
 HASHED = {f"harder/{n}": HERE / n for n in ("calibration.py", "calibration2.py", "calibration3.py",
                                              "scored.py", "tier.py")} | {
-    n: S7 / n for n in ("task.py", "harness.py", "isolate.py")}
+    n: S7 / n for n in ("task.py", "harness.py", "isolate.py")} | {
+    str(p.relative_to(STDLIB.parent)): p for p in STDLIB_FILES}
 IMPORT_HASHES = {n: hashlib.sha256(p.read_bytes()).hexdigest() for n, p in HASHED.items()}
 import harness  # noqa: E402
 import isolate  # noqa: E402
@@ -95,6 +101,7 @@ def prompt(tasks: list[Task], lang: str, rounds: int = 1) -> str:
             + loop)
         for doc in harness.MVP_DOCS:
             parts.append(f"<document path=\"{doc}\">\n{(harness.ROOT / doc).read_text()}\n</document>\n")
+        parts.append(stdlib_note())
         fence = "firth"
     else:
         parts.append("For each task, write a Python 3 function named `main`. Use only the "
@@ -118,24 +125,48 @@ def run_firth(source: str, args: tuple) -> dict:
     A copy, not a call, because changing `harness.py` would change files a
     pinned S7 run scores with; keep it in step with `harness.run_firth`
     (`todo.s7-harder-tier-harness-merge`)."""
-    with tempfile.NamedTemporaryFile("w", suffix=".firth", delete=False) as f:
-        f.write(source)
-        path = f.name
-    try:
-        p = subprocess.run(
-            [sys.executable, str(harness.RUNNER), "run", path, "--entry", "main",
-             "--stack", json.dumps(list(args)), "--fuel", str(FUEL)],
-            cwd=harness.ROOT, capture_output=True, text=True, timeout=harness.TIMEOUT)
-    except subprocess.TimeoutExpired:
-        return {"ok": False, "error": "timeout"}
-    finally:
-        Path(path).unlink()
+    with tempfile.TemporaryDirectory() as root:
+        path = stage(source, Path(root))
+        try:
+            p = subprocess.run(
+                [sys.executable, str(harness.RUNNER), "run", str(path), "--root", root, "--entry", "main",
+                 "--stack", json.dumps(list(args)), "--fuel", str(FUEL)],
+                cwd=harness.ROOT, capture_output=True, text=True, timeout=harness.TIMEOUT)
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "error": "timeout"}
     if p.returncode == 0:
         out = json.loads(p.stdout)
         return {"ok": True, "stack": out["stack"], "kernel_cost": out.get("kernel_cost"),
                 "vm_cost": out.get("vm_cost")}
     harness.toolchain_failure(p.stderr)
     return {"ok": False, "error": harness.compact(p.stderr.strip() or p.stdout.strip())}
+
+
+def stage(source: str, root: Path) -> Path:
+    """Write SOURCE as `answer.firth` in ROOT, the source root of its run,
+    beside a copy of the standard library at `stdlib/`, so the answer can
+    `import "stdlib/core.firth";` (`todo.s7-stage-stdlib`). Returns the
+    answer's path."""
+    for f in STDLIB_FILES:
+        dst = root / f.relative_to(STDLIB.parent)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(f.read_bytes())
+    path = root / "answer.firth"
+    path.write_text(source)
+    return path
+
+
+def stdlib_note() -> str:
+    """What the Firth prompt says about the staged standard library, with the
+    text of every file in it."""
+    parts = ["The standard library is next to every answer when it runs: write "
+             "`import \"stdlib/core.firth\";` as the first line of an answer to use the words that "
+             "file exports (its `export` line). An import is not transitive, and an answer may "
+             "import no other file. The library's files follow.\n"]
+    for f in STDLIB_FILES:
+        rel = f.relative_to(STDLIB.parent)
+        parts.append(f"<document path=\"{rel}\">\n{f.read_text()}\n</document>\n")
+    return "\n".join(parts)
 
 
 def run(source: str, lang: str, task: Task, args: tuple) -> dict:

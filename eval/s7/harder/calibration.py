@@ -291,7 +291,7 @@ CALIBRATION: tuple[Task, ...] = (
        "and 4 to 6 are) until no two of them do. Return the merged ranges' starts and ends, "
        "ordered by start, and how many whole numbers they cover in all. There are at most "
        "30 ranges.",
-       [("starts", SI), ("ends", SI)], [("merged-starts", SI), ("merged-ends", SI), ("covered", I)],
+       [("starts", SI), ("ends", SI)], [("mergedStarts", SI), ("mergedEnds", SI), ("covered", I)],
        _merge_ranges,
        ([8, 1, 4, 15], [10, 3, 6, 15]),
        [([], []),
@@ -319,7 +319,7 @@ CALIBRATION: tuple[Task, ...] = (
        "stop with status 2. Executing a halt stops with status 0. Return the registers, the "
        "number of instructions executed (a halt counts) and the status. limit is at most "
        "300.",
-       [("code", SI), ("regs", SI), ("limit", I)], [("regs-out", SI), ("executed", I), ("status", I)],
+       [("code", SI), ("regs", SI), ("limit", I)], [("regsOut", SI), ("executed", I), ("status", I)],
        _tiny_vm,
        ([1, 0, 5, 1, 1, 1, 1, 2, 1, 4, 1, 0, 3, 0, 2, 6, 0, 3, 0, 0, 0], [0, 0, 0, 0], 100),
        [([], [1, 2, 3, 4], 10),

@@ -45,3 +45,35 @@
 - sonnet-firth-9 (sample 47, replacement for sample 39): KEPT. Audit clean (flagged [], claude-sonnet-5-5), context items are the known kinds only (one 'other' of 183 characters), raw-log scan all 0. Round 1 failed two visible examples; a feedback round was sent; round 2 scored (d306a4d). Its round-1 scoring waited until the background pin rescore had finished, so it was scored alone, as every other sample was.
 - RUN END (authoring ended after sample 47, about 11:20Z, 11 October 2026). Kept: Sonnet python 8, firth 8; DeepSeek python 8, firth 8; Haiku python 5, firth 2 (cap reached, comparison incomplete). Voids: voids.txt (8), which analyse.py re-derives from the files and checks.
 - PIN RESCORE: rescore.sh scored every kept answer again from a checkout of 627a0eb (scratchpad worktree; `git rev-parse HEAD` checked by the script). rescore-pin/compare.txt: "files identical: 120, differing: 0" (every solutions-N.json and results-N.json of the 39 kept samples, tasks and cases compared, headers eval_sha256, fuel and lang compared). The reported results are the pin's (analyse.py reads rescore-pin/); they match the live scores exactly.
+
+## After the run: what failed Sonnet Firth in round 1 (written 11 October, after #245 merged)
+
+For the language work (coordinator's request). `sonnet_firth_r1.py` lists
+each failed task from the pin rescore and `voids.txt`; its output is
+`sonnet-firth-r1.txt`. The explanations come from the refusal messages in
+`rescore-pin/*/results-1.json` and the notes in `readings.json`. Thirteen tasks
+failed across the 8 kept authors:
+
+- **4, arguments in the wrong order at a call** (`firth.type.word-input-mismatch`;
+  sonnet-firth-6 sokoban and regex, sonnet-firth-9 checkers and regex). Each
+  calls a helper word with its inputs in an order other than the helper's
+  stack effect, for example `undo4` takes `m e d` and gets `e m` and a result.
+- **3, `_` in a name** (`firth.syntax.unexpected-token`; sonnet-firth-5
+  checkers, warehouse, cache-sim). The names were copied from the task's
+  output list. This is the task-input confound, not a language gap; the next
+  tier's task names are valid in both languages.
+- **2, `if` branches leaving different numbers of values**
+  (`firth.type.branch-mismatch`; sonnet-firth-2 regex, sonnet-firth-3 warehouse).
+- **1, a word named `pick`** (`firth.syntax.invalid-name`; sonnet-firth-7
+  checkers). `pick` is a kernel atom, so it cannot name a word.
+- **2, an index out of range at 12 players** (`trap primitive-fault`;
+  sonnet-firth-1 and sonnet-firth-2 swiss). Both keep all state in one
+  fixed-size sequence whose layout is too small for 12 players. The visible
+  example passed, so there was no round 2.
+- **1, out of steps at the largest input** (`trap fuel-exhausted`;
+  sonnet-firth-1 regex). The answer is correct but too slow for the step
+  budget on case 25 (`trace-checks/`).
+
+So 6 of the 10 refusals are stack-order or stack-count errors inside the
+author's own words (word-input-mismatch, branch-mismatch). Round 2 fixed 9 of
+the 10 refusals; sonnet-firth-6's regex became a wrong result.

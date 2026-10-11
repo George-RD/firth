@@ -22,3 +22,21 @@ authors had Python's builtins (`eval/s7/harder/runs/2026-10-11-scored/results.md
 - A planted answer that imports a stdlib word scores as a pass, and one that
   imports a word the stdlib does not export is refused.
 - The run's notes record which stdlib version the authors saw.
+
+## Progress
+
+The first two criteria are met in `eval/s7/harder/tier.py`:
+- `stage` copies `stdlib/` beside every Firth answer.
+- The Firth prompt shows the library's files and how to import them.
+- `test_harder.py` (`stdlib_staged`, `stdlib_prompt`) shows that an import of
+  `stdlib/core.firth` runs and that a word the library does not export is
+  refused. Its plants are a runner with nothing staged, a runner that
+  accepts everything, and prompts with the note missing or misplaced.
+
+Scored results record each stdlib file's hash in `eval_sha256`. The third
+criterion stays open until the next run's notes say which version its
+authors saw.
+
+The library holds only `stdlib/core.firth`, whose five exported words are
+stack shuffles, so staging it does not yet give a Firth author anything
+like Python's builtins.
