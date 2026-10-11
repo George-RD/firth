@@ -76,3 +76,6 @@ sonnet-firth-8 (abc6dc0a68971869e)
 sonnet-python-8 (a35fa1062cc49821e)
   others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
   attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+haiku-python-6 (ad9f3fd886df7c40f)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 1}
