@@ -1,1 +1,4 @@
 {"at": "2026-10-11T04:27:56Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "test"}
+{"at": "2026-10-11T05:01:36Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-2"}
+{"at": "2026-10-11T05:02:41Z", "status": 200, "seconds": 1.2, "chars": 65000, "result": ["stop", 13039, "ok"], "before": "deepseek-python-2 (diagnostic: large filler, no task text)"}
+{"at": "2026-10-11T05:03:22Z", "status": 200, "seconds": 29.9, "result": ["stop", 21657, 91864], "before": "deepseek-python-2 (diagnostic: long reply, no task text)"}

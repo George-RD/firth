@@ -1,0 +1,17 @@
+{
+ "set": "scored",
+ "lang": "firth",
+ "model": "deepseek-v4.1-flash",
+ "rounds": [
+  {
+   "round": 1,
+   "result": "void",
+   "why": "HTTP status 502"
+  }
+ ],
+ "void": {
+  "round": 1,
+  "why": "HTTP status 502"
+ },
+ "status": "void"
+}
