@@ -97,6 +97,9 @@ in and reads back.
   `test_harder.py` (a file with the content of one, a directory named
   `eval/s7/harder`, or git storage holding any revision of them) and
   refuses if it finds one.
+- `author_tools.py`: the check that every sub-agent author had
+  exactly Read, Write and the hand-back, in one working directory (below,
+  "Author tool set"); `test_author_tools.py` checks it on planted logs.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown, and this tier's `take` for the check that each
@@ -145,6 +148,63 @@ tasks, so their kept solutions are the same under both rules, and all 18
 calibration samples, Firth and Python, keep the solutions this tier's rule
 takes (`test_harder.py`, `take_rule`). `audit.py` rebuilds each kept
 `solutions-<n>.json` by this tier's rule.
+
+### Author tool set (from the next tier)
+
+In the scored run of 11 October 2026 the sub-agent authors had whatever
+tools the driver's session had, including session-messaging tools (two
+Haiku authors called `send_message` and were voided), and that list changed
+partway through the run (`runs/2026-10-11-scored/results.md`). Its skill
+listing gained five `firth-ds:cairn-*` skills at the same point, probably
+because the driver's working directory moved to a `firth-ds` checkout; that
+cause is inferred, not shown. From the next tier on, every sub-agent
+author in both language arms gets the same fixed set: Read, Write and the
+hand-back (`todo.s7-author-tool-set`).
+
+1. **The agent type.** Every author is started as `s7-harder-author`
+   (`.claude/agents/s7-harder-author.md`: `tools: Read, Write`, no hooks,
+   no model), with the subject's model passed when it is started. The
+   harness adds `SubagentHandback` to the listed tools
+   (`runs/2026-10-11-tool-probe/notes.md`). No other agent type starts an
+   author. Agent types are read when a session starts, so the driver's
+   session must start with this definition on its checkout.
+2. **The working directory.** Before the first author starts, the driver
+   sets its working directory to the pinned checkout and writes that path
+   in `run-notes.md`. Until the last author has handed back it does not
+   `cd` anywhere else (it uses absolute paths, `git -C` and subshells) and
+   opens no other checkout in that session. Each line of a sub-agent's raw
+   log records the working directory, so the check below sees a move.
+3. **A probe first.** Still before the first sample, the driver starts one
+   author of that type that is not a sample, with a prompt asking it to
+   name its tools and write nothing else, and runs
+
+       python3 eval/s7/harder/author_tools.py --logs LOG_DIR --probe AGENT_ID --cwd DIR
+
+   where `LOG_DIR` is the session's `subagents/` log directory under
+   `~/.claude/projects/`. The run starts only if this prints `ok`. Its
+   output is committed as `tool-probe.txt` in the run directory: it shows
+   that the `tools:` line was honoured in the session the samples ran in.
+4. **A record per author.** After each author hands back, before it is
+   scored, the driver runs
+
+       python3 eval/s7/harder/author_tools.py --logs LOG_DIR --ids RUN/agent-ids.txt --cwd DIR
+
+   which prints, for every author so far, its agent type, model, working
+   directory and tool list, and refuses unless every author, voided or
+   kept, had exactly Read, Write and `SubagentHandback`, no deferred tool,
+   and only that working directory. `agent-ids.txt` lists the probe as the
+   row `probe <id>` and every author; a sub-agent log in `LOG_DIR` that the
+   list leaves out, or a name or id listed twice, also refuses the run, so
+   an author cannot go unchecked by being left off the list. The last output is committed as
+   `author-tools.txt`, the run's record of each author's tools. A refusal
+   stops the run before the next author starts; the next tier's
+   pre-registration says how a refused author counts.
+
+`test_author_tools.py` checks the check on hand-written logs, with planted
+logs it must refuse (an extra `send_message` tool, a deferred tool, no
+Write, the wrong agent type, no tool list, a moved working directory).
+The transcript audit (`audit.py`) still flags any call outside the allowed
+ones, as before.
 
 ## Calibration plan
 
