@@ -48,14 +48,25 @@ refused for something else first. All 15 round-1 answers get it
 unused local is on the stack, where a local is in scope at the operation, or
 in a word whose effect has a row, keeps its message.
 
-Still open, so this todo stays open. Erasure gives no account of the values
-handed to a kernel atom (`if`, `dip`, `call`, `swap`, `dup`, `drop`, `pick`,
-`roll`) or to a call to a word whose own effect has no row
-(`Account.ofShortCall` makes none), so nothing says whether a local was
-meant, and these keep the generic report. For example,
-`: f ( -- x:Int^many y:Int^many ) swap ;` declares no inputs and its body
-takes two, and with `: g ( a:Int^many b:Int^many -- r:Int^many ) prim + ;`,
-`: f ( -- r:Int^many ) 1 g ;` takes one; neither report says so. The answers
-under `eval/s7/runs` and in both harder calibration pools have 39 such
-reports at `if`, `dip`, `call` or `swap`, and 8 at `pick` or `roll`. A word
-whose effect has a row is a separate gap (`todo.locals-binds-row`).
+Kernel atoms (`swap`, `dup`, `drop`, `quote`, `call`, `dip`, `if`) and calls
+to a word whose own effect has no row, outside every `locals` block, now get
+it too: erasure says how many values the operation needs, counting for
+`call`, `dip` and `if` the values the quotations they run take, for example
+"`swap` in `f` needs 2 values, but no value is on the stack before it. `f`
+declares no inputs, but its body takes 2 inputs." `compose`, and `call`,
+`dip` or `if` before the quotations they run are on the stack with known
+effects, keep their message, since a quotation may be what is missing, as
+does an operation after a quotation of unknown effect ran. Nothing is said
+when, with the inputs declared, the word is refused before the underflow,
+as when it calls a word whose effect has no row there.
+
+Still open, so this todo stays open: a word whose effect has a row. Every
+underflow at a kernel atom in the answers under `eval/s7/runs` and in the
+first two harder calibration pools is in one (39, at `if`, `dip`, `call` or
+`swap`), as are the 7 typing reports of a `pick` or `roll` that erasure wrote
+running out of values. Erasure counts the row as a value on the stack, so
+its count of the values missing is one short there (`swap` in
+`: f (forall ρ; ρ a:Int^many -- ρ x:Int^many y:Int^many) swap ;` gets past
+erasure and typing refuses it), and a `locals` block can name the row
+(`todo.locals-binds-row`). The sentence needs the inputs added above the row
+and the count taken without it.

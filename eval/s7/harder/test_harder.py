@@ -17,9 +17,15 @@
    for every task, a planted Python mutant with one such mistake fails, and
    in each pool and the scored set a planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
+   The scored run's pinned Firth prompt says exactly once that imports are
+   not available, and the Python prompt does not say it. A refusal keeps
+   the `code:` lines the pre-registration says it counts.
 6. The audit refuses options that widen an author's tools, scoring refuses
    a link named as the answer directory, and the scan run before scoring
    Python finds planted copies of this tier's hidden files.
+7. A scored Firth answer that imports `stdlib/` is refused with
+   `firth.name.import-path`, and runs without the import, which is why the
+   Firth prompt says imports are not available.
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
@@ -36,6 +42,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -1578,6 +1585,95 @@ def firth_mutant() -> None:
           "a Firth sokoban reference that counts a box in a corner on a goal as dead passes the example "
           f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
 
+# The scored run's Firth prompt says this once, appended after `tier.py
+# prompt` builds it (preregistration.md, "Pre-pin amendment").
+NO_IMPORTS = ("Imports are not available in this run: an `import` cannot reach `stdlib/`, "
+              "so define every word your answer uses in the answer itself.")
+STDLIB_IMPORT = ('import "../../stdlib/core.firth";\n'
+                 ": main\n  ( forall \u03c1; \u03c1 x:Int^many -- \u03c1 y:Int^many )\n  core.identity;\n")
+
+
+def import_problems(run) -> list[str]:
+    """What is wrong if RUN (`tier.run_firth`'s shape) lets a scored answer
+    import stdlib: each answer runs from its own temporary file, so the
+    import must be refused as outside the source root."""
+    out = run(STDLIB_IMPORT, (3,))
+    if out.get("ok"):
+        return [f"an answer importing stdlib ran: {out}"]
+    if "code: firth.name.import-path" not in out.get("error", ""):
+        return [f"an answer importing stdlib was refused for another reason: {out.get('error', '')[:200]}"]
+    return []
+
+
+NO_MESSAGE = ("checker refused: [{'code': 'firth.type.stack-underflow', 'word': 'a'}, "
+              "{'code': 'firth.name.unresolved', 'word': 'b'}]")
+SOME_MESSAGE = ("checker refused: [{'code': 'firth.type.stack-underflow', 'word': 'a'}, "
+                "{'code': 'firth.name.unresolved', 'word': 'b', 'message': 'm'}]")
+
+
+def kept_code_problems(compact) -> list[str]:
+    """What is wrong with the pre-registration's rule for diagnostics without
+    a message, read against COMPACT (`harness.compact`'s shape): the `code:`
+    lines it keeps are the ones the report counts."""
+    def codes(text: str) -> list[str]:
+        return [line[len("code: "):] for line in compact(text).splitlines() if line.startswith("code: ")]
+    problems = []
+    if codes(NO_MESSAGE) != ["firth.type.stack-underflow"]:
+        problems.append(f"with no message, kept {codes(NO_MESSAGE)}, not the first code alone")
+    if codes(SOME_MESSAGE) != ["firth.name.unresolved"]:
+        problems.append(f"with one message, kept {codes(SOME_MESSAGE)}, not only that diagnostic's code")
+    return problems
+
+
+def messageless_diagnostics() -> None:
+    """Pins the pre-registration's "Sorting a case's error" rule. Planted: a
+    compact that keeps every code is caught."""
+    check(kept_code_problems(harness.compact) == [],
+          "a refusal with no message keeps its first code alone; with messages, only theirs")
+    check(kept_code_problems(lambda t: "\n".join(f"code: {c}" for c in re.findall(r"'code': '([^']+)'", t))) != [],
+          "planted: a compact that keeps every code is caught")
+
+
+def stdlib_import_refused() -> None:
+    """Pins why the scored Firth prompt says imports are unavailable. Planted:
+    a runner that accepts the import, and one that refuses it with another
+    code, are each caught."""
+    check(import_problems(tier.run_firth) == [],
+          "a scored answer that imports stdlib is refused with firth.name.import-path")
+    bare = STDLIB_IMPORT.replace('import "../../stdlib/core.firth";\n', "").replace("core.identity", "")
+    check(tier.run_firth(bare, (3,)) == {"ok": True, "stack": [3], "kernel_cost": 0, "vm_cost": 0},
+          "the same word without the import and its call to core.identity runs, so the refusal is the import's")
+    check(import_problems(lambda src, args: {"ok": True, "stack": [3]}) != [],
+          "planted: a runner that accepts a stdlib import is caught")
+    check(import_problems(lambda src, args: {"ok": False, "error": "code: firth.name.import-not-found"}) != [],
+          "planted: a stdlib import refused with another code is caught")
+
+
+def prompt_sentence_problems(text: str) -> list[str]:
+    """What is wrong with a scored Firth prompt TEXT: it must hold the
+    no-imports sentence exactly once."""
+    n = text.count(NO_IMPORTS)
+    return [] if n == 1 else [f"the Firth prompt holds the no-imports sentence {n} times, not once"]
+
+
+SCORED_RUN = HERE / "runs" / "2026-10-11-scored"
+
+
+def pinned_prompts() -> None:
+    """The scored run's pinned Firth prompt holds the no-imports sentence
+    exactly once, and the Python prompt does not hold it. Planted: the
+    Firth prompt without the sentence, and with it twice, are each caught."""
+    firth = (SCORED_RUN / "prompt-firth.md").read_text()
+    python = (SCORED_RUN / "prompt-python.md").read_text()
+    check(prompt_sentence_problems(firth) == [],
+          "the pinned Firth prompt holds the no-imports sentence exactly once")
+    check(NO_IMPORTS not in python, "the pinned Python prompt does not hold the no-imports sentence")
+    check(prompt_sentence_problems(firth.replace(NO_IMPORTS, "")) != [],
+          "planted: a Firth prompt without the no-imports sentence is caught")
+    check(prompt_sentence_problems(firth + "\n" + NO_IMPORTS + "\n") != [],
+          "planted: a Firth prompt with the no-imports sentence twice is caught")
+
+
 def prompt_and_repair() -> None:
     for name, tasks in SETS.items():
         for lang in ("firth", "python"):
@@ -1787,11 +1883,14 @@ def main() -> int:
     deepseek_sample_driver()
     take_rule()
     prompt_and_repair()
+    pinned_prompts()
+    messageless_diagnostics()
     if "--no-firth" not in sys.argv:
         if part is None:
             firth_references()
         firth_hand_values()
         firth_mutant()
+        stdlib_import_refused()
         regex_drafted_rerun()
         deepseek_sample_scored()
     print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
