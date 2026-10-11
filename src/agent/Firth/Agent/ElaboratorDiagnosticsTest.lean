@@ -1690,6 +1690,24 @@ private def runSourceTypeTests : IO Unit := do
   let (_, _, takenHint, _, _) := report taken
   if (takenHint.splitOn "white-took").length > 1 then
     fail s!"underscore in a name whose rename is taken: the hint offers the taken name: {takenHint}"
+  -- When the example would be a reserved name, the hint offers none
+  -- either: `if` and `dup` are atoms, so `_if` renamed to `if` everywhere
+  -- is refused, and so is `_dup` renamed to `dup` (reviewer on #250).
+  let noRenameHint := "Rename it everywhere it appears, to a name the file does not already use."
+  for atom in ["if", "dup"] do
+    let reservedRename := s!": _{atom} ( -- n:Int ) 0 ;\n: main ( -- n:Int ) _{atom} ;"
+    expectReport s!"underscore in a name whose rename is `{atom}`" reservedRename
+      "firth.syntax.underscore-in-name" s!"`_{atom}` is not a name: a name cannot contain `_`."
+      noRenameHint 1 3
+    let (reservedCode, _, _, _, _) := report (reservedRename.replace s!"_{atom}" atom)
+    if reservedCode == "accepted" then
+      fail s!"underscore in a name whose rename is `{atom}`: `{atom}` in place of `_{atom}` checks, so the case does not test the reserved-name guard"
+  -- Planted: the report without the reserved-name guard offers `if`; it
+  -- fails the check.
+  if (mismatch ("firth.syntax.underscore-in-name", "`_if` is not a name: a name cannot contain `_`.",
+      underscoreHint "if", 1, 3)
+      "firth.syntax.underscore-in-name" "`_if` is not a name: a name cannot contain `_`." noRenameHint 1 3).isNone then
+    fail "source types: the `_if` hint offering `if` passes the check"
   -- Planted: the hint this PR first gave states a rule (`-` joins parts)
   -- that is not one; it fails the check.
   if (mismatch ("firth.syntax.underscore-in-name", "`b_c` is not a name: a name cannot contain `_`.",
