@@ -251,13 +251,20 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
           "Write exactly one character between the quotes, and close the literal with `'`.")
     | "firth.syntax.underscore-in-name" =>
         let written := error.actual.getD "This name"
-        let renamed := error.expected.getD written
+        -- No rename is the fix (`whiteTook` checks as well as `white-took`),
+        -- so `-` for `_` is only an example, and none is given when the file
+        -- already uses that name.
         (s!"`{written}` is not a name: a name cannot contain `_`.",
-          s!"Names join their parts with `-`. Write `{renamed}` in place of `{written}`, and the same everywhere else it appears.")
+          match error.expected with
+          | some renamed => s!"Rename it everywhere it appears, for example as `{renamed}`."
+          | none => "Rename it everywhere it appears, to a name the file does not already use.")
     | "firth.syntax.unnamed-stack-item" =>
         let type := error.actual.getD "Int"
+        -- `Seq` alone is no type either, so the example gives it one.
+        let shown := if type == "Seq" then "`name:Seq Int` or `name:Seq Bool`"
+          else s!"`{error.expected.getD s!"name:{type}"}`"
         (s!"`{type}` here is a type with no name: every item in a stack effect is written `name:Type`.",
-          s!"Give it a name, as in `{error.expected.getD s!"name:{type}"}`. Any name will do: stack-effect names only document the stack.")
+          s!"Give it a name, as in {shown}. Any name will do: stack-effect names only document the stack.")
     | "firth.syntax.quote-in-name" =>
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
           "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")

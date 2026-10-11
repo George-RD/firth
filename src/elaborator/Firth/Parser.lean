@@ -741,14 +741,16 @@ private partial def parseDeclarations (p : Parser) (closing : Option String) (im
     | _ => .error (err "firth.syntax.invalid-declaration" t.span .grammar)
 
 /-- The first name written with a `_` touching it, as in `white_took`,
-which `lex` keeps whole: names join their parts with `-`, so the report says
-that and gives the name rewritten. -/
+which `lex` keeps whole. The report gives the name with `-` for `_` as an
+example rename, unless the file already uses that name. -/
 private def underscoreError (tokens : List Token) : Option ParseError :=
   tokens.findSome? fun token => match token.kind with
     | .identifier written =>
         if written.contains '_' then
+          let renamed := written.map fun x => if x = '_' then '-' else x
+          let taken := tokens.any (·.kind == .identifier renamed)
           some (err "firth.syntax.underscore-in-name" token.span .lexical
-            (some (written.map fun x => if x = '_' then '-' else x)) (some written))
+            (if taken then none else some renamed) (some written))
         else none
     | _ => none
 

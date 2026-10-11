@@ -45,8 +45,11 @@ is exactly the base types in every language primitive's scheme and every
 literal kind a program can write, in both directions, with planted lists one
 short of `Handle` and one with `Unit` that the check rejects. The check runs
 in the agent's typing environment (`gammaTyping`), which every checker,
-runner and eval path uses; an environment built without a list
-(`types := none`) still accepts any name, as before.
+runner and eval path uses, and in the elaborator's default pipeline
+(`elaborate`, `lake exe firth`), whose list `sourceTypeNames` is written out
+in `StackEffect.lean` and checked against `sourceTypes` by the same test. Only
+an environment built explicitly without a list (`types := none`) accepts any
+name, which `FirthPipelineTest` also checks.
 
 The compiler keeps its own guard (`isReservedTargetTypeName`): a word type
 built some other way than from checked source, over `SeqInt` or `SeqBool`,

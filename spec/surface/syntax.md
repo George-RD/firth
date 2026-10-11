@@ -344,9 +344,9 @@ The chosen v0.1 annotation is a parenthesised effect at the word boundary:
                        [ "^" , ( "many" | "linear" ) ] ,
                        [ "{" , predicate , { "," , predicate } , "}" ] ;
 
-A `type-name` must be a declared sort a program can make a value of: `Int`,
-`Bool`, or one of the effect types `World`, `Handle` and `Bytes` that the world
-primitives thread. A stack effect naming anything else, `Seq` with no element
+A stack effect may declare only the types a program can make a value of:
+`Int`, `Bool`, `Seq Int` and `Seq Bool`, and the effect types `World`,
+`Handle` and `Bytes` that the world primitives thread. A stack effect naming anything else, `Seq` with no element
 type, or the target spellings `SeqInt` and `SeqBool`, is refused with
 `firth.type.unknown-type` at that type (`dec.source-type-names`).
 

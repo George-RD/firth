@@ -719,6 +719,14 @@ def schemeOfEffect (effect : StackEffect) : Except Diagnostic Scheme := do
     let output ← stackFromItems names effect.output
     pure { rowVariables := names, input, output }
 
+/-- The base types a source stack effect may declare (`dec.source-type-names`):
+`Int`, `Bool`, `Seq Int` and `Seq Bool`, which literals and primitives give,
+and `World`, `Handle` and `Bytes`, which the world primitives thread. The
+default pipeline restricts to these; the agent's `sourceTypes` derives the
+same list from the primitives' schemes, and its tests check the two agree. -/
+def sourceTypeNames : List String :=
+  ["Int", "Bool", "Seq Int", "Seq Bool", "World", "Handle", "Bytes"]
+
 /-- The first declared type in `effect` that `env` does not know, as a
 `firth.type.unknown-type` diagnostic at that type, its name the subject. -/
 def unknownType (env : Env) (effect : StackEffect) : Option Diagnostic :=

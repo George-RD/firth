@@ -77,7 +77,7 @@ structure ImportedWord where
 
 structure PipelineConfig where
   erasureEnv : EffectEnv := {}
-  typingEnv : Env := { literal := defaultLiteralType }
+  typingEnv : Env := { literal := defaultLiteralType, types := some sourceTypeNames }
   requestId : String := "firth.elaborator"
   sourcePath : String := "<source>"
   refinementBuilder : RefinementBuilder := emptyRefinementBuilder
@@ -364,7 +364,7 @@ private def firstErrorAlone (config : PipelineConfig) (words : List WordDefiniti
   match erase (makeErasureEnv config (word :: others)) word.effect word.body with
   | .error error => some (.erasure word.name error)
   | .ok erased =>
-      let typed := others.filter fun other => (schemeOfEffect other.effect).toOption.isSome
+      let typed := others.filter fun other => (schemeIn config.typingEnv other.effect).toOption.isSome
       let definitions : List StackEffect.Definition :=
         { name := word.name, declared := word.effect, program := erased.program, span := word.span } ::
           typed.map fun other => { name := other.name, declared := other.effect, program := [], span := other.span }

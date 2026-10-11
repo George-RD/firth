@@ -40,8 +40,9 @@ not cost Python; a later task set should say so or use names valid in both.
 
 A name with `_` touching it is refused with `firth.syntax.underscore-in-name`
 over the whole name: "`b_c` is not a name: a name cannot contain `_`.", with
-the hint "Names join their parts with `-`. Write `b-c` in place of `b_c`, and
-the same everywhere else it appears." The name is kept as one token, so an
+the hint "Rename it everywhere it appears, for example as `b-c`." The rename
+is only an example (`bC` checks too), and none is offered when the file
+already uses it. The name is kept as one token, so an
 error earlier in the file is still reported first. `runSourceTypeTests`
 checks the program above (line 1, column 16), a word name, and both orders
 against another error, and a planted copy of the old report fails the check.
