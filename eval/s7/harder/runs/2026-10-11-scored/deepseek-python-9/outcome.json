@@ -1,0 +1,41 @@
+{
+ "set": "scored",
+ "lang": "python",
+ "model": "deepseek-v4.1-flash",
+ "rounds": [
+  {
+   "round": 1,
+   "result": "answer",
+   "why": "a complete answer",
+   "not_taken": []
+  },
+  {
+   "round": 2,
+   "result": "answer",
+   "why": "a complete answer",
+   "not_taken": []
+  }
+ ],
+ "round1": {
+  "sokoban": true,
+  "checkers": true,
+  "regex": false,
+  "swiss": true,
+  "warehouse": true,
+  "cache-sim": true
+ },
+ "within_two": {
+  "sokoban": true,
+  "checkers": true,
+  "regex": true,
+  "swiss": true,
+  "warehouse": true,
+  "cache-sim": true
+ },
+ "passed": {
+  "round1": 5,
+  "within_two": 6
+ },
+ "tasks": 6,
+ "status": "scored"
+}
