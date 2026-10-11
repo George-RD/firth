@@ -22,3 +22,4 @@ sonnet-firth-6 a7fca83c9219c1d52
 sonnet-python-6 ade2dd0157aa8ba21
 sonnet-python-7 af8efeb8212ec47f8
 sonnet-firth-7 a448073eedb68feb9
+sonnet-firth-8 abc6dc0a68971869e
