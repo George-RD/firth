@@ -2,3 +2,4 @@ sonnet-python-1 ae558afd413328220
 sonnet-firth-1 aa3e80bf9d59ef1b6
 haiku-python-1 a27b0002d5d298cf6
 haiku-firth-1 a240cd24227534291
+sonnet-firth-2 a3090bfc9c25b49b7
