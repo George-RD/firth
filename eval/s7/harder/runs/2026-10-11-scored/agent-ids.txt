@@ -15,3 +15,4 @@ sonnet-python-4 a1cb257db1e9a1011
 haiku-firth-4 abb119fa7b0bc0d56
 haiku-python-4 a7e379a218a63377f
 sonnet-python-5 a926375dbc42cc9c2
+sonnet-firth-5 a5192b3cdee8bef58
