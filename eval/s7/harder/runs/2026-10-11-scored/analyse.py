@@ -41,7 +41,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TASKS = ["sokoban", "checkers", "regex", "swiss", "warehouse", "cache-sim"]
 SUBJECTS = {"sonnet": 8, "deepseek": 8, "haiku": 5}  # planned kept samples per arm
-CAP = 3  # voids and crashes per cell that stop replacement
 BOOT, SEED = 10_000, 0
 
 # Context items every sub-agent author is shown (preregistration.md "Known

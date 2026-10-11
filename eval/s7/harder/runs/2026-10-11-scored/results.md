@@ -343,6 +343,22 @@ reports each.
   later tier is `todo.s7-stage-stdlib`.
 - The Firth prompt is about 3.6 times the Python prompt in tokens (16,670
   against 4,634 for DeepSeek), because it carries the language guide.
+- The harness's output-limit continuation fell on the Firth arm only. Its
+  text is "Output token limit hit. Resume directly ...", injected after an
+  author's turn was cut off at the output limit, and the author then
+  carried on. It reached 7 of 8 kept Sonnet Firth authors (all but
+  sonnet-firth-4), both kept Haiku Firth authors, and none of the 13 kept
+  Python authors. Each affected author got it once, in the turn between
+  reading the prompt and writing its round-1 answer. It is a pre-registered known item
+  (`preregistration.md`, "Known injected items"), so no sample is void and
+  no number changes, but most Firth authors were cut off once and resumed
+  and no Python author was, which a reader of the Sonnet round-1 row should
+  weigh. `context-seen.json` stores no text and records the item only as
+  kind `other`, 183 characters. The identification rests on the raw
+  session logs, which are not committed; `continuation.py` read them, and
+  its output, `continuation.txt`, gives each author's count, log line,
+  time and length, and the item's one text. It cannot be re-run from this
+  PR without those logs.
 - The S7 inputs were frozen during authoring (`run-notes.md`); every author
   saw the same version of the guide and prompts, built at the pin.
 - Each kept transcript's model id is in `analysis-output.md`:

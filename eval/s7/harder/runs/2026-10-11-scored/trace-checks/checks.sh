@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reruns every fix check cited in traces-draft.json notes.
+# Reruns every fix check cited in the notes in readings.json.
 # usage: checks.sh RUN PIN   (RUN = run dir, PIN = pin checkout)
 set -euo pipefail
 RUN=$1; PIN=$2
