@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Check that every kept sub-agent author had exactly the allowed tools.
+"""Check that every sub-agent author had exactly the allowed tools.
 
 From the next tier on, each sub-agent author is started as the agent type
 `s7-harder-author` (`.claude/agents/s7-harder-author.md`, `tools: Read,
-Write`), and the harness adds the hand-back. This reads each kept author's
-raw session log and refuses the run unless, for every kept author:
+Write`), and the harness adds the hand-back. This reads each author's raw
+session log and refuses the run unless, for every author:
 
 - its `agent-<id>.meta.json` names the agent type `s7-harder-author`;
 - its log has at least one `prompt_snapshot` attachment carrying a tool
@@ -16,9 +16,11 @@ raw session log and refuses the run unless, for every kept author:
 
 It prints one line per author with its agent type, model, working directory
 and tool list, which the driver commits as the run's record of each author's
-tools. Voided authors (`voids.txt`) are listed but not checked.
+tools. A voided author is checked like any other: the claim is that every
+author in both arms had the same tools, not only the kept ones, so a
+wrong tool list refuses the run even if that sample was voided.
 
-    author_tools.py --logs LOG_DIR --ids RUN/agent-ids.txt [--voids RUN/voids.txt] --cwd DIR
+    author_tools.py --logs LOG_DIR --ids RUN/agent-ids.txt --cwd DIR
     author_tools.py --logs LOG_DIR --probe AGENT_ID --cwd DIR
 
 `--probe` checks one log that is not a sample (the non-sample author the
@@ -88,7 +90,6 @@ def main(argv: list[str]) -> int:
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--ids", type=Path)
     g.add_argument("--probe")
-    p.add_argument("--voids", type=Path)
     a = p.parse_args(argv)
     if a.probe:
         authors = [("probe", a.probe)]
@@ -97,15 +98,8 @@ def main(argv: list[str]) -> int:
         if not authors:
             print(f"refused: {a.ids} names no author")
             return 1
-    voids = set()
-    if a.voids and a.voids.is_file():
-        voids = {l.split()[0] for l in a.voids.read_text().splitlines()
-                 if l.strip() and not l.startswith("#")}
     refused = 0
     for name, agent in authors:
-        if name in voids:
-            print(f"{name} {agent}: void, not checked")
-            continue
         record, errors = check_log(a.logs, agent, a.cwd)
         print(f"{name} {agent}: type={record['type']} model={record['model']} "
               f"cwd={','.join(map(str, record['cwd']))} tools={','.join(record['tools'])}")
@@ -115,7 +109,7 @@ def main(argv: list[str]) -> int:
     if refused:
         print(f"refused: {refused} author(s) did not have exactly {', '.join(ALLOWED)}")
         return 1
-    print(f"ok: every kept author had exactly {', '.join(ALLOWED)}")
+    print(f"ok: every author had exactly {', '.join(ALLOWED)}")
     return 0
 
 

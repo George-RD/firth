@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks for `author_tools.py`, the check that every kept author had exactly
+"""Checks for `author_tools.py`, the check that every author had exactly
 Read, Write and the hand-back.
 
 The logs here are written by hand in the shape of a sub-agent's raw session
@@ -7,7 +7,8 @@ log (`agent-<id>.meta.json` and `agent-<id>.jsonl`), not made by the check.
 A clean author passes, and each planted log is refused for its own reason:
 an extra session-messaging tool, a deferred tool, a missing Write, the wrong
 agent type, no tool list, a moved working directory, a missing log, and an
-empty id list. A voided author is not checked. The real probe log in
+empty id list. A bad author is refused even if its sample was voided.
+The real probe log in
 `runs/2026-10-11-tool-probe/` (a built-in agent type with Read and Edit) is
 refused for its type and its Edit.
 
@@ -82,7 +83,7 @@ def main() -> int:
             expect(agent, ["--logs", t, "--cwd", CWD, "--probe", agent], code, needle, failures)
 
         probe("good", 0, "tools=Read,SubagentHandback,Write")
-        probe("emptydelta", 0, "ok: every kept author")
+        probe("emptydelta", 0, "ok: every author")
         probe("extra", 1, "tool list is ['Read', 'SubagentHandback', 'Write', "
                           "'mcp__claude-code-remote__send_message']")
         probe("deferred", 1, "deferred tools added: ['SendMessage']")
@@ -98,16 +99,22 @@ def main() -> int:
         voids = logs / "voids.txt"
         ids.write_text("# name agent\nsonnet-firth-1 good\nsonnet-python-1 good2\n")
         expect("run", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 0,
-               "ok: every kept author", failures)
+               "ok: every author", failures)
         # One bad author among good ones refuses the run.
         ids.write_text("sonnet-firth-1 good\nhaiku-firth-2 extra\nsonnet-python-1 good2\n")
         expect("run with a bad author", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 1,
                "refused: 1 author(s)", failures)
-        # The same author voided is listed and not checked.
+        # A voided sample's author is still checked: the run had a wrong tool
+        # list whether or not that sample counts. --voids is not an option.
         voids.write_text("haiku-firth-2 audit flag\n")
-        expect("voided bad author", ["--logs", t, "--cwd", CWD, "--ids", str(ids),
-                                     "--voids", str(voids)], 0,
-               "haiku-firth-2 extra: void, not checked", failures)
+        expect("voided bad author", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 1,
+               "refused: 1 author(s)", failures)
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                run(["--logs", t, "--cwd", CWD, "--ids", str(ids), "--voids", str(voids)])
+            failures.append("--voids accepted: it would let a voided author skip the check")
+        except SystemExit:
+            pass
         ids.write_text("# nothing\n")
         expect("empty ids", ["--logs", t, "--cwd", CWD, "--ids", str(ids)], 1,
                "names no author", failures)

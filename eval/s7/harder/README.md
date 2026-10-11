@@ -91,7 +91,7 @@ in and reads back.
   `test_harder.py` (a file with the content of one, a directory named
   `eval/s7/harder`, or git storage holding any revision of them) and
   refuses if it finds one.
-- `author_tools.py`: the check that every kept sub-agent author had
+- `author_tools.py`: the check that every sub-agent author had
   exactly Read, Write and the hand-back, in one working directory (below,
   "Author tool set"); `test_author_tools.py` checks it on planted logs.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
@@ -181,12 +181,12 @@ hand-back (`todo.s7-author-tool-set`).
 4. **A record per author.** After each author hands back, before it is
    scored, the driver runs
 
-       python3 eval/s7/harder/author_tools.py --logs LOG_DIR --ids RUN/agent-ids.txt --voids RUN/voids.txt --cwd DIR
+       python3 eval/s7/harder/author_tools.py --logs LOG_DIR --ids RUN/agent-ids.txt --cwd DIR
 
    which prints, for every author so far, its agent type, model, working
-   directory and tool list, and refuses unless every kept author had
-   exactly Read, Write and `SubagentHandback`, no deferred tool, and only
-   that working directory. The last output is committed as
+   directory and tool list, and refuses unless every author, voided or
+   kept, had exactly Read, Write and `SubagentHandback`, no deferred tool,
+   and only that working directory. The last output is committed as
    `author-tools.txt`, the run's record of each author's tools. A refusal
    stops the run before the next author starts; the next tier's
    pre-registration says how a refused author counts.
