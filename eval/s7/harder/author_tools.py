@@ -11,8 +11,8 @@ session log and refuses the run unless, for every author:
   list, and every such list is exactly Read, Write and SubagentHandback;
 - no `deferred_tools_delta` attachment adds a tool (a deferred tool can be
   loaded and called, so it widens the set);
-- every log line was written with the working directory the driver fixed
-  before the first author (`--cwd`).
+- every log line names the working directory, and it is the one the driver
+  fixed before the first author (`--cwd`); a line with none is refused.
 
 With `--ids`, the list must also name every sub-agent that ran: each
 `agent-<id>.meta.json` or `agent-<id>.jsonl` in the log directory must be a
@@ -63,8 +63,10 @@ def check_log(logs: Path, agent: str, cwd: str) -> tuple[dict, list[str]]:
         if not line.strip():
             continue
         o = json.loads(line)
-        if "cwd" in o and o["cwd"] not in cwds:
-            cwds.append(o.get("cwd"))
+        if "cwd" not in o:
+            errors.append(f"line {n}: no working directory")
+        elif o["cwd"] not in cwds:
+            cwds.append(o["cwd"])
         a = o.get("attachment") or {}
         if o.get("type") != "attachment":
             continue

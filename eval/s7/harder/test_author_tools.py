@@ -6,11 +6,12 @@ The logs here are written by hand in the shape of a sub-agent's raw session
 log (`agent-<id>.meta.json` and `agent-<id>.jsonl`), not made by the check.
 A clean author passes, and each planted log is refused for its own reason:
 an extra session-messaging tool, a deferred tool, a missing Write, the wrong
-agent type, no tool list, a moved working directory, a missing log, and an
-empty id list, an author that ran but is not listed (with or without a
-meta file), a name or id listed twice, no probe row, a malformed row, half
-a log, a meta file with no type, and a missing or empty log directory. A bad author is refused even if its sample was voided.
-The real probe log in
+agent type, no tool list, a moved working directory, a log line with no
+working directory, a missing log, an empty id list, an author that ran but
+is not listed (with or without a meta file), a name or id listed twice, no
+probe row, a malformed row, half a log, a meta file with no type, and a
+missing or empty log directory. A bad author is refused even if its sample
+was voided. The real probe log in
 `runs/2026-10-11-tool-probe/` (a built-in agent type with Read and Edit) is
 refused for its type and its Edit.
 
@@ -34,7 +35,7 @@ GOOD = ["Read", "Write", "SubagentHandback"]
 
 
 def write_log(d: Path, agent: str, tools=GOOD, agent_type="s7-harder-author",
-              delta=None, cwds=(CWD,), snapshot=True) -> None:
+              delta=None, cwds=(CWD,), snapshot=True, nocwd=False) -> None:
     (d / f"agent-{agent}.meta.json").write_text(json.dumps(
         {"agentType": agent_type, "model": "sonnet"}))
     lines = [{"type": "user", "cwd": cwds[0]},
@@ -49,6 +50,8 @@ def write_log(d: Path, agent: str, tools=GOOD, agent_type="s7-harder-author",
         lines.append({"type": "attachment", "cwd": cwds[-1], "attachment": {
             "type": "prompt_snapshot",
             "tools": [{"name": t, "description": "", "schema": {}} for t in tools]}})
+    if nocwd:
+        del lines[-2]["cwd"]
     (d / f"agent-{agent}.jsonl").write_text("".join(json.dumps(l) + "\n" for l in lines))
 
 
@@ -80,6 +83,7 @@ def main() -> int:
         write_log(logs, "moved", cwds=(CWD, "/home/user/firth-ds"))
         write_log(logs, "elsewhere", cwds=("/home/user/firth-ds",))
         write_log(logs, "emptydelta", delta=[])
+        write_log(logs, "nocwd", nocwd=True)
 
         def probe(agent, code, needle):
             expect(agent, ["--logs", t, "--cwd", CWD, "--probe", agent], code, needle, failures)
@@ -96,6 +100,7 @@ def main() -> int:
         probe("moved", 1, "working directory ['/home/user/firth', '/home/user/firth-ds']")
         probe("elsewhere", 1, "working directory ['/home/user/firth-ds']")
         probe("absent", 1, "no log for agent absent")
+        probe("nocwd", 1, "line 3: no working directory")
 
         # A run directory holds only the logs of the sub-agents that ran.
         rd = logs / "run"
