@@ -79,7 +79,10 @@ private def resolveWord (keys : List String) (hidden : List ImportedName) (exter
     if keys.contains canonical || external canonical then return canonical
     throw (missingName hidden [canonical] name span)
   let imported : List String := uses.map (fun (declaration : UseDecl) => qualified declaration.name name)
-  let visible : List String := qualified scopeName name :: imported
+  -- A word declared outside any vocabulary has no qualified spelling, so
+  -- inside a vocabulary its key is a candidate too (`dec.top-level-words-in-vocabularies`).
+  let topLevel : List String := if scopeName.isEmpty then [] else [name]
+  let visible : List String := qualified scopeName name :: topLevel ++ imported
   let candidates := (visible.filter (fun key => keys.contains key)).eraseDups
   match candidates with
   | [candidate] => return candidate
