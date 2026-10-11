@@ -8,8 +8,8 @@
 #   rescore.sh PIN_CHECKOUT OUT_DIR [NAME ...]   (names: only those samples)
 #   rescore.sh --self-test   (planted differences the comparison must report)
 # PIN_CHECKOUT is a built checkout of 627a0eb. OUT_DIR receives
-# NAME/{solutions,results}-N.json and compare.txt.
-set -e
+# NAME/{solutions,results}-N.json and compare.txt; the script exits 1 when any file differs.
+set -eo pipefail
 R=$(cd "$(dirname "$0")" && pwd)
 
 compare() {  # compare RUN_DIR OUT_DIR
@@ -35,6 +35,7 @@ for d in sorted(p for p in OUT.iterdir() if p.is_dir()):
             diff += 1
             print("DIFFERS", d.name, f.name)
 print(f"files identical: {same}, differing: {diff}")
+sys.exit(1 if diff else 0)
 PY
 }
 
@@ -44,15 +45,18 @@ if [ "$1" = "--self-test" ]; then
   printf '%s' '{"lang": "firth", "fuel": 1000000, "eval_sha256": "e", "tasks": {"a": {"pass": true, "cases": [{"pass": true, "kernel_cost": 5}]}}}' > "$T/run/s-firth-1/results-1.json"
   printf '%s' '{"a": "code"}' > "$T/run/s-firth-1/solutions-1.json"
   cp "$T/run/s-firth-1/"* "$T/out/s-firth-1/"
-  compare "$T/run" "$T/out" | grep -x "files identical: 2, differing: 0" >/dev/null || { echo "self-test FAILED on identical files"; exit 1; }
+  out=$(compare "$T/run" "$T/out") || { echo "self-test FAILED: identical files exit nonzero"; exit 1; }
+  grep -x "files identical: 2, differing: 0" <<<"$out" >/dev/null || { echo "self-test FAILED on identical files"; exit 1; }
   # Planted: a flipped pass, a changed cost, a changed solution, a changed header.
   for plant in 's/"pass": true, "cases"/"pass": false, "cases"/' 's/"kernel_cost": 5/"kernel_cost": 6/' 's/1000000/999/'; do
     sed "$plant" "$T/run/s-firth-1/results-1.json" > "$T/out/s-firth-1/results-1.json"
-    compare "$T/run" "$T/out" | grep -x "files identical: 1, differing: 1" >/dev/null || { echo "self-test FAILED: planted $plant not counted as differing"; exit 1; }
+    if out=$(compare "$T/run" "$T/out"); then echo "self-test FAILED: planted $plant exits 0"; exit 1; fi
+    grep -x "files identical: 1, differing: 1" <<<"$out" >/dev/null || { echo "self-test FAILED: planted $plant not counted as differing"; exit 1; }
   done
   cp "$T/run/s-firth-1/results-1.json" "$T/out/s-firth-1/"
   printf '%s' '{"a": "other code"}' > "$T/out/s-firth-1/solutions-1.json"
-  compare "$T/run" "$T/out" | grep "DIFFERS s-firth-1 solutions-1.json" >/dev/null || { echo "self-test FAILED: changed solution not reported"; exit 1; }
+  if out=$(compare "$T/run" "$T/out"); then echo "self-test FAILED: changed solution exits 0"; exit 1; fi
+  grep "DIFFERS s-firth-1 solutions-1.json" <<<"$out" >/dev/null || { echo "self-test FAILED: changed solution not reported"; exit 1; }
   rm -r "$T"
   echo "self-test ok"
   exit 0
