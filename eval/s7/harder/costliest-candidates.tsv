@@ -1,35 +1,15 @@
-order-match	_random_order_book(100, 30)	93087	True
-order-match	_random_order_book(101, 30)	109692	True
-order-match	_random_order_book(102, 30)	112145	True
-order-match	_random_order_book(103, 30)	119810	True
-order-match	_random_order_book(104, 30)	107552	True
-order-match	_random_order_book(105, 30)	101840	True
-order-match	_random_order_book(106, 30)	105101	True
-order-match	_random_order_book(107, 30)	127959	True
-order-match	_random_order_book(108, 30)	124341	True
-order-match	_random_order_book(109, 30)	87697	True
-order-match	_random_order_book(110, 30)	96008	True
-order-match	_random_order_book(111, 30)	100839	True
-order-match	_random_order_book(112, 30)	131362	True
-order-match	_random_order_book(113, 30)	111977	True
-order-match	_random_order_book(114, 30)	119468	True
-order-match	_random_order_book(115, 30)	102789	True
-order-match	_random_order_book(116, 30)	127246	True
-order-match	_random_order_book(117, 30)	129992	True
-order-match	_random_order_book(118, 30)	106418	True
-order-match	_random_order_book(119, 30)	110063	True
-order-match	_random_order_book(120, 30)	115599	True
-order-match	_random_order_book(121, 30)	147209	True
-order-match	_random_order_book(122, 30)	105490	True
-order-match	_random_order_book(123, 30)	105415	True
-order-match	_random_order_book(124, 30)	111799	True
-order-match	_random_order_book(125, 30)	119793	True
-order-match	_random_order_book(126, 30)	103661	True
-order-match	_random_order_book(127, 30)	132834	True
-order-match	_random_order_book(128, 30)	105796	True
-order-match	_random_order_book(129, 30)	117937	True
-order-match	a market buy sweeping 29 sells	223807	True
-order-match	fill or kill buys against 22 sells	201175	True
+go-game	hand case 0	11105	True
+go-game	hand case 1	13347	True
+go-game	hand case 2	21868	True
+go-game	hand case 3	33617	True
+go-game	hand case 4	8038	True
+go-game	hand case 5	8643	True
+go-game	hand case 6	11107	True
+go-game	hand case 7	9653	True
+go-game	hand case 8	31471	True
+go-game	hand case 9	20872	True
+go-game	hand case 10	21924	True
+go-game	hand case 11	21167	True
 go-game	_random_go(100, 7, 60)	59498	True
 go-game	_random_go(101, 7, 60)	73576	True
 go-game	_random_go(102, 7, 60)	74975	True
@@ -65,47 +45,16 @@ go-game	_random_go(101, 6, 60)	63197	True
 go-game	_random_go(102, 6, 60)	65389	True
 go-game	_random_go(103, 6, 60)	57391	True
 go-game	_random_go(104, 6, 60)	55768	True
-stack-vm	_random_stack_vm(100, 60, 800)	10309	True
-stack-vm	_random_stack_vm(101, 60, 800)	10289	True
-stack-vm	_random_stack_vm(102, 60, 800)	33762	True
-stack-vm	_random_stack_vm(103, 60, 800)	9631	True
-stack-vm	_random_stack_vm(104, 60, 800)	9631	True
-stack-vm	_random_stack_vm(105, 60, 800)	10291	True
-stack-vm	_random_stack_vm(106, 60, 800)	9810	True
-stack-vm	_random_stack_vm(107, 60, 800)	11315	True
-stack-vm	_random_stack_vm(108, 60, 800)	9869	True
-stack-vm	_random_stack_vm(109, 60, 800)	10390	True
-stack-vm	_random_stack_vm(110, 60, 800)	9630	True
-stack-vm	_random_stack_vm(111, 60, 800)	38130	True
-stack-vm	_random_stack_vm(112, 60, 800)	22058	True
-stack-vm	_random_stack_vm(113, 60, 800)	37375	True
-stack-vm	_random_stack_vm(114, 60, 800)	11061	True
-stack-vm	_random_stack_vm(115, 60, 800)	9631	True
-stack-vm	_random_stack_vm(116, 60, 800)	9810	True
-stack-vm	_random_stack_vm(117, 60, 800)	9869	True
-stack-vm	_random_stack_vm(118, 60, 800)	11476	True
-stack-vm	_random_stack_vm(119, 60, 800)	9594	True
-stack-vm	_random_stack_vm(120, 60, 800)	189609	True
-stack-vm	_random_stack_vm(121, 60, 800)	15010	True
-stack-vm	_random_stack_vm(122, 60, 800)	10289	True
-stack-vm	_random_stack_vm(123, 60, 800)	10971	True
-stack-vm	_random_stack_vm(124, 60, 800)	9816	True
-stack-vm	_random_stack_vm(125, 60, 800)	9647	True
-stack-vm	_random_stack_vm(126, 60, 800)	34212	True
-stack-vm	_random_stack_vm(127, 60, 800)	20773	True
-stack-vm	_random_stack_vm(128, 60, 800)	9647	True
-stack-vm	_random_stack_vm(129, 60, 800)	10289	True
-stack-vm	_random_stack_vm(130, 60, 800)	25351	True
-stack-vm	_random_stack_vm(131, 60, 800)	19863	True
-stack-vm	_random_stack_vm(132, 60, 800)	17225	True
-stack-vm	_random_stack_vm(133, 60, 800)	18568	True
-stack-vm	_random_stack_vm(134, 60, 800)	189834	True
-stack-vm	_random_stack_vm(135, 60, 800)	10289	True
-stack-vm	_random_stack_vm(136, 60, 800)	14663	True
-stack-vm	_random_stack_vm(137, 60, 800)	17391	True
-stack-vm	_random_stack_vm(138, 60, 800)	10372	True
-stack-vm	_random_stack_vm(139, 60, 800)	11567	True
-stack-vm	an 800-step loop	48779	True
+josephus	hand case 0	461	True
+josephus	hand case 1	1889	True
+josephus	hand case 2	4919	True
+josephus	hand case 3	7130	True
+josephus	hand case 4	2517	True
+josephus	hand case 5	28126	True
+josephus	hand case 6	69319	True
+josephus	hand case 7	21705	True
+josephus	hand case 8	119034	True
+josephus	hand case 9	395	True
 josephus	_random_josephus(100, 3)	9340	True
 josephus	_random_josephus(101, 3)	30026	True
 josephus	_random_josephus(102, 3)	122215	True
@@ -128,6 +77,19 @@ josephus	_random_josephus(118, 3)	131050	True
 josephus	_random_josephus(119, 3)	33685	True
 josephus	1e12 counting by 12 to 10	190296	True
 josephus	near 1e12 counting by 12	207883	True
+perm-rank	hand case 0	2032	True
+perm-rank	hand case 1	1475	True
+perm-rank	hand case 2	3807	True
+perm-rank	hand case 3	1819	True
+perm-rank	hand case 4	2889	True
+perm-rank	hand case 5	2313	True
+perm-rank	hand case 6	2059	True
+perm-rank	hand case 7	1927	True
+perm-rank	hand case 8	4845	True
+perm-rank	hand case 9	26609	True
+perm-rank	hand case 10	36355	True
+perm-rank	hand case 11	13716	True
+perm-rank	hand case 12	18065	True
 perm-rank	_random_perm_rank(100)	4497	True
 perm-rank	_random_perm_rank(101)	24813	True
 perm-rank	_random_perm_rank(102)	7883	True
@@ -150,6 +112,26 @@ perm-rank	_random_perm_rank(118)	7795	True
 perm-rank	_random_perm_rank(119)	9417	True
 perm-rank	two of each digit, largest first, last k	26609	True
 perm-rank	two of each digit, smallest first, k 1e15	30421	True
+wire-decode	hand case 0	41	True
+wire-decode	hand case 1	2156	True
+wire-decode	hand case 2	3877	True
+wire-decode	hand case 3	2422	True
+wire-decode	hand case 4	1170	True
+wire-decode	hand case 5	693	True
+wire-decode	hand case 6	505	True
+wire-decode	hand case 7	544	True
+wire-decode	hand case 8	898	True
+wire-decode	hand case 9	757	True
+wire-decode	hand case 10	1042	True
+wire-decode	hand case 11	233	True
+wire-decode	hand case 12	233	True
+wire-decode	hand case 13	763	True
+wire-decode	hand case 14	290	True
+wire-decode	hand case 15	290	True
+wire-decode	hand case 16	290	True
+wire-decode	hand case 17	544	True
+wire-decode	hand case 18	591	True
+wire-decode	hand case 19	816	True
 wire-decode	_random_wire(100, 200)	8182	True
 wire-decode	_random_wire(101, 200)	25509	True
 wire-decode	_random_wire(102, 200)	6137	True
@@ -182,6 +164,20 @@ wire-decode	_random_wire(128, 200)	22814	True
 wire-decode	_random_wire(129, 200)	23322	True
 wire-decode	100 two-byte records	47341	True
 wire-decode	22 nine-byte records	26771	True
+tennis	hand case 0	8708	True
+tennis	hand case 1	1932	True
+tennis	hand case 2	2374	True
+tennis	hand case 3	11018	True
+tennis	hand case 4	5209	True
+tennis	hand case 5	20073	True
+tennis	hand case 6	11630	True
+tennis	hand case 7	26979	True
+tennis	hand case 8	9066	True
+tennis	hand case 9	180	True
+tennis	hand case 10	8729	True
+tennis	hand case 11	11984	True
+tennis	hand case 12	19009	True
+tennis	hand case 13	8482	True
 tennis	_random_tennis(100, 400)	14619	True
 tennis	_random_tennis(101, 400)	56746	True
 tennis	_random_tennis(102, 400)	12425	True
@@ -213,75 +209,170 @@ tennis	_random_tennis(127, 400)	17452	True
 tennis	_random_tennis(128, 400)	18345	True
 tennis	_random_tennis(129, 400)	14701	True
 tennis	400 alternating points	52580	True
-timetable	_random_timetable(100, 60)	43452	True
-timetable	_random_timetable(101, 60)	39961	True
-timetable	_random_timetable(102, 60)	48758	True
-timetable	_random_timetable(103, 60)	60237	True
-timetable	_random_timetable(104, 60)	40318	True
-timetable	_random_timetable(105, 60)	38138	True
-timetable	_random_timetable(106, 60)	29520	True
-timetable	_random_timetable(107, 60)	53294	True
-timetable	_random_timetable(108, 60)	60741	True
-timetable	_random_timetable(109, 60)	32714	True
-timetable	_random_timetable(110, 60)	59021	True
-timetable	_random_timetable(111, 60)	48238	True
-timetable	_random_timetable(112, 60)	58157	True
-timetable	_random_timetable(113, 60)	49528	True
-timetable	_random_timetable(114, 60)	63753	True
-timetable	_random_timetable(115, 60)	40410	True
-timetable	_random_timetable(116, 60)	60806	True
-timetable	_random_timetable(117, 60)	33336	True
-timetable	_random_timetable(118, 60)	31292	True
-timetable	_random_timetable(119, 60)	32910	True
-timetable	_random_timetable(120, 60)	31567	True
-timetable	_random_timetable(121, 60)	36402	True
-timetable	_random_timetable(122, 60)	35466	True
-timetable	_random_timetable(123, 60)	39082	True
-timetable	_random_timetable(124, 60)	62299	True
-timetable	_random_timetable(125, 60)	42069	True
-timetable	_random_timetable(126, 60)	29384	True
-timetable	_random_timetable(127, 60)	47686	True
-timetable	_random_timetable(128, 60)	43144	True
-timetable	_random_timetable(129, 60)	34400	True
-timetable	_random_timetable(130, 60)	51360	True
-timetable	_random_timetable(131, 60)	39878	True
-timetable	_random_timetable(132, 60)	29892	True
-timetable	_random_timetable(133, 60)	54318	True
-timetable	_random_timetable(134, 60)	50720	True
-timetable	_random_timetable(135, 60)	37770	True
-timetable	_random_timetable(136, 60)	50448	True
-timetable	_random_timetable(137, 60)	32662	True
-timetable	_random_timetable(138, 60)	47900	True
-timetable	_random_timetable(139, 60)	45570	True
-expr-eval	_random_expr(100, 60)	13544	True
-expr-eval	_random_expr(101, 60)	19550	True
-expr-eval	_random_expr(102, 60)	14295	True
-expr-eval	_random_expr(103, 60)	16430	True
-expr-eval	_random_expr(104, 60)	11044	True
-expr-eval	_random_expr(105, 60)	17522	True
-expr-eval	_random_expr(106, 60)	16695	True
-expr-eval	_random_expr(107, 60)	22442	True
-expr-eval	_random_expr(108, 60)	24503	True
-expr-eval	_random_expr(109, 60)	18295	True
-expr-eval	_random_expr(110, 60)	22558	True
-expr-eval	_random_expr(111, 60)	17667	True
-expr-eval	_random_expr(112, 60)	19309	True
-expr-eval	_random_expr(113, 60)	16130	True
-expr-eval	_random_expr(114, 60)	18470	True
-expr-eval	_random_expr(115, 60)	22408	True
-expr-eval	_random_expr(116, 60)	20599	True
-expr-eval	_random_expr(117, 60)	18870	True
-expr-eval	_random_expr(118, 60)	15283	True
-expr-eval	_random_expr(119, 60)	24131	True
-expr-eval	_random_expr(120, 60)	18498	True
-expr-eval	_random_expr(121, 60)	20166	True
-expr-eval	_random_expr(122, 60)	12963	True
-expr-eval	_random_expr(123, 60)	14920	True
-expr-eval	_random_expr(124, 60)	20287	True
-expr-eval	_random_expr(125, 60)	21741	True
-expr-eval	_random_expr(126, 60)	19870	True
-expr-eval	_random_expr(127, 60)	18958	True
-expr-eval	_random_expr(128, 60)	19084	True
-expr-eval	_random_expr(129, 60)	17817	True
-expr-eval	29 nested parentheses	32894	True
-expr-eval	powers near the bound	56261	True
+huffman	hand case 0	1554	True
+huffman	hand case 1	1024	True
+huffman	hand case 2	763	True
+huffman	hand case 3	8673	True
+huffman	hand case 4	6090	True
+huffman	hand case 5	6093	True
+huffman	hand case 6	123978	True
+huffman	hand case 7	57098	True
+huffman	hand case 8	3897	True
+huffman	hand case 9	3877	True
+huffman	hand case 10	3679	True
+huffman	hand case 11	131438	True
+huffman	_random_huffman(100, 20, 100)	81402	True
+huffman	_random_huffman(101, 20, 100)	111443	True
+huffman	_random_huffman(102, 20, 100)	124994	True
+huffman	_random_huffman(103, 20, 100)	98041	True
+huffman	_random_huffman(104, 20, 100)	72908	True
+huffman	_random_huffman(105, 20, 100)	101456	True
+huffman	_random_huffman(106, 20, 100)	111272	True
+huffman	_random_huffman(107, 20, 100)	96306	True
+huffman	_random_huffman(108, 20, 100)	87582	True
+huffman	_random_huffman(109, 20, 100)	101750	True
+huffman	_random_huffman(110, 20, 100)	104788	True
+huffman	_random_huffman(111, 20, 100)	101318	True
+huffman	_random_huffman(112, 20, 100)	122065	True
+huffman	_random_huffman(113, 20, 100)	103738	True
+huffman	_random_huffman(114, 20, 100)	121833	True
+huffman	_random_huffman(115, 20, 100)	111444	True
+huffman	_random_huffman(116, 20, 100)	76467	True
+huffman	_random_huffman(117, 20, 100)	110760	True
+huffman	_random_huffman(118, 20, 100)	100263	True
+huffman	_random_huffman(119, 20, 100)	106983	True
+huffman	_random_huffman(120, 20, 100)	92037	True
+huffman	_random_huffman(121, 20, 100)	101320	True
+huffman	_random_huffman(122, 20, 100)	106214	True
+huffman	_random_huffman(123, 20, 100)	90133	True
+huffman	_random_huffman(124, 20, 100)	89076	True
+huffman	_random_huffman(125, 20, 100)	112826	True
+huffman	_random_huffman(126, 20, 100)	117123	True
+huffman	_random_huffman(127, 20, 100)	90930	True
+huffman	_random_huffman(128, 20, 100)	121449	True
+huffman	_random_huffman(129, 20, 100)	100763	True
+huffman	Fibonacci weights, the longest code 100 times	194148	True
+huffman	twenty equal weights, every symbol	127368	True
+avl-tree	hand case 0	95	True
+avl-tree	hand case 1	229	True
+avl-tree	hand case 2	6844	True
+avl-tree	hand case 3	6772	True
+avl-tree	hand case 4	2090	True
+avl-tree	hand case 5	2072	True
+avl-tree	hand case 6	1957	True
+avl-tree	hand case 7	3797	True
+avl-tree	hand case 8	3802	True
+avl-tree	hand case 9	5996	True
+avl-tree	hand case 10	8032	True
+avl-tree	hand case 11	9659	True
+avl-tree	_random_avl(100, 60)	40228	True
+avl-tree	_random_avl(101, 60)	56925	True
+avl-tree	_random_avl(102, 60)	29012	True
+avl-tree	_random_avl(103, 60)	51598	True
+avl-tree	_random_avl(104, 60)	24276	True
+avl-tree	_random_avl(105, 60)	49162	True
+avl-tree	_random_avl(106, 60)	64766	True
+avl-tree	_random_avl(107, 60)	27374	True
+avl-tree	_random_avl(108, 60)	29691	True
+avl-tree	_random_avl(109, 60)	31447	True
+avl-tree	_random_avl(110, 60)	38370	True
+avl-tree	_random_avl(111, 60)	28792	True
+avl-tree	_random_avl(112, 60)	36478	True
+avl-tree	_random_avl(113, 60)	34044	True
+avl-tree	_random_avl(114, 60)	31548	True
+avl-tree	_random_avl(115, 60)	40356	True
+avl-tree	_random_avl(116, 60)	55291	True
+avl-tree	_random_avl(117, 60)	33155	True
+avl-tree	_random_avl(118, 60)	55333	True
+avl-tree	_random_avl(119, 60)	39004	True
+avl-tree	_random_avl(120, 60)	59751	True
+avl-tree	_random_avl(121, 60)	32513	True
+avl-tree	_random_avl(122, 60)	63857	True
+avl-tree	_random_avl(123, 60)	29870	True
+avl-tree	_random_avl(124, 60)	44347	True
+avl-tree	_random_avl(125, 60)	30750	True
+avl-tree	_random_avl(126, 60)	48823	True
+avl-tree	_random_avl(127, 60)	29164	True
+avl-tree	_random_avl(128, 60)	34401	True
+avl-tree	_random_avl(129, 60)	55892	True
+avl-tree	40 ascending inserts, then 20 deletes from the top	98368	True
+avl-tree	30 inserts, then deletes of keys with two children	73219	True
+kalah	hand case 0	905	True
+kalah	hand case 1	1156	True
+kalah	hand case 2	3495	True
+kalah	hand case 3	3280	True
+kalah	hand case 4	2070	True
+kalah	hand case 5	8426	True
+kalah	hand case 6	905	True
+kalah	hand case 7	28334	True
+kalah	_random_kalah(100, 80, 6, 6)	53346	True
+kalah	_random_kalah(101, 80, 6, 6)	45028	True
+kalah	_random_kalah(102, 80, 6, 6)	44379	True
+kalah	_random_kalah(103, 80, 6, 6)	53199	True
+kalah	_random_kalah(104, 80, 6, 6)	46664	True
+kalah	_random_kalah(105, 80, 6, 6)	49050	True
+kalah	_random_kalah(106, 80, 6, 6)	51710	True
+kalah	_random_kalah(107, 80, 6, 6)	43000	True
+kalah	_random_kalah(108, 80, 6, 6)	51913	True
+kalah	_random_kalah(109, 80, 6, 6)	58192	True
+kalah	_random_kalah(110, 80, 6, 6)	57130	True
+kalah	_random_kalah(111, 80, 6, 6)	51218	True
+kalah	_random_kalah(112, 80, 6, 6)	49039	True
+kalah	_random_kalah(113, 80, 6, 6)	56776	True
+kalah	_random_kalah(114, 80, 6, 6)	48299	True
+kalah	_random_kalah(115, 80, 6, 6)	38579	True
+kalah	_random_kalah(116, 80, 6, 6)	51770	True
+kalah	_random_kalah(117, 80, 6, 6)	57827	True
+kalah	_random_kalah(118, 80, 6, 6)	57553	True
+kalah	_random_kalah(119, 80, 6, 6)	45600	True
+kalah	_random_kalah(120, 80, 6, 6)	53333	True
+kalah	_random_kalah(121, 80, 6, 6)	55703	True
+kalah	_random_kalah(122, 80, 6, 6)	53673	True
+kalah	_random_kalah(123, 80, 6, 6)	45390	True
+kalah	_random_kalah(124, 80, 6, 6)	54489	True
+kalah	_random_kalah(125, 80, 6, 6)	50823	True
+kalah	_random_kalah(126, 80, 6, 6)	43190	True
+kalah	_random_kalah(127, 80, 6, 6)	43425	True
+kalah	_random_kalah(128, 80, 6, 6)	54796	True
+kalah	_random_kalah(129, 80, 6, 6)	50988	True
+build-sched	hand case 0	1835	True
+build-sched	hand case 1	3668	True
+build-sched	hand case 2	2371	True
+build-sched	hand case 3	7376	True
+build-sched	hand case 4	5113	True
+build-sched	hand case 5	4742	True
+build-sched	hand case 6	6413	True
+build-sched	hand case 7	8946	True
+build-sched	hand case 8	70914	True
+build-sched	_random_sched(100, 16, 30)	31983	True
+build-sched	_random_sched(101, 16, 30)	86574	True
+build-sched	_random_sched(102, 16, 30)	27264	True
+build-sched	_random_sched(103, 16, 30)	81370	True
+build-sched	_random_sched(104, 16, 30)	87382	True
+build-sched	_random_sched(105, 16, 30)	41207	True
+build-sched	_random_sched(106, 16, 30)	52017	True
+build-sched	_random_sched(107, 16, 30)	57763	True
+build-sched	_random_sched(108, 16, 30)	87831	True
+build-sched	_random_sched(109, 16, 30)	22199	True
+build-sched	_random_sched(110, 16, 30)	84026	True
+build-sched	_random_sched(111, 16, 30)	27204	True
+build-sched	_random_sched(112, 16, 30)	78936	True
+build-sched	_random_sched(113, 16, 30)	86464	True
+build-sched	_random_sched(114, 16, 30)	41524	True
+build-sched	_random_sched(115, 16, 30)	58844	True
+build-sched	_random_sched(116, 16, 30)	83718	True
+build-sched	_random_sched(117, 16, 30)	84739	True
+build-sched	_random_sched(118, 16, 30)	79909	True
+build-sched	_random_sched(119, 16, 30)	79239	True
+build-sched	_random_sched(120, 16, 30)	72154	True
+build-sched	_random_sched(121, 16, 30)	87633	True
+build-sched	_random_sched(122, 16, 30)	84671	True
+build-sched	_random_sched(123, 16, 30)	84069	True
+build-sched	_random_sched(124, 16, 30)	59303	True
+build-sched	_random_sched(125, 16, 30)	37092	True
+build-sched	_random_sched(126, 16, 30)	85542	True
+build-sched	_random_sched(127, 16, 30)	45758	True
+build-sched	_random_sched(128, 16, 30)	35099	True
+build-sched	_random_sched(129, 16, 30)	39454	True
+build-sched	sixteen tasks, no edges, one worker	66980	True
+build-sched	a chain of thirty edges on four workers	89832	True

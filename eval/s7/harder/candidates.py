@@ -7,15 +7,15 @@ model. Which six of them become the next scored set is decided by a rule fixed
 before any of them is run (`next-run/calibration.md`); the others are kept
 here and are never scored.
 
-Six are whole simulations or interpreters with interacting rules, the genre
-of the earlier pools: an order book with time in force and self-trade
-prevention (`order-match`), Go with captures, suicide and ko (`go-game`), a
-stack machine with exception handlers (`stack-vm`), tennis scoring with
-tiebreaks and serve order (`tennis`), a timetable with change times
-(`timetable`) and an expression language with assignment (`expr-eval`).
-Three are hard in another way: an algorithm, since direct simulation or
-enumeration is too slow at the stated sizes (`josephus`, `perm-rank`), and
-edge cases in a binary format (`wire-decode`).
+Three are whole simulations with interacting rules, the genre of the earlier
+pools: Go with captures, suicide and ko (`go-game`), tennis scoring with
+tiebreaks and serve order (`tennis`) and Kalah sowing with captures and extra
+moves (`kalah`). Six are hard in another way: an algorithm, since direct
+simulation or enumeration is too slow at the stated sizes (`josephus`,
+`perm-rank`); an exact procedure with tie-breaks and edge cases (a Huffman
+code built in a stated order, `huffman`; an AVL tree with its rotation and
+delete rules, `avl-tree`; list scheduling on several workers, `build-sched`);
+and edge cases in a binary format (`wire-decode`).
 
 Every description states every bound an answer depends on, so every result
 fits in a 64-bit `Int`. Each `ref` is the task's meaning, written in plain
@@ -32,61 +32,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from task import Task, _t  # noqa: E402
 
 I, B, SI, SB = "Int", "Bool", "Seq Int", "Seq Bool"
-
-
-# --- order-book ------------------------------------------------------------------
-
-def _order_book(kind, side, price, qty, trader, tif):
-    book = []  # resting orders: [number, side, price, remaining, trader]
-    trades = volume = notional = self_cancelled = cancelled = rejected = killed = 0
-    for i, k in enumerate(kind):
-        if k == 2:
-            hit = [r for r in book if r[0] == price[i]]
-            if hit:
-                book.remove(hit[0])
-                cancelled += 1
-            else:
-                rejected += 1
-            continue
-        s, left, who, p = side[i], qty[i], trader[i], price[i]
-
-        def crosses(r):
-            if r[1] == s:
-                return False
-            if k == 1:
-                return True
-            return r[2] <= p if s == 0 else r[2] >= p
-
-        def rank(r):
-            return (r[2], r[0]) if s == 0 else (-r[2], r[0])
-
-        if tif[i] == 2 and sum(r[3] for r in book if crosses(r) and r[4] != who) < left:
-            killed += 1
-            continue
-        while left > 0:
-            ready = [r for r in book if crosses(r)]
-            if not ready:
-                break
-            best = min(ready, key=rank)
-            if best[4] == who:
-                book.remove(best)
-                self_cancelled += best[3]
-                continue
-            q = min(left, best[3])
-            trades += 1
-            volume += q
-            notional += q * best[2]
-            best[3] -= q
-            left -= q
-            if best[3] == 0:
-                book.remove(best)
-        if left > 0 and k == 0 and tif[i] == 0:
-            book.append([i, s, p, left, who])
-    bids = sorted((r for r in book if r[1] == 0), key=lambda r: (-r[2], r[0]))
-    asks = sorted((r for r in book if r[1] == 1), key=lambda r: (r[2], r[0]))
-    rest = bids + asks
-    return (trades, volume, notional, self_cancelled, cancelled, rejected, killed,
-            [r[0] for r in rest], [r[3] for r in rest])
 
 
 # --- go-game ---------------------------------------------------------------------
@@ -176,97 +121,6 @@ def _go_game(size, moves):
             if len(edge) == 1:
                 area[edge.pop()] += len(region)
     return board, took[1], took[2], illegal, read, area[1] - area[2]
-
-
-# --- stack-vm --------------------------------------------------------------------
-
-_LIMIT = 10 ** 9
-
-
-def _trunc_div(a, b):
-    q = abs(a) // abs(b)
-    return q if (a < 0) == (b < 0) else -q
-
-
-def _stack_vm(ops, args, limit):
-    stack, calls, frames = [], [], []
-    pc = steps = caught = 0
-    deepest = 0
-    status = code = 0
-    while 0 <= pc < len(ops):
-        if steps == limit:
-            status = 2
-            break
-        steps += 1
-        op, a = ops[pc], args[pc]
-        nxt = pc + 1
-        thrown = None
-        need = {1: 2, 2: 2, 3: 2, 4: 2, 5: 2, 6: 1, 7: 2, 8: 1, 10: 1, 15: 1}.get(op, 0)
-        if len(stack) < need:
-            thrown = 2
-        elif op == 0 or op == 6:
-            if len(stack) == 32:
-                thrown = 4
-            else:
-                stack.append(a if op == 0 else stack[-1])
-        elif 1 <= op <= 5:
-            x, y = stack[-2], stack[-1]
-            if op in (4, 5) and y == 0:
-                thrown = 1
-            else:
-                r = (x + y if op == 1 else x - y if op == 2 else x * y if op == 3
-                     else _trunc_div(x, y) if op == 4 else x - y * _trunc_div(x, y))
-                if abs(r) > _LIMIT:
-                    thrown = 6
-                else:
-                    stack[-2:] = [r]
-        elif op == 7:
-            stack[-2], stack[-1] = stack[-1], stack[-2]
-        elif op == 8:
-            stack.pop()
-        elif op == 9:
-            nxt = a
-        elif op == 10:
-            if stack.pop() == 0:
-                nxt = a
-        elif op == 11:
-            if len(calls) == 16:
-                thrown = 4
-            else:
-                calls.append(pc + 1)
-                nxt = a
-        elif op == 12:
-            if not calls:
-                break
-            nxt = calls.pop()
-        elif op == 13:
-            if len(frames) == 8:
-                thrown = 4
-            else:
-                frames.append((a, len(stack), len(calls)))
-        elif op == 14:
-            if not frames:
-                thrown = 3
-            else:
-                frames.pop()
-        elif op == 15:
-            thrown = stack.pop()
-        elif op == 16:
-            break
-        if thrown is not None:
-            if not frames:
-                status, code = 1, thrown
-                deepest = max(deepest, len(stack))
-                break
-            h, depth, ncalls = frames.pop()
-            del stack[depth:]
-            del calls[ncalls:]
-            stack.append(thrown)
-            caught += 1
-            nxt = h
-        deepest = max(deepest, len(stack))
-        pc = nxt
-    return stack, status, code, steps, caught, deepest
 
 
 # --- josephus --------------------------------------------------------------------
@@ -476,232 +330,216 @@ def _tennis(points, best_of, final_set, no_ad, server):
     return [v for g in sets for v in g], winner, read, now, nxt, breaks
 
 
-# --- timetable -------------------------------------------------------------------
+# --- huffman ---------------------------------------------------------------------
 
-def _timetable(stations, change, origin, start, c_from, c_to, c_dep, c_arr, c_train):
-    inf = float("inf")
-    best = [inf] * stations
-    best[origin] = start
-    fewest = [-1] * stations
-    fewest[origin] = 0
-    trains = sorted(set(c_train))
-    legs = {t: sorted((i for i in range(len(c_train)) if c_train[i] == t), key=lambda i: c_dep[i])
-            for t in trains}
-    reach = best[:]          # earliest arrival with at most k - 1 trains
-    for k in range(1, len(trains) + 1):
-        nxt = reach[:]
-        for t in trains:
-            aboard = False
-            for i in legs[t]:
-                s = c_from[i]
-                ready = start if s == origin else reach[s] + change
-                if not aboard and ready <= c_dep[i]:
-                    aboard = True
-                if aboard and c_arr[i] < nxt[c_to[i]]:
-                    nxt[c_to[i]] = c_arr[i]
-        for s in range(stations):
-            if nxt[s] < best[s]:
-                best[s] = nxt[s]
-                fewest[s] = k
-        reach = nxt
-    return [-1 if v == inf else v for v in best], fewest
-
-
-# --- expr-eval -------------------------------------------------------------------
-
-_BIG = 10 ** 12
+def _huffman(freqs, msg):
+    n = len(freqs)
+    lengths = [0] * n
+    used = [s for s in range(n) if freqs[s] > 0]
+    if len(used) == 1:
+        lengths[used[0]] = 1
+    elif used:
+        # A node is (weight, key, symbols): key is its smallest symbol.
+        nodes = [(freqs[s], s, [s]) for s in used]
+        while len(nodes) > 1:
+            nodes.sort(key=lambda x: (x[0], x[1]))
+            (w1, k1, s1), (w2, k2, s2) = nodes[0], nodes[1]
+            for s in s1 + s2:
+                lengths[s] += 1
+            nodes = nodes[2:] + [(w1 + w2, min(k1, k2), s1 + s2)]
+    codes = [-1] * n
+    code, prev = -1, 0
+    for s in sorted(used, key=lambda s: (lengths[s], s)):
+        code = 0 if code == -1 else (code + 1) * 2 ** (lengths[s] - prev)
+        prev = lengths[s]
+        codes[s] = code
+    bits, bad = [], -1
+    for i, s in enumerate(msg):
+        if not 0 <= s < n or codes[s] == -1:
+            bad = i
+            break
+        bits += [codes[s] // 2 ** (lengths[s] - 1 - j) % 2 for j in range(lengths[s])]
+    if bad != -1:
+        bits = []
+    return lengths, codes, bits, bad
 
 
-class _Fail(Exception):
-    def __init__(self, code):
-        self.code = code
+# --- avl-tree --------------------------------------------------------------------
 
+def _avl(ops, keys):
+    # A node is [key, left, right, height]; None is empty.
+    rotations = ignored = 0
+    found = []
 
-def _expr_eval(kinds, vals):
-    env = [None] * 8
-    values, status = [], []
-    statements, cur = [], []
-    for k, v in zip(kinds, vals):
-        if k == 2 and v == 10:
-            statements.append(cur)
-            cur = []
+    def h(t):
+        return t[3] if t else 0
+
+    def fix(t):
+        t[3] = 1 + max(h(t[1]), h(t[2]))
+        return t
+
+    def rot_right(t):
+        nonlocal rotations
+        rotations += 1
+        l = t[1]
+        t[1], l[2] = l[2], t
+        fix(t)
+        return fix(l)
+
+    def rot_left(t):
+        nonlocal rotations
+        rotations += 1
+        r = t[2]
+        t[2], r[1] = r[1], t
+        fix(t)
+        return fix(r)
+
+    def balance(t):
+        fix(t)
+        b = h(t[1]) - h(t[2])
+        if b == 2:
+            if h(t[1][1]) - h(t[1][2]) < 0:
+                t[1] = rot_left(t[1])
+            return rot_right(t)
+        if b == -2:
+            if h(t[2][1]) - h(t[2][2]) > 0:
+                t[2] = rot_right(t[2])
+            return rot_left(t)
+        return t
+
+    def insert(t, k):
+        nonlocal ignored
+        if t is None:
+            return [k, None, None, 1]
+        if k == t[0]:
+            ignored += 1
+            return t
+        if k < t[0]:
+            t[1] = insert(t[1], k)
         else:
-            cur.append((k, v))
-    statements.append(cur)
+            t[2] = insert(t[2], k)
+        return balance(t)
 
-    def check(n):
-        if abs(n) > _BIG:
-            raise _Fail(5)
-        return n
+    def delete(t, k):
+        nonlocal ignored
+        if t is None:
+            ignored += 1
+            return None
+        if k < t[0]:
+            t[1] = delete(t[1], k)
+        elif k > t[0]:
+            t[2] = delete(t[2], k)
+        elif t[1] is None or t[2] is None:
+            return t[1] or t[2]
+        else:
+            m = t[2]
+            while m[1] is not None:
+                m = m[1]
+            t[0] = m[0]
+            t[2] = delete(t[2], m[0])
+        return balance(t)
 
-    for toks in statements:
-        if not toks:
+    def has(t, k):
+        while t is not None and t[0] != k:
+            t = t[1] if k < t[0] else t[2]
+        return t is not None
+
+    root = None
+    for op, k in zip(ops, keys):
+        if op == 0:
+            root = insert(root, k)
+        elif op == 1:
+            root = delete(root, k)
+        else:
+            found.append(has(root, k))
+    pre = []
+
+    def walk(t):
+        if t:
+            pre.append(t[0])
+            walk(t[1])
+            walk(t[2])
+    walk(root)
+    return pre, found, rotations, ignored, h(root)
+
+
+# --- kalah -----------------------------------------------------------------------
+
+def _kalah(pits, seeds, moves):
+    p = pits
+    board = [seeds] * p + [0] + [seeds] * p + [0]
+    store = (p, 2 * p + 1)
+    player, illegal, read, over = 0, 0, 0, False
+    took = [0, 0]
+    for mv in moves:
+        if over:
+            break
+        read += 1
+        if not 0 <= mv < p or board[player * (p + 1) + mv] == 0:
+            illegal += 1
             continue
-        pos = 0
+        i = player * (p + 1) + mv
+        hand, board[i] = board[i], 0
+        while hand:
+            i = (i + 1) % (2 * p + 2)
+            if i == store[1 - player]:
+                continue
+            board[i] += 1
+            hand -= 1
+        mine = range(player * (p + 1), player * (p + 1) + p)
+        if i in mine and board[i] == 1:
+            opp = 2 * p - i
+            if board[opp] > 0:
+                took[player] += board[opp] + 1
+                board[store[player]] += board[opp] + 1
+                board[i] = board[opp] = 0
+        if all(board[j] == 0 for j in range(p)) or all(board[j] == 0 for j in range(p + 1, 2 * p + 1)):
+            for side in (0, 1):
+                for j in range(side * (p + 1), side * (p + 1) + p):
+                    board[store[side]] += board[j]
+                    board[j] = 0
+            over = True
+        elif i != store[player]:
+            player = 1 - player
+    if over:
+        a, b = board[p], board[2 * p + 1]
+        winner, nxt = (0 if a > b else 1 if b > a else 2), -1
+    else:
+        winner, nxt = -1, player
+    return board, nxt, illegal, read, took, winner
 
-        def peek(off=0):
-            return toks[pos + off] if pos + off < len(toks) else None
 
-        def is_op(t, v):
-            return t is not None and t[0] == 2 and t[1] == v
+# --- build-sched -----------------------------------------------------------------
 
-        # Parse to a tree first: ("num", n) ("var", i) ("set", i, e) ("neg", e) (op, l, r)
-        def assign():
-            nonlocal pos
-            t = peek()
-            if t is not None and t[0] == 1 and is_op(peek(1), 9):
-                pos += 2
-                return ("set", t[1], assign())
-            return additive()
-
-        def additive():
-            nonlocal pos
-            node = term()
-            while is_op(peek(), 1) or is_op(peek(), 2):
-                op = peek()[1]
-                pos += 1
-                node = (op, node, term())
-            return node
-
-        def term():
-            nonlocal pos
-            node = unary()
-            while any(is_op(peek(), o) for o in (3, 4, 5)):
-                op = peek()[1]
-                pos += 1
-                node = (op, node, unary())
-            return node
-
-        def unary():
-            nonlocal pos
-            if is_op(peek(), 2):
-                pos += 1
-                return ("neg", unary())
-            return power()
-
-        def power():
-            nonlocal pos
-            node = atom()
-            if is_op(peek(), 6):
-                pos += 1
-                return (6, node, unary())
-            return node
-
-        def atom():
-            nonlocal pos
-            t = peek()
-            if t is None:
-                raise _Fail(1)
-            if t[0] == 0:
-                pos += 1
-                return ("num", t[1])
-            if t[0] == 1:
-                pos += 1
-                return ("var", t[1])
-            if is_op(t, 7):
-                pos += 1
-                node = assign()
-                if not is_op(peek(), 8):
-                    raise _Fail(1)
-                pos += 1
-                return node
-            raise _Fail(1)
-
-        def run(node):
-            tag = node[0]
-            if tag == "num":
-                return node[1]
-            if tag == "var":
-                if env[node[1]] is None:
-                    raise _Fail(2)
-                return env[node[1]]
-            if tag == "set":
-                val = run(node[2])
-                env[node[1]] = val
-                return val
-            if tag == "neg":
-                return check(-run(node[1]))
-            a = run(node[1])
-            b = run(node[2])
-            if tag == 1:
-                return check(a + b)
-            if tag == 2:
-                return check(a - b)
-            if tag == 3:
-                return check(a * b)
-            if tag in (4, 5):
-                if b == 0:
-                    raise _Fail(3)
-                q = _trunc_div(a, b)
-                return check(q if tag == 4 else a - b * q)
-            if b < 0:
-                raise _Fail(4)
-            if a in (0, 1):
-                return 1 if b == 0 else a
-            if a == -1:
-                return 1 if b % 2 == 0 else -1
-            r = 1
-            for _ in range(b):
-                r = check(r * a)
-            return r
-
-        try:
-            tree = assign()
-            if pos != len(toks):
-                raise _Fail(1)
-        except _Fail as f:
-            values.append(0)
-            status.append(f.code)
-            continue
-        try:
-            values.append(run(tree))
-            status.append(0)
-        except _Fail as f:
-            values.append(0)
-            status.append(f.code)
-    return values, status, [0 if v is None else v for v in env], [v is not None for v in env]
+def _build_sched(dur, before, after, prio, workers):
+    n = len(dur)
+    start, who, finish = [-1] * n, [-1] * n, [-1] * n
+    busy = [-1] * workers           # the task each worker runs, or -1
+    t = 0
+    idle = 0
+    while True:
+        for w in range(workers):
+            if busy[w] != -1 and finish[busy[w]] == t:
+                busy[w] = -1
+        ready = [i for i in range(n) if start[i] == -1
+                 and all(finish[a] != -1 and finish[a] <= t for a, b in zip(before, after) if b == i)]
+        ready.sort(key=lambda i: (-prio[i], -dur[i], i))
+        for w in range(workers):
+            if busy[w] == -1 and ready:
+                i = ready.pop(0)
+                start[i], who[i], finish[i] = t, w, t + dur[i]
+                busy[w] = i
+        running = [finish[busy[w]] for w in range(workers) if busy[w] != -1]
+        if not running:
+            break
+        nxt = min(running)
+        idle += sum(1 for w in range(workers) if busy[w] == -1) * (nxt - t)
+        t = nxt
+    makespan = max(finish) if max(finish) > 0 else 0
+    return start, who, makespan, idle, start.count(-1)
 
 
 # --- descriptions ----------------------------------------------------------------
-
-_ORDER_BOOK = (
-    "Run an order book and report what traded and what is left. Order i is given by "
-    "kind[i], side[i], price[i], qty[i], trader[i] and tif[i], and the orders arrive in "
-    "order, 0 first. kind is 0 for a limit order, 1 for a market order and 2 for a cancel. "
-    "side is 0 to buy and 1 to sell. tif (time in force) is 0 for good till cancelled, 1 "
-    "for immediate or cancel and 2 for fill or kill. The book holds resting orders, each "
-    "with its order number, side, price, the quantity it still has and its trader. A "
-    "cancel removes the resting order whose number is price[i] from the book and counts as "
-    "a cancel; if no resting order has that number (it was never a resting order, has "
-    "already gone from the book, or has not arrived yet), the cancel is rejected and "
-    "changes nothing. For a cancel, side, qty, trader and tif are not used. For a limit "
-    "or market order, a resting order can match it if it is on the other side and, for a "
-    "limit order, its price is no worse: a resting sell matches a limit buy if its price "
-    "is at most the buy's price, and a resting buy matches a limit sell if its price is at "
-    "least the sell's price. A market order matches every resting order on the other side. "
-    "Among the resting orders that can match, the best is the lowest-priced sell for a buy, "
-    "or the highest-priced buy for a sell, and between equal prices the lower order "
-    "number. A fill or kill order is checked first: if the quantities of the resting orders "
-    "that can match it and belong to another trader add up to less than its quantity, it "
-    "is killed and nothing at all happens, not even the self-trade removals below. "
-    "Otherwise the incoming order matches repeatedly while it has quantity left and "
-    "some resting order can match it. Take the best resting order. If it belongs to the same "
-    "trader as the incoming order, it is removed from the book (its remaining quantity "
-    "counts as self-cancelled) and matching goes on. Otherwise they trade: the quantity is "
-    "the smaller of the two remaining quantities, the price is the resting order's price, "
-    "both lose that quantity, and a resting order with nothing left leaves the book. After "
-    "matching, a limit order that is good till cancelled and has quantity left rests in "
-    "the book with that quantity; any other order's remaining quantity is dropped, and a "
-    "market order never rests. Return the number of trades, the total quantity traded, the "
-    "sum over trades of quantity times price, the total quantity self-cancelled, the number "
-    "of cancels, the number of rejected cancels, the number of orders killed, and the "
-    "resting orders at the end, as their numbers and, in the same order, their remaining "
-    "quantities: buys first, best first (highest price, then lower number), then sells, "
-    "best first (lowest price, then lower number). The six sequences have the same "
-    "length, at most 30; kind is 0 to 2, side 0 or 1, tif 0 to 2, qty 1 to 1,000 and "
-    "trader 0 to 9; price is 1 to 1,000 for a limit or market order (a market order's "
-    "price is not used) and 0 to 29 for a cancel."
-)
 
 _GO_GAME = (
     "Play a game of Go and report the result. The board has size rows of size points; "
@@ -725,44 +563,6 @@ _GO_GAME = (
     "point 0 first), the number of stones black captured, the number white captured, the "
     "number of illegal moves, the number of moves read, and black's area minus white's. "
     "size is 2 to 7; moves has at most 60 values, each -1 or a point of the board."
-)
-
-_STACK_VM = (
-    "Run a program on a small stack machine with exceptions and report the final state. "
-    "Instruction i is the operation ops[i] with the argument args[i]; the machine starts "
-    "at instruction 0 with an empty data stack, an empty call stack and no handlers. "
-    "Before each instruction: if the instruction number is not an instruction of the "
-    "program (below 0, or not below the program's length), the machine halts normally; "
-    "otherwise, if limit instructions have already run, it stops out of steps. Then the "
-    "instruction runs and counts as run, and the machine goes on to the next instruction "
-    "unless it says otherwise. The operations: 0 push args[i]; 1 add, 2 subtract, 3 "
-    "multiply, 4 divide and 5 remainder, each taking the top two values, the top one as "
-    "the right operand, and pushing the result; 6 duplicate the top value; 7 swap the top "
-    "two; 8 drop the top value; 9 jump to instruction args[i]; 10 pop a value and jump to "
-    "args[i] if it is 0; 11 call: push the number of the next instruction on the call "
-    "stack and jump to args[i]; 12 return: pop the call stack and jump there, or halt "
-    "normally if it is empty; 13 try: push a handler holding args[i], the data stack's "
-    "length and the call stack's length; 14 end try: pop the latest handler; 15 throw: pop "
-    "a value and throw it; 16 halt normally. Division rounds toward zero, and the remainder "
-    "is the left operand minus the right operand times the quotient. An instruction throws "
-    "instead of doing anything (it changes nothing first) in these cases: the data stack "
-    "has fewer values than it takes (code 2; add to remainder and swap take two, duplicate, "
-    "drop, the conditional jump and throw take one); divide or remainder by 0 (code 1); end "
-    "try with no handler (code 3); push or duplicate when the data stack already holds 32 "
-    "values, call when the call stack already holds 16, or try when there are already 8 "
-    "handlers (code 4); a result of add, subtract, multiply, divide or remainder above "
-    "1,000,000,000 or below -1,000,000,000 (code 6). Throw (15) throws the value it popped. "
-    "When a value is thrown: if there is no handler, the machine stops with an uncaught "
-    "exception; otherwise the latest handler is popped, the data stack and the call stack "
-    "are cut back to the lengths it holds (if they are longer), the thrown value is pushed "
-    "(even onto 32 values), "
-    "and the machine jumps to the instruction it holds. Return the data stack (bottom "
-    "first), the status (0 halted normally, 1 uncaught exception, 2 out of steps), the "
-    "uncaught value (0 unless the status is 1), the number of instructions run, the number "
-    "of exceptions caught by a handler, and the largest length the data stack had at any "
-    "point. ops and args have the same length, 1 to 60; every op is 0 to 16; args are -1,000 "
-    "to 1,000 for a push and 0 to 60 for a jump, conditional jump, call or try, and are "
-    "not used by other operations (they are 0); limit is 1 to 800."
 )
 
 _JOSEPHUS = (
@@ -840,72 +640,98 @@ _TENNIS = (
     "player won. points has at most 400 values; server is 0 or 1."
 )
 
-_TIMETABLE = (
-    "Find the earliest arrival at every station of a railway. Stations are 0 to "
-    "stations - 1. Connection i is a train, train[i], leaving station fromSt[i] at time "
-    "dep[i] and arriving at station toSt[i] at time arr[i], with no stop between. Each "
-    "train's connections, taken in order of departure, form one run: each leaves from the "
-    "station where the one before it arrived, no earlier than it arrived. A traveller "
-    "starts at station origin at time start. They can board a train at a station for one "
-    "of its connections leaving there: at the origin, if the connection leaves at start or "
-    "later; elsewhere, if they arrived there by another train at least change before the "
-    "connection leaves. Once aboard, they can stay on for the train's later connections "
-    "and get off where any of them arrives. Return, for each station, the earliest time "
-    "the traveller can be there (start for the origin, -1 if they cannot get there) and "
-    "the fewest trains used by a journey that arrives that early (0 for the origin, -1 if "
-    "they cannot get there). Taking one train is one train used, and taking the same train "
-    "again later counts again. stations is 2 to 12; change is 0 to 10; origin is a "
-    "station; start is 0 to 1,440. fromSt, toSt, dep, arr and train have the same length, at "
-    "most 60, and are listed in order of dep, which never decreases; fromSt and toSt are "
-    "different stations; dep is 0 to 1,440 and less than arr, which is at most 1,440; "
-    "train is 0 to 11."
+_HUFFMAN = (
+    "Build a Huffman code and encode a message. freqs[s] is the frequency of symbol s, for "
+    "s from 0 to n - 1, where n is the length of freqs. Only symbols with a frequency above "
+    "0 get a code. If no symbol does, no symbol has a code; if exactly one does, its code "
+    "length is 1. Otherwise build a tree: start with one node for each such symbol, weighing "
+    "its frequency, and while there is more than one node, take the two nodes that come "
+    "first when ordered by weight, lowest first, and between equal weights by the smallest "
+    "symbol the node holds, lowest first, and replace them by one node weighing their sum and "
+    "holding the symbols of both. A symbol's code length is the number of times a node "
+    "holding it was taken. Then give the codes in canonical form: list the symbols that have "
+    "a code by length, shortest first, and between equal lengths by symbol, lowest first; the "
+    "first gets code 0, and each next one gets the previous one's code plus 1, multiplied by 2 "
+    "once for each bit by which its length exceeds the previous one's. Encode msg, a list of "
+    "symbols, by writing each symbol's code in as many bits as its length, most significant "
+    "bit first, one symbol after another. Return each symbol's code length (0 if it has no "
+    "code), each symbol's code (-1 if it has none), the encoded bits as 0s and 1s, and -1; "
+    "or, if a value in msg is not 0 to n - 1 or is a symbol with no code, the lengths, the "
+    "codes, no bits, and the position in msg of the first such value. freqs has 1 to 20 "
+    "values, each 0 to 1,000,000; msg has at most 100 values, each -5 to 45."
 )
 
-_EXPR_EVAL = (
-    "Run a small expression language. The program is a list of tokens: token i has kind "
-    "kinds[i] and value vals[i]. Kind 0 is a number, its value; kind 1 is the variable "
-    "with that number, 0 to 7; kind 2 is a symbol: 1 +, 2 -, 3 *, 4 /, 5 %, 6 ^, 7 (, 8 ), "
-    "9 = and 10 ;. Semicolons split the program into statements, and a statement with no "
-    "tokens is ignored. Each statement must be an expression by this grammar, using all "
-    "its tokens: an expression is a variable followed by = and an expression (an "
-    "assignment), or else a sum; a sum is one or more products joined by + or -, taken left "
-    "to right; a product is one or more factors joined by *, / or %, left to right; a "
-    "factor is - followed by a factor (negation), or a power; a power is an atom, "
-    "optionally followed by ^ and a factor; an atom is a number, a variable, or an "
-    "expression in parentheses. So -2^2 is -(2^2), 2^3^2 is 2^(3^2) and 2^-1 is 2^(-1). "
-    "A statement that does not fit the grammar fails with code 1 and does nothing. "
-    "Otherwise it is evaluated, operands left before right. An assignment evaluates its "
-    "right side, gives the variable that value, and has that value. Variables start with "
-    "no value, and keep values between statements. / is division rounding toward zero; % "
-    "is the left operand minus the right times their quotient; a^b is a multiplied by "
-    "itself b times (a^0 is 1, and 0^0 is 1). A statement stops at its first error: "
-    "reading a variable with no value (code 2), dividing or taking % by 0 (code 3), a "
-    "negative power (code 4), or any value (of a negation, an operation or a power) above "
-    "1,000,000,000,000 or below -1,000,000,000,000 (code 5). Assignments it made before "
-    "the error stay. Return, for each statement that is not ignored, its value (0 if it "
-    "failed) and its code (0 if it did not fail), then each variable's value (0 if it has "
-    "none) and whether it has one. kinds and vals have the same length, at most 60; a "
-    "number is 0 to 9,999, a variable 0 to 7 and a symbol 1 to 10."
+_AVL = (
+    "Run operations on an AVL tree of distinct keys, starting empty, and report the final "
+    "tree. Operation i is ops[i] with the key keys[i]: 0 insert, 1 delete, 2 look up. A "
+    "node's height is 1 more than the larger of its two subtrees' heights (an empty subtree "
+    "has height 0), and its balance is its left subtree's height minus its right subtree's. "
+    "Insert: if the key is in the tree, the operation is ignored; otherwise go down from the "
+    "root, left where the key is smaller than the node's and right where it is larger, and "
+    "add a node with the key where the path leaves the tree. Delete: if the key is not in the "
+    "tree, the operation is ignored; otherwise, if its node has at most one child, replace "
+    "the node by that child (or by nothing); if it has two, copy the smallest key of its "
+    "right subtree into it and delete that key from the right subtree in the same way. After "
+    "an insert or delete, go back up the path from where a node was added or removed to the "
+    "root, and at each node on it recompute its height and rebalance it: if its balance is "
+    "2, first rotate its left child left if that child's balance is negative, then rotate "
+    "the node right; if its balance is -2, first rotate its right child right if that "
+    "child's balance is positive, then rotate the node left. Rotating a node right makes its "
+    "left child the root of that subtree, with the node as the child's right child and the "
+    "child's old right subtree as the node's left subtree; rotating left is the mirror image. "
+    "A look up adds true to the results if the key is in the tree and false if not. Return "
+    "the final tree's keys in preorder (a node, then its left subtree, then its right "
+    "subtree), the look-up results in order, the number of rotations made (a rotation of a "
+    "child and then of the node counts as two), the number of operations ignored, and the "
+    "final tree's height. ops and keys have the same length, at most 60; each op is 0 to 2 "
+    "and each key 0 to 999."
 )
 
+_KALAH = (
+    "Play the sowing game Kalah and report the position. Each player has pits pits and a "
+    "store: positions 0 to pits - 1 are player 0's pits, position pits is player 0's store, "
+    "positions pits + 1 to 2 pits are player 1's pits, and position 2 pits + 1 is player 1's "
+    "store. The pit at position j is opposite the pit at position 2 pits - j. Every pit "
+    "starts with seeds seeds, and both stores start empty. Player 0 moves first. Read the "
+    "moves in order. A move is j, meaning the mover's own j-th pit (position j for player 0, "
+    "pits + 1 + j for player 1). If j is not 0 to pits - 1, or that pit is empty, the move "
+    "is illegal: it is counted, and the same player moves next. Otherwise take all the seeds "
+    "from the pit and sow them one at a time into the following positions in increasing "
+    "order, going from 2 pits + 1 back to 0 and skipping the opponent's store. If the last "
+    "seed lands in one of the mover's own pits that was empty before it (the pit just "
+    "emptied counts as empty) and the opposite pit has seeds, the mover takes that seed and "
+    "all the seeds of the opposite pit into their own store (a capture). Then, if all of "
+    "either player's pits are empty, the game ends: each player moves the seeds left in "
+    "their own pits into their own store, and no more moves are read. Otherwise, if the last "
+    "seed landed in the mover's own store, the mover moves again, and if not, the other "
+    "player moves next. Return the board (all 2 pits + 2 positions), the player to move next "
+    "(-1 if the game has ended), the number of illegal moves, the number of moves read, the "
+    "seeds each player took by captures (player 0's, then player 1's), and the winner: the "
+    "player with the larger store, 2 if the stores are equal, or -1 if the game has not "
+    "ended. pits is 1 to 6, seeds is 1 to 6, and moves has at most 80 values, each -1 to 7."
+)
+
+_SCHED = (
+    "Schedule tasks that depend on each other on a number of workers. Task i takes dur[i] "
+    "time units and has priority prio[i]; for each k, task before[k] must finish before task "
+    "after[k] can start (a task may be given as depending on itself, and a pair may be "
+    "repeated). The workers are numbered 0 to workers - 1, and time starts at 0. At time 0, "
+    "and at each later moment when a running task finishes: first every worker whose task "
+    "finishes then is free; a task is ready if it has not started and every task it depends "
+    "on has finished at or before this moment; then, while some worker is free and some task "
+    "is ready, the free worker with the lowest number starts the ready task with the highest "
+    "priority, between equal priorities the one that takes longest, and between equal "
+    "lengths the lowest-numbered, and it finishes dur time units later. Then time moves on "
+    "to the next moment a running task finishes; when no task is running, the schedule ends, "
+    "and a task that never became ready never starts. Return each task's start time and "
+    "worker (-1 and -1 for a task that never started), the makespan (the latest finish, or "
+    "0 if no task started), the idle time (summed over the workers, the time between 0 and "
+    "the makespan when a worker had no task), and the number of tasks that never started. "
+    "dur and prio have the same length, 1 to 16; each dur is 1 to 20 and each prio 0 to 9. "
+    "before and after have the same length, at most 30, and each is a task number."
+)
 
 # --- random inputs ---------------------------------------------------------------
-
-def _random_order_book(seed, n=None):
-    rng = random.Random(seed)
-    n = rng.randint(1, 30) if n is None else n
-    kind, side, price, qty, trader, tif = [], [], [], [], [], []
-    mid = rng.randint(20, 980)
-    for i in range(n):
-        k = rng.choices((0, 1, 2), (6, 1, 2))[0]
-        kind.append(k)
-        side.append(rng.randint(0, 1))
-        price.append(rng.randint(0, i) if k == 2 else max(1, min(1000, mid + rng.randint(-8, 8))))
-        qty.append(rng.choice((rng.randint(1, 20), rng.randint(1, 1000))))
-        trader.append(rng.randint(0, rng.choice((1, 3, 9))))
-        tif.append(rng.choices((0, 1, 2), (5, 2, 2))[0])
-    return kind, side, price, qty, trader, tif
-
 
 def _random_go(seed, size=None, n=None):
     rng = random.Random(seed)
@@ -915,59 +741,6 @@ def _random_go(seed, size=None, n=None):
     for _ in range(n):
         moves.append(-1 if rng.random() < 0.06 else rng.randrange(size * size))
     return size, moves
-
-
-def _random_stack_vm(seed, n=None, limit=None):
-    """A program built from small pieces (arithmetic on pushed values, a counted
-    loop, a call to a routine, a guarded block with a handler), with random
-    instructions mixed in, so most runs do more than fault at once."""
-    rng = random.Random(seed)
-    n = rng.randint(1, 60) if n is None else n
-    ops, args = [], []
-
-    def put(op, arg=0):
-        ops.append(op)
-        args.append(arg)
-
-    def piece():
-        r = rng.random()
-        if r < 0.3:
-            for _ in range(rng.randint(1, 3)):
-                put(0, rng.randint(-1000, 1000) if rng.random() < 0.3 else rng.randint(-9, 9))
-            for _ in range(rng.randint(0, 3)):
-                put(rng.choice((1, 2, 3, 4, 5, 6, 7, 8)))
-        elif r < 0.5:   # count down from k: push k; top: dup, jz end, push 1, sub, jmp top; end: drop
-            put(0, rng.randint(0, 12))
-            top = len(ops)
-            put(6)
-            put(10, top + 5)
-            put(0, rng.choice((1, 1, 2)))
-            put(2)
-            put(9, top)
-            put(8)
-        elif r < 0.7:   # try: guard a throw or a fault; handler drops or keeps the code
-            at = len(ops)
-            put(13, 0)
-            put(0, rng.randint(-5, 5))
-            put(rng.choice((15, 4, 14, 0)), rng.randint(0, 3))
-            put(14)
-            put(9, len(ops) + 2)
-            args[at] = len(ops)
-            put(rng.choice((8, 6, 0)), 1)
-        elif r < 0.85:   # call a routine placed after a jump over it
-            put(11, len(ops) + 2)
-            put(9, len(ops) + 4)
-            put(rng.choice((6, 0, 3, 1)), rng.randint(1, 4))
-            put(12)
-        else:
-            op = rng.randrange(17)
-            put(op, rng.randint(-9, 9) if op == 0 else rng.randint(0, 60) if op in (9, 10, 11, 13) else 0)
-
-    while len(ops) < n:
-        piece()
-    del ops[n:], args[n:]
-    args = [min(a, 60) if op in (9, 10, 11, 13) else a if op == 0 else 0 for op, a in zip(ops, args)]
-    return ops, args, rng.randint(1, 800) if limit is None else limit
 
 
 def _random_josephus(seed, q=None):
@@ -1041,140 +814,63 @@ def _random_tennis(seed, n=None, bias=None):
     return points, rng.choice((3, 5)), rng.randint(0, 2), rng.random() < 0.3, rng.randint(0, 1)
 
 
-def _random_timetable(seed, n=None):
+def _random_huffman(seed, n=None, m=None):
     rng = random.Random(seed)
-    stations = rng.randint(2, 12)
-    trains = rng.randint(1, 12)
-    conns = []
-    budget = rng.randint(1, 60) if n is None else n
-    for t in range(trains):
-        if len(conns) >= budget:
-            break
-        at = rng.randrange(stations)
-        time = rng.randint(0, 600)
-        for _ in range(rng.randint(1, max(1, min(8, budget - len(conns))))):
-            to = rng.choice([s for s in range(stations) if s != at])
-            dep = time + rng.randint(0, 20)
-            arr = dep + rng.randint(1, 60)
-            if arr > 1440:
-                break
-            conns.append((at, to, dep, arr, t))
-            at, time = to, arr
-    conns.sort(key=lambda c: c[2])
-    cols = [list(c) for c in zip(*conns)] if conns else [[], [], [], [], []]
-    return (stations, rng.randint(0, 10), rng.randrange(stations), rng.randint(0, 300), *cols)
+    n = rng.randint(1, 20) if n is None else n
+    shape = rng.random()
+    if shape < 0.3:     # powers and Fibonacci-like weights make long codes
+        freqs = [rng.choice((0, 1, 2 ** rng.randint(0, 19))) for _ in range(n)]
+    elif shape < 0.6:   # many equal weights test the tie-break
+        w = rng.randint(1, 5)
+        freqs = [rng.choice((0, w, w, 2 * w)) for _ in range(n)]
+    else:
+        freqs = [rng.choice((0, rng.randint(1, 1_000_000), rng.randint(1, 30))) for _ in range(n)]
+    m = rng.randint(0, 100) if m is None else m
+    has = [s for s in range(n) if freqs[s] > 0] or [0]
+    msg = [rng.choice(has) for _ in range(m)]
+    if msg and rng.random() < 0.15:
+        msg[rng.randrange(len(msg))] = rng.choice((-1, n, 45, rng.randrange(n)))
+    return freqs, msg
 
 
-def _random_expr(seed, n=None):
+def _random_avl(seed, n=None):
     rng = random.Random(seed)
-    n = rng.randint(1, 60) if n is None else n
-    kinds, vals = [], []
-    known = set()   # variables an earlier statement assigns (if it does not fail)
+    n = rng.randint(0, 60) if n is None else n
+    span = rng.choice((10, 30, 1000))
+    ops, keys = [], []
+    for _ in range(n):
+        ops.append(rng.choices((0, 1, 2), (5, 3, 2))[0])
+        keys.append(rng.randrange(span))
+    return ops, keys
 
-    def expr(out, depth, top=False):
-        if depth > 3 or rng.random() < 0.3:
-            r = rng.random()
-            if r < 0.45 or (r < 0.8 and not known and rng.random() < 0.8):
-                out.append((0, rng.choice((0, 1, 2, 3, 7, 10, rng.randint(0, 9999)))))
-            elif r < 0.8:
-                out.append((1, rng.choice(sorted(known)) if known and rng.random() < 0.95 else rng.randint(0, 7)))
-            else:
-                out.append((2, 7))
-                expr(out, depth + 1, True)
-                out.append((2, 8))
-            return
-        r = rng.random()
-        if r < 0.15 and top:
-            out += [(1, rng.randint(0, 7)), (2, 9)]
-            expr(out, depth + 1, True)
-        elif r < 0.25:
-            out.append((2, 2))
-            expr(out, depth + 1)
-        else:
-            expr(out, depth + 1)
-            out.append((2, rng.choice((1, 2, 3, 4, 5, 6, 1, 2, 3))))
-            expr(out, depth + 1)
 
-    while True:
-        out = []
-        target = rng.randint(0, 7) if rng.random() < 0.5 else None
-        if target is not None:
-            out += [(1, target), (2, 9)]
-        expr(out, 0, True)
-        if rng.random() < 0.08:   # noise: often a syntax error
-            k = rng.randint(0, 2)
-            out.insert(rng.randint(0, len(out)), (k, rng.randint(0, 7) if k == 1 else rng.randint(1, 10)))
-        out.append((2, 10))
-        if len(kinds) + len(out) > n:
-            break
-        for k, v in out:
-            kinds.append(k)
-            vals.append(v)
-        if target is not None:
-            known.add(target)
-    return kinds, vals
+def _random_kalah(seed, n=None, pits=None, seeds=None):
+    rng = random.Random(seed)
+    pits = rng.randint(1, 6) if pits is None else pits
+    seeds = rng.randint(1, 6) if seeds is None else seeds
+    n = rng.randint(0, 80) if n is None else n
+    return pits, seeds, [rng.randint(-1, 7) if rng.random() < 0.08 else rng.randrange(pits) for _ in range(n)]
+
+
+def _random_sched(seed, n=None, e=None):
+    rng = random.Random(seed)
+    n = rng.randint(1, 16) if n is None else n
+    e = rng.randint(0, 30) if e is None else e
+    dur = [rng.randint(1, 20) for _ in range(n)]
+    prio = [rng.randint(0, rng.choice((0, 2, 9))) for _ in range(n)]
+    before, after = [], []
+    for _ in range(e):
+        a, b = rng.randrange(n), rng.randrange(n)
+        if rng.random() < 0.9 and a > b:
+            a, b = b, a
+        if rng.random() < 0.9 and a == b:
+            continue
+        before.append(a)
+        after.append(b)
+    return dur, before, after, prio, rng.randint(1, 4)
 
 
 # --- hand-picked hidden tests ----------------------------------------------------
-
-def _ob(*orders):
-    """order-book inputs from (kind, side, price, qty, trader, tif) rows."""
-    cols = [list(c) for c in zip(*orders)] if orders else [[]] * 6
-    return tuple(cols)
-
-
-_LIM, _MKT, _CXL = 0, 1, 2
-_BUY, _SELL = 0, 1
-_GTC, _IOC, _FOK = 0, 1, 2
-
-
-def _order_book_cases():
-    L, M, C, Bu, Se = _LIM, _MKT, _CXL, _BUY, _SELL
-    return [
-        # Price before time: a later, better sell is taken first; equal prices by number.
-        _ob((L, Se, 105, 5, 1, _GTC), (L, Se, 103, 5, 2, _GTC), (L, Se, 103, 5, 3, _GTC),
-            (L, Bu, 105, 12, 4, _GTC)),
-        # A sell crossing resting buys trades at the buys' prices, highest first; the rest rests.
-        _ob((L, Bu, 98, 4, 1, _GTC), (L, Bu, 99, 4, 2, _GTC), (L, Bu, 99, 4, 3, _GTC),
-            (L, Se, 97, 20, 4, _GTC)),
-        # Self-trade: the best sell is the buyer's own and is removed; matching goes on.
-        _ob((L, Se, 50, 7, 1, _GTC), (L, Se, 51, 3, 2, _GTC), (L, Bu, 60, 5, 1, _GTC)),
-        # Fill or kill: enough only when the buyer's own order is counted, so it is killed and
-        # the own order stays.
-        _ob((L, Se, 10, 4, 1, _GTC), (L, Se, 11, 4, 2, _GTC), (L, Bu, 11, 6, 1, _FOK)),
-        # Fill or kill with exactly enough from others: fills, removing its own order on the way.
-        _ob((L, Se, 10, 4, 1, _GTC), (L, Se, 11, 4, 2, _GTC), (L, Se, 12, 2, 3, _GTC),
-            (L, Bu, 12, 6, 1, _FOK)),
-        # Fill or kill not crossing at all is killed; a fill or kill sell market order fills.
-        _ob((L, Bu, 20, 5, 1, _GTC), (L, Se, 21, 1, 2, _FOK), (M, Se, 1, 5, 3, _FOK)),
-        # Immediate or cancel: a partial fill, the rest dropped; one with no match is dropped.
-        _ob((L, Se, 30, 3, 1, _GTC), (L, Bu, 31, 5, 2, _IOC), (L, Bu, 29, 5, 2, _IOC),
-            (L, Bu, 29, 2, 3, _GTC)),
-        # A market buy sweeps three prices; a good-till-cancelled market order never rests.
-        _ob((L, Se, 7, 2, 1, _GTC), (L, Se, 9, 2, 2, _GTC), (L, Se, 8, 2, 3, _GTC),
-            (M, Bu, 1, 10, 4, _GTC), (M, Se, 500, 3, 5, _GTC)),
-        # Cancels: a partly filled resting order (done), a filled one, a market order, a cancel,
-        # a later order and one already cancelled (all rejected).
-        _ob((L, Se, 40, 5, 1, _GTC), (L, Bu, 40, 2, 2, _GTC), (C, 0, 0, 1, 0, 0),
-            (L, Se, 41, 1, 1, _GTC), (L, Bu, 41, 1, 2, _GTC), (C, 0, 3, 1, 0, 0),
-            (M, Bu, 1, 1, 3, _GTC), (C, 0, 6, 1, 0, 0), (C, 0, 7, 1, 0, 0), (C, 0, 10, 1, 0, 0),
-            (C, 0, 0, 1, 0, 0), (L, Bu, 5, 1, 4, _GTC)),
-        # The final book: buys best first, then sells best first, equal prices by number.
-        _ob((L, Se, 12, 1, 1, _GTC), (L, Bu, 8, 2, 2, _GTC), (L, Se, 11, 3, 3, _GTC),
-            (L, Bu, 9, 4, 4, _GTC), (L, Bu, 8, 5, 5, _GTC), (L, Se, 11, 6, 6, _GTC),
-            (L, Bu, 9, 7, 7, _IOC)),
-        # Only the best order is checked for self-trade: a deeper own order stays.
-        _ob((L, Se, 20, 5, 2, _GTC), (L, Se, 25, 5, 1, _GTC), (L, Bu, 30, 3, 1, _GTC)),
-        # A cancel naming an order removed by self-trade is rejected; both sides fill exactly.
-        _ob((L, Bu, 70, 3, 1, _GTC), (L, Se, 70, 3, 1, _GTC), (C, 0, 0, 1, 0, 0),
-            (L, Bu, 70, 4, 2, _GTC), (L, Se, 69, 4, 3, _IOC)),
-        # A market order with an empty book, and a cancel as the first order.
-        _ob((C, 1, 0, 9, 9, 2), (M, Bu, 1000, 1000, 9, _IOC)),
-        # Large quantities and prices.
-        _ob((L, Se, 1000, 1000, 0, _GTC), (L, Se, 999, 1000, 1, _GTC), (L, Bu, 1000, 1000, 2, _IOC),
-            (M, Bu, 1, 1000, 3, _FOK), (M, Bu, 1, 1000, 4, _FOK)),
-    ]
-
 
 def _go_cases():
     def pt(size, r, c):
@@ -1215,67 +911,6 @@ def _go_cases():
         # opponent's latest turn counts.
         (4, [s4(0, 1), s4(0, 2), s4(1, 0), s4(1, 3), s4(2, 1), s4(2, 2), s4(1, 2), s4(1, 1),
              s4(3, 3), s4(1, 2), P, P]),
-    ]
-
-
-def _vm(*code, limit=800):
-    ops = [c[0] for c in code]
-    args = [c[1] if len(c) > 1 else 0 for c in code]
-    return ops, args, limit
-
-
-(_PUSH, _ADD, _SUB, _MUL, _DIV, _REM, _DUP, _SWAP, _DROP, _JMP, _JZ, _CALL, _RET, _TRY,
- _ENDTRY, _THROW, _HALT) = range(17)
-
-
-def _stack_vm_cases():
-    P = _PUSH
-    return [
-        # Division and remainder round toward zero for every sign.
-        _vm((P, -7), (P, 2), (_DIV,), (P, -7), (P, 2), (_REM,), (P, 7), (P, -2), (_DIV,), (P, 7), (P, -2),
-            (_REM,), (P, -7), (P, -2), (_DIV,), (P, -7), (P, -2), (_REM,)),
-        # Underflow is thrown before anything changes, and is not caught.
-        _vm((P, 5), (_ADD,), (P, 6)),
-        # Divide by zero caught: the stack is cut back to the try's length and the code pushed.
-        _vm((P, 1), (_TRY, 7), (P, 2), (P, 3), (P, 0), (_DIV,), (_HALT,), (P, 9), (_ADD,)),
-        # Nested handlers: the inner catches a throw, rethrows it, the outer catches it.
-        _vm((_TRY, 9), (_TRY, 5), (P, 42), (_THROW,), (_HALT,), (P, 1), (_ADD,), (_THROW,), (_HALT,),
-            (P, 100), (_ADD,), (_HALT,)),
-        # End try with no handler: code 3, uncaught; a later instruction does not run.
-        _vm((P, 1), (_ENDTRY,), (P, 2)),
-        # The 33rd value pushed throws code 4.
-        _vm(*([(P, 1)] * 33)),
-        # Caught with 32 values kept: the code is pushed anyway, making 33.
-        _vm(*([(P, 1)] * 32), (_TRY, 35), (P, 1), (_HALT,), (_DROP,)),
-        # Duplicating in a loop until the stack is full, caught by the handler.
-        _vm((_TRY, 4), (P, 7), (_DUP,), (_JMP, 2), (P, -1), (_HALT,)),
-        # Unbounded recursion: the 17th call throws code 4.
-        _vm((_CALL, 0)),
-        # A routine: call, return to the caller; return with an empty call stack halts.
-        _vm((P, 3), (_CALL, 4), (P, 10), (_RET,), (_DUP,), (_MUL,), (_RET,)),
-        # A conditional jump on a value that is not 0 falls through; jumping to the
-        # program's length halts normally.
-        _vm((P, 4), (_JZ, 3), (_JMP, 4), (P, 9)),
-        # Out of steps in an endless loop, with the limit counted exactly.
-        _vm((P, 1), (_JMP, 0), limit=7),
-        # Halting by running off the end exactly when the limit is reached is a normal halt.
-        _vm((P, 1), (P, 2), (_ADD,), limit=3),
-        # A result above 1,000,000,000 throws code 6, and so does one below -1,000,000,000;
-        # exactly 1,000,000,000 is fine.
-        _vm((P, 1000), (P, 1000), (_MUL,), (P, 1000), (_MUL,), (_TRY, 9), (P, 1), (_ADD,), (_HALT,),
-            (P, 0), (P, 1000), (_SUB,), (P, 1000), (_MUL,), (P, 1000), (_MUL,), (P, 2), (_MUL,)),
-        # A throw inside a call: the handler cuts the call stack back, so a return halts.
-        _vm((_TRY, 5), (_CALL, 3), (_HALT,), (P, 8), (_THROW,), (P, 1), (_RET,)),
-        # The handler's saved length is longer than the stack when the throw comes.
-        _vm((P, 1), (P, 2), (P, 3), (_TRY, 7), (_DROP,), (_DROP,), (_THROW,), (P, 5)),
-        # Throwing 0, uncaught: status 1 with value 0.
-        _vm((P, 0), (_THROW,)),
-        # The ninth handler throws code 4, caught by the eighth.
-        _vm(*([(_TRY, 9)] * 9), (P, 2), (_MUL,)),
-        # Swap, then a conditional jump pops its value, leaving too few to subtract.
-        _vm((P, 2), (P, 3), (_SWAP,), (_JZ, 0), (_SUB,)),
-        # A swap underflow is caught; a drop underflow after it is not.
-        _vm((_TRY, 3), (P, 4), (_SWAP,), (_DROP,), (_DROP,), (_TRY, 8), (_DROP,), (_HALT,), (P, 6)),
     ]
 
 
@@ -1409,145 +1044,157 @@ def _tennis_cases():
     ]
 
 
-def _tt(stations, change, origin, start, *conns):
-    conns = sorted(conns, key=lambda c: c[2])
-    cols = [list(c) for c in zip(*conns)] if conns else [[], [], [], [], []]
-    return (stations, change, origin, start, *cols)
+def _fib(k):
+    a, b, out = 1, 1, []
+    for _ in range(k):
+        out.append(a)
+        a, b = b, a + b
+    return out
 
 
-def _timetable_cases():
-    # (from, to, dep, arr, train)
+def _huffman_cases():
     return [
-        # One train along four stations.
-        _tt(5, 2, 0, 0, (0, 1, 10, 20, 0), (1, 2, 20, 30, 0), (2, 3, 35, 40, 0)),
-        # A change needs `change` minutes: 3 is too long for this one, 2 is not.
-        _tt(4, 3, 0, 0, (0, 1, 0, 10, 0), (1, 2, 12, 20, 1), (1, 3, 13, 20, 2)),
-        _tt(4, 2, 0, 0, (0, 1, 0, 10, 0), (1, 2, 12, 20, 1), (1, 3, 13, 20, 2)),
-        # Staying aboard needs no change time; boarding at the origin needs none either.
-        _tt(4, 10, 0, 5, (0, 1, 5, 6, 0), (1, 2, 6, 7, 0), (2, 3, 7, 8, 0), (0, 3, 4, 5, 1)),
-        # The fewest trains among journeys arriving equally early.
-        _tt(4, 0, 0, 0, (0, 1, 0, 5, 0), (1, 3, 5, 9, 1), (0, 2, 0, 3, 2), (2, 3, 4, 9, 3),
-            (0, 3, 1, 9, 4)),
-        # Earliest wins over fewer trains; the trains count is for the earliest journey.
-        _tt(3, 1, 0, 0, (0, 2, 0, 50, 0), (0, 1, 0, 10, 1), (1, 2, 11, 20, 2)),
-        # Unreachable stations; a station reached only from a train that left before start.
-        _tt(5, 0, 1, 100, (1, 2, 90, 95, 0), (1, 3, 100, 110, 1), (4, 0, 0, 10, 2)),
-        # Coming back to the origin changes nothing there.
-        _tt(3, 0, 0, 0, (0, 1, 0, 5, 0), (1, 0, 6, 9, 1), (0, 2, 10, 12, 2)),
-        # Change time 0: arrive and leave in the same minute.
-        _tt(3, 0, 0, 0, (0, 1, 0, 10, 0), (1, 2, 10, 15, 1)),
-        # A train calling at a station twice: the first arrival counts.
-        _tt(4, 5, 0, 0, (0, 1, 0, 10, 0), (1, 2, 10, 20, 0), (2, 1, 20, 30, 0), (1, 3, 30, 40, 0)),
-        # Two connections leaving at the same time, and a longer journey with three changes.
-        _tt(6, 1, 2, 0, (2, 0, 0, 5, 0), (2, 1, 0, 4, 1), (1, 3, 5, 8, 2), (0, 3, 6, 7, 3),
-            (3, 4, 9, 12, 4), (4, 5, 13, 14, 5)),
-        # No connections.
-        _tt(2, 0, 1, 0),
+        # One symbol with a frequency: length 1, code 0.
+        ([0, 7, 0], [1, 1]),
+        # No symbol has a frequency: the first symbol of msg has no code; an empty msg is fine.
+        ([0, 0, 0], [0]),
+        ([0, 0], []),
+        # Equal weights: the tie-break by smallest symbol decides every merge.
+        ([1, 1, 1, 1, 1], [0, 1, 2, 3, 4]),
+        # A merged node and a leaf of equal weight: the merged node holds symbol 0, so it
+        # is taken before the leaf 2.
+        ([1, 1, 2, 2], [3, 2, 1, 0]),
+        # The same with the merged node's smallest symbol larger than the leaf's.
+        ([2, 1, 1, 2], [0, 1, 2, 3]),
+        # Fibonacci weights: a code 19 bits long.
+        (_fib(20), [0, 19, 1, 18]),
+        # Powers of two with zeros between: lengths 1 to 9.
+        ([2 ** (k // 2) if k % 2 == 0 else 0 for k in range(20)], [18, 0, 2]),
+        # Bad symbols: one with no code, one past the end, a negative one.
+        ([3, 0, 3, 1], [0, 2, 1, 3]),
+        ([3, 0, 3, 1], [0, 3, 4]),
+        ([3, 0, 3, 1], [-1]),
+        # Twenty symbols, all used, and a long message.
+        ([s % 7 + 1 for s in range(20)], [s * 13 % 20 for s in range(100)]),
     ]
 
 
-_TOK = {"+": 1, "-": 2, "*": 3, "/": 4, "%": 5, "^": 6, "(": 7, ")": 8, "=": 9, ";": 10}
-
-
-def _ex(text):
-    """expr-eval inputs from text: numbers, x0 to x7, and symbols, separated by spaces."""
-    kinds, vals = [], []
-    for w in text.split():
-        if w in _TOK:
-            kinds.append(2)
-            vals.append(_TOK[w])
-        elif w.startswith("x"):
-            kinds.append(1)
-            vals.append(int(w[1:]))
-        else:
-            kinds.append(0)
-            vals.append(int(w))
-    return kinds, vals
-
-
-def _expr_cases():
+def _avl_cases():
+    I, D, L = 0, 1, 2
+    def run(*pairs):
+        return [p[0] for p in pairs], [p[1] for p in pairs]
     return [
-        # Precedence and grouping: powers to the right, - and / to the left, negation below ^.
-        _ex("2 ^ 3 ^ 2 ; - 2 ^ 2 ; 10 - 3 - 2 ; 7 / 2 * 2 ; 2 * 3 + 4 * 5 ; ( 2 + 3 ) * 4"),
-        # Rounding toward zero for every sign.
-        _ex("0 - 7 / 2 ; ( 0 - 7 ) / 2 ; ( 0 - 7 ) % 2 ; 7 % ( 0 - 2 ) ; 7 / ( 0 - 2 ) ; "
-            "( 0 - 7 ) % ( 0 - 2 ) ; - 7 / 2 ; - 7 % 2"),
-        # Each error code, with what was assigned before it kept.
-        _ex("x1 ; x0 = 5 + ( x1 = 2 ) / 0 ; x2 = 2 ^ - 1 ; x3 = 9999 ^ 4 ; x4 = 9999 ^ 3 ; x0"),
-        # Assignment chains and assignment in parentheses.
-        _ex("x0 = x1 = 3 ; x2 = ( x3 = 4 ) * x0 ; x2 + x3 + x1"),
-        # Statements that do not fit the grammar, and empty statements.
-        _ex("3 = 4 ; ; ( 1 + 2 ; 1 2 ; x0 = = 1 ; + 1 ; ( x0 ) = 1 ; x0 = 1 ; ; x0 ^ ; - ; ( ) ;"),
-        # Powers of 0, 1 and -1, and the largest powers of 2 within bounds.
-        _ex("0 ^ 0 ; 0 ^ 9999 ; 1 ^ 9999 ; ( 0 - 1 ) ^ 9999 ; ( 0 - 1 ) ^ 9998 ; 2 ^ 39 ; 2 ^ 40 ; "
-            "( 0 - 2 ) ^ 39 ; 9999 ^ 0"),
-        # The bound itself is allowed; one more is not; negation can break the bound too.
-        _ex("x0 = 1000 * 1000 ; x0 * x0 ; x0 * x0 + 1 ; 0 - x0 * x0 ; 0 - x0 * x0 - 1 ; "
-            "- ( x0 * x0 ) - 1"),
-        # Double negation, a negative power after the error, and a variable read before set.
-        _ex("- - 3 ; 2 ^ - - 2 ; - 2 ^ - 2 ; x5 = x5 + 1 ; x5"),
-        # Left before right: the left error is the one reported.
-        _ex("x6 / 0 ; 1 / 0 + x6 ; ( x7 = 0 ) + 1 / x7 ; x7"),
-        # A trailing semicolon, and a statement of a single number.
-        _ex("42 ;"),
-        # No tokens at all.
+        # Nothing at all; a look-up in an empty tree.
         ([], []),
+        run((L, 5)),
+        # Ascending inserts: left rotations; descending: right rotations.
+        run(*[(I, k) for k in range(1, 8)]),
+        run(*[(I, k) for k in range(7, 0, -1)]),
+        # Zig-zags: a right-left and a left-right double rotation.
+        run((I, 1), (I, 3), (I, 2)),
+        run((I, 3), (I, 1), (I, 2)),
+        # A duplicate insert and deleting a missing key are ignored.
+        run((I, 4), (I, 4), (D, 9), (I, 2), (D, 2), (D, 2)),
+        # Deleting a leaf leaves the heavy child with balance 0: a single rotation.
+        run((I, 2), (I, 1), (I, 4), (I, 3), (I, 5), (D, 1)),
+        run((I, 4), (I, 5), (I, 2), (I, 1), (I, 3), (D, 5)),
+        # Deleting a node with two children takes the smallest key on its right.
+        run((I, 5), (I, 3), (I, 8), (I, 1), (I, 4), (I, 7), (I, 9), (D, 5), (L, 5), (L, 7)),
+        # The successor has a right child, and its removal unbalances the tree.
+        run((I, 10), (I, 5), (I, 20), (I, 3), (I, 15), (I, 30), (I, 17), (I, 2), (D, 10), (D, 3)),
+        # Delete everything, root first, then insert again.
+        run(*[(I, k) for k in (50, 20, 80, 10, 30, 70, 90)], *[(D, k) for k in (50, 70, 80, 90, 20, 30, 10)],
+            (I, 999), (I, 0), (L, 999), (L, 50)),
+    ]
+
+
+def _kalah_cases():
+    return [
+        # One pit each: the seed goes into player 0's store, player 0's side is empty, and
+        # player 1's seed is swept into player 1's store: a draw.
+        (1, 1, [0]),
+        # Three seeds in one pit go round past player 1's pit and back into the pit just
+        # emptied: a capture of the opposite pit, and the game ends.
+        (1, 3, [0]),
+        # A last seed in the mover's store gives another move; then sowing passes player
+        # 1's pits.
+        (3, 3, [0, 1, 0, 2]),
+        # Illegal moves: an empty pit, -1 and 7; the same player moves after each.
+        (3, 1, [0, 0, 0, -1, 7, 2, 1]),
+        # Player 1's last seed lands in its own empty pit, opposite player 0's empty pit:
+        # no capture.
+        (2, 1, [0, 1, 0]),
+        # Many seeds: one pit sows more than a lap and skips the opponent's store.
+        (2, 6, [0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0]),
+        # Moves after the end are not read.
+        (1, 1, [0, 0, 0, 0, 0]),
+        # Six pits of six seeds: a long game.
+        (6, 6, [2, 5, 0, 1, 3, 4, 2, 5, 0, 3, 1, 4, 5, 2, 0, 1, 3, 5, 4, 0, 2, 1, 5, 3, 0, 4, 2, 1, 5, 0]),
+    ]
+
+
+def _sched_cases():
+    return [
+        # One task, one worker.
+        ([5], [], [], [0], 1),
+        # A cycle never starts, nor the task after it; the third task runs.
+        ([1, 1, 1, 2], [0, 1, 1], [1, 0, 3], [0, 0, 0, 0], 2),
+        # A task that depends on itself never starts.
+        ([3, 2], [0], [0], [0, 0], 1),
+        # Equal priority: the longer first; equal length: the lower number first.
+        ([2, 5, 2, 5], [], [], [1, 1, 1, 1], 1),
+        # Priority beats length.
+        ([9, 1, 4], [], [], [0, 3, 1], 1),
+        # A dependency finishing at the moment a worker frees: the task starts then.
+        ([2, 2, 3], [0], [2], [0, 0, 9], 2),
+        # More workers than tasks: idle time, and the lowest free worker takes each task.
+        ([4, 1, 2], [1], [2], [0, 0, 0], 4),
+        # Repeated edges, and a chain that leaves workers waiting.
+        ([3, 3, 3, 1], [0, 0, 1, 2], [1, 1, 2, 3], [0, 0, 0, 0], 3),
+        # Sixteen tasks in layers on two workers.
+        ([(i * 7) % 20 + 1 for i in range(16)], [i for i in range(12)], [i + 4 for i in range(12)],
+         [i % 3 for i in range(16)], 2),
     ]
 
 
 # --- examples --------------------------------------------------------------------
 
-_ORDER_BOOK_EX = _ob((_LIM, _SELL, 101, 5, 1, _GTC), (_LIM, _SELL, 100, 3, 2, _GTC), (_LIM, _BUY, 101, 6, 3, _GTC),
-                     (_CXL, 0, 0, 1, 0, 0), (_CXL, 0, 0, 1, 0, 0), (_MKT, _SELL, 1, 4, 3, _IOC),
-                     (_LIM, _BUY, 99, 2, 4, _GTC))
 _GO_EX = (3, [4, 0, 1, 2, 3, -1, -1])
-_STACK_VM_EX = _vm((_PUSH, 6), (_CALL, 6), (_TRY, 9), (_PUSH, 0), (_DIV,), (_HALT,), (_DUP,), (_MUL,), (_RET,),
-                   (_PUSH, 1), (_ADD,), limit=100)
 _JOSEPHUS_EX = ([7, 10, 1], [3, 2, 5], [2, 10, 1])
 _PERM_RANK_EX = ([2, 1, 1], [1, 2, 1], 2)
 _WIRE_EX = ([8, 150, 1, 17, 3, 26, 2, 0, 0, 8, 128, 0],)
 _TENNIS_EX = ([0, 0, 0, 0] + [0, 0, 0, 0] + [1, 1, 0, 1, 1] + [0, 1, 0, 1, 0, 1, 0, 0] + [0, 1], 3, 0, False, 0)
-_TIMETABLE_EX = _tt(4, 2, 0, 5, (0, 1, 5, 10, 0), (1, 2, 11, 20, 1), (1, 2, 12, 18, 2), (0, 2, 6, 19, 3),
-                    (2, 3, 20, 30, 4))
-_EXPR_EX = _ex("x0 = 7 ; x1 = x0 * 2 - 3 ^ 2 ; x1 / 0 ; - x1 % 3")
+_HUFFMAN_EX = ([5, 9, 12, 13, 16, 45], [0, 5, 1])
+_AVL_EX = ([0, 0, 0, 0, 0, 1, 2, 2], [3, 2, 1, 4, 5, 2, 2, 4])
+_KALAH_EX = (3, 3, [0, 1, 2, 5])
+_SCHED_EX = ([3, 2, 4, 1], [0, 0], [2, 3], [0, 1, 0, 5], 2)
 
 
 # The costliest input for each Firth reference among the inputs `costliest.py
 # --candidates` runs (its record is costliest-candidates.tsv): kernel steps
-# 223,807 (order-match), 74,975 (go-game), 189,834 (stack-vm), 207,883
-# (josephus), 30,421 (perm-rank), 47,341 (wire-decode), 56,746 (tennis),
-# 63,753 (timetable) and 56,261 (expr-eval).
-_ORDER_BOOK_MAX = _ob(*([(0, 1, 500 + i, 1, i % 10, 0) for i in range(29)] + [(1, 0, 1, 1000, 9, 0)]))
+# 74,975 (go-game), 207,883 (josephus), 36,355 (perm-rank, one of its hand
+# cases, so it is moved to the end rather than repeated), 47,341 (wire-decode),
+# 56,746 (tennis), 194,148 (huffman), 98,368 (avl-tree), 58,192 (kalah) and
+# 89,832 (build-sched).
 _GO_MAX = _random_go(102, 7, 60)
-_STACK_VM_MAX = _random_stack_vm(134, 60, 800)
 _JOSEPHUS_MAX = ([10 ** 12, 10 ** 12 - 1, 999_999_999_989], [12] * 3, [200] * 3)
-_PERM_RANK_MAX = (list(range(10)) * 2, sorted(list(range(10)) * 2), 10 ** 15)
+_PERM_RANK_MAX = _perm_rank_cases()[10]
 _WIRE_MAX = ([8, 1] * 100,)
 _TENNIS_MAX = _random_tennis(101, 400)
-_TIMETABLE_MAX = _random_timetable(114, 60)
-_EXPR_MAX = _ex(" ; ".join(["2 ^ 39"] * 10) + " ; 9999 ^ 3 ^ 9")
+_HUFFMAN_MAX = (_fib(20), [0] * 100)
+_AVL_MAX = ([0] * 40 + [1] * 20, list(range(40)) + list(range(39, 19, -1)))
+_KALAH_MAX = _random_kalah(109, 80, 6, 6)
+_SCHED_MAX = ([1 + i % 20 for i in range(16)], [i % 15 for i in range(30)], [i % 15 + 1 for i in range(30)],
+              [5] * 16, 4)
 
 # The last hidden test of each task is its costliest input (README, "The candidate set").
 CANDIDATES: tuple[Task, ...] = (
-    _t("order-match", _ORDER_BOOK,
-       [("kind", SI), ("side", SI), ("price", SI), ("qty", SI), ("trader", SI), ("tif", SI)],
-       [("trades", I), ("volume", I), ("notional", I), ("selfCancelled", I), ("cancels", I),
-        ("rejected", I), ("killed", I), ("restingIds", SI), ("restingQty", SI)],
-       _order_book, _ORDER_BOOK_EX,
-       [*_order_book_cases(), *(_random_order_book(s) for s in (1, 2, 3, 4)), _ORDER_BOOK_MAX],
-       ["seq", "nested-loop", "rules", "state", "sort", "heavy"]),
     _t("go-game", _GO_GAME,
        [("size", I), ("moves", SI)],
        [("board", SI), ("blackTook", I), ("whiteTook", I), ("illegal", I), ("read", I), ("score", I)],
        _go_game, _GO_EX,
        [*_go_cases(), *(_random_go(s) for s in (1, 2, 3, 4)), _GO_MAX],
        ["seq", "nested-loop", "rules", "state", "search", "heavy"]),
-    _t("stack-vm", _STACK_VM,
-       [("ops", SI), ("args", SI), ("limit", I)],
-       [("stack", SI), ("status", I), ("uncaught", I), ("steps", I), ("caught", I), ("deepest", I)],
-       _stack_vm, _STACK_VM_EX,
-       [*_stack_vm_cases(), *(_random_stack_vm(s) for s in (1, 2, 3, 4)), _STACK_VM_MAX],
-       ["seq", "loop", "rules", "state", "divmod", "heavy"]),
     _t("josephus", _JOSEPHUS,
        [("n", SI), ("k", SI), ("m", SI)],
        [("survivor", SI), ("removed", SI)],
@@ -1558,7 +1205,8 @@ CANDIDATES: tuple[Task, ...] = (
        [("items", SI), ("perm", SI), ("k", I)],
        [("total", I), ("rank", I), ("kth", SI), ("after", SI)],
        _perm_rank, _PERM_RANK_EX,
-       [*_perm_rank_cases(), *(_random_perm_rank(s) for s in (1, 2, 3, 4)), _PERM_RANK_MAX],
+       [*(c for c in _perm_rank_cases() if c != _PERM_RANK_MAX), *(_random_perm_rank(s) for s in (1, 2, 3, 4)),
+        _PERM_RANK_MAX],
        ["seq", "nested-loop", "divmod", "algorithm", "heavy"]),
     _t("wire-decode", _WIRE,
        [("data", SI)],
@@ -1572,17 +1220,28 @@ CANDIDATES: tuple[Task, ...] = (
        _tennis, _TENNIS_EX,
        [*_tennis_cases(), *(_random_tennis(s) for s in (1, 2, 3, 4)), _TENNIS_MAX],
        ["seq", "loop", "rules", "state", "heavy"]),
-    _t("timetable", _TIMETABLE,
-       [("stations", I), ("change", I), ("origin", I), ("start", I), ("fromSt", SI), ("toSt", SI), ("dep", SI),
-        ("arr", SI), ("train", SI)],
-       [("arrive", SI), ("trains", SI)],
-       _timetable, _TIMETABLE_EX,
-       [*_timetable_cases(), *(_random_timetable(s) for s in (1, 2, 3, 4)), _TIMETABLE_MAX],
-       ["seq", "nested-loop", "rules", "search", "heavy"]),
-    _t("expr-eval", _EXPR_EVAL,
-       [("kinds", SI), ("vals", SI)],
-       [("values", SI), ("codes", SI), ("vars", SI), ("assigned", SB)],
-       _expr_eval, _EXPR_EX,
-       [*_expr_cases(), *(_random_expr(s) for s in (1, 2, 3, 4)), _EXPR_MAX],
-       ["seq", "nested-loop", "rules", "parse", "divmod", "bool-seq", "heavy"]),
+    _t("huffman", _HUFFMAN,
+       [("freqs", SI), ("msg", SI)],
+       [("lengths", SI), ("codes", SI), ("bits", SI), ("bad", I)],
+       _huffman, _HUFFMAN_EX,
+       [*_huffman_cases(), *(_random_huffman(s) for s in (1, 2, 3, 4)), _HUFFMAN_MAX],
+       ["seq", "nested-loop", "algorithm", "sort", "divmod", "heavy"]),
+    _t("avl-tree", _AVL,
+       [("ops", SI), ("keys", SI)],
+       [("preorder", SI), ("found", SB), ("rotations", I), ("ignored", I), ("height", I)],
+       _avl, _AVL_EX,
+       [*_avl_cases(), *(_random_avl(s) for s in (1, 2, 3, 4)), _AVL_MAX],
+       ["seq", "loop", "algorithm", "rules", "recursion", "heavy"]),
+    _t("kalah", _KALAH,
+       [("pits", I), ("seeds", I), ("moves", SI)],
+       [("board", SI), ("toMove", I), ("illegal", I), ("read", I), ("took", SI), ("winner", I)],
+       _kalah, _KALAH_EX,
+       [*_kalah_cases(), *(_random_kalah(s) for s in (1, 2, 3, 4)), _KALAH_MAX],
+       ["seq", "loop", "rules", "state", "heavy"]),
+    _t("build-sched", _SCHED,
+       [("dur", SI), ("before", SI), ("after", SI), ("prio", SI), ("workers", I)],
+       [("start", SI), ("worker", SI), ("makespan", I), ("idle", I), ("unrun", I)],
+       _build_sched, _SCHED_EX,
+       [*_sched_cases(), *(_random_sched(s) for s in (1, 2, 3, 4)), _SCHED_MAX],
+       ["seq", "nested-loop", "rules", "state", "sort", "heavy"]),
 )

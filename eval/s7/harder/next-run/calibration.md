@@ -28,20 +28,47 @@ conditions in "Before the pin" are met.
   cannot be materially higher on either measure, so a set frozen unrun is
   likely to give parity by construction. Calibration measures where each
   candidate sits before the scored set is fixed.
-- **More than one kind of difficulty.** Six candidates are of the genre
-  that has sat at the ceiling (`order-match`, `go-game`, `stack-vm`,
-  `tennis`, `timetable`, `expr-eval`): simulations and interpreters with
-  many interacting rules. Three test other hypotheses:
-  `josephus` and `perm-rank`, where the difficulty is an algorithm (inputs
-  too large for direct simulation or enumeration in either language), and
-  `wire-decode`, where it is edge cases in a binary input format. Three
-  earlier drafts (`lifts`, `recurrence`, `heap-gc`) were dropped before
-  this file because pool 2 had already run close relatives (`elevator`,
-  `date-diff`, `heap-alloc`) at the ceiling. A tenth, `chess-moves`, was
-  dropped because its Firth reference could not be kept within a quarter
-  of the step budget on positions inside any natural bound (`README.md`,
-  "The candidate set"). No candidate is run more than once in calibration,
-  and none is changed after it.
+- **More than one kind of difficulty.** Three candidates are of the genre
+  that has sat at the ceiling, simulations with many interacting rules
+  (`go-game`, `tennis`, `kalah`). Six test other hypotheses: `josephus`
+  and `perm-rank`, where the difficulty is an algorithm (inputs too large
+  for direct simulation or enumeration in either language); `huffman`,
+  `avl-tree` and `build-sched`, where it is an exact procedure with
+  tie-breaks and edge cases (a tree built by a stated order, rebalancing
+  with its delete rules, list scheduling); and `wire-decode`, where it is
+  edge cases in a binary input format.
+- **No close relative of a task already run at the ceiling.** A candidate
+  is dropped if an earlier pool or the scored set ran a close relative (the
+  same core procedure on the same kind of input) that Sonnet passed in
+  Python every time. Every earlier pool task passed in Python every time
+  except `spreadsheet` (pool 2, 1 of 3), so every relative counts. Dropped
+  under this rule: `lifts`, `recurrence` and `heap-gc` (relatives of pool
+  2's `elevator`, `date-diff` and `heap-alloc`) before the first draft of
+  this file, and, after review, `order-match` (pool 2's `order-book`),
+  `stack-vm` (pool 1's `tiny-vm` and pool 3's `mini-cpu`), `expr-eval`
+  (pool 1's `rpn` and pool 3's `formula-sheet`) and `timetable` (pool 1's
+  `shortest-hops`: least-cost paths with a second tie-break). `tennis` is
+  kept: the nearest earlier task is pool 1's `bowling`, which shares the
+  sport's scoring but not the procedure (bowling is one pass with bonuses
+  looked up ahead; tennis is nested points, games and sets with
+  tiebreaks, deciding-set rules and serve order). The four dropped after
+  review are in the commit `a6dcf7f` and were replaced by `huffman`,
+  `avl-tree`, `kalah` and `build-sched`, which have no such relative.
+- **The Firth step budget shaped the set.** A task is kept only if its
+  Firth reference costs at most a quarter of the 1,000,000-step budget on
+  its costliest recorded input. To meet that, four bounds were cut (two
+  of them on candidates later dropped) and `chess-moves` was dropped
+  (`README.md`, "The candidate set"). The replacements were chosen to need
+  neither big numbers nor heavy compute (`bigint` and a
+  rational-approximation task were ruled out because Python's integers are
+  unbounded and Firth's are 64-bit), and even so `huffman` was cut from 40
+  symbols to 20. So the set
+  leaves out compute-heavy tasks and tasks with large intermediate values,
+  where Firth is weaker: a straightforward Firth program costs far more
+  steps than the same program in Python, and Python has no step budget at
+  all. Whatever the scored run finds, it says nothing about such tasks.
+- No candidate is run more than once in calibration, and none is changed
+  after it.
 
 ## Calibration run
 
@@ -78,8 +105,9 @@ conditions in "Before the pin" are met.
   run resumes only after the cause is found and fixed in its own reviewed
   change.
 - **Voids and crashes** as the scored run defines them, with the known
-  items below; a void or crash is replaced, up to 3 per arm. An arm that
-  reaches 3 makes calibration incomplete, and the selection is not used.
+  items below. The first and second void or crash in an arm are replaced.
+  A third void or crash in an arm is not replaced: calibration is
+  incomplete, and the selection is not used.
 - **No stop on results.**
 
 ## Known injected items

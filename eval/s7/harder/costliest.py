@@ -80,25 +80,19 @@ def candidates() -> dict[str, list[tuple[str, tuple]]]:
 
 
 def candidate_inputs() -> dict[str, list[tuple[str, tuple]]]:
-    """The same search for the candidate set (`candidates.py`): seeded random
-    inputs at the largest sizes each description allows, and a few built to be
-    slow for a straightforward program."""
-    sweep = cand._ob(*([(0, 1, 500 + i, 1, i % 10, 0) for i in range(29)] + [(1, 0, 1, 1000, 9, 0)]))
-    fok = cand._ob(*([(0, 1, 100 + i % 3, 2, i % 10, 0) for i in range(22)]
-                     + [(0, 0, 200, 40, i % 10, 2) for i in range(8)]))
+    """The same search for the candidate set (`candidates.py`): every hand-picked
+    hidden test, seeded random inputs at the largest sizes each description
+    allows, and a few built to be slow for a straightforward program."""
     j_max = ([10 ** 12] * 3, [12, 11, 10], [200] * 3)
     j_twelve = ([10 ** 12, 10 ** 12 - 1, 999_999_999_989], [12] * 3, [200] * 3)
     two_each = list(range(10)) * 2
-    deep = cand._ex(" ".join(["("] * 29 + ["2"] + [")"] * 29))
-    powers = cand._ex(" ; ".join(["2 ^ 39"] * 10) + " ; 9999 ^ 3 ^ 9")
-    return {
-        "order-match": [(f"_random_order_book({s}, 30)", cand._random_order_book(s, 30)) for s in range(100, 130)]
-        + [("a market buy sweeping 29 sells", sweep), ("fill or kill buys against 22 sells", fok)],
+    fib = cand._fib(20)
+    hand = {"go-game": cand._go_cases, "josephus": cand._josephus_cases, "perm-rank": cand._perm_rank_cases,
+            "wire-decode": cand._wire_cases, "tennis": cand._tennis_cases, "huffman": cand._huffman_cases,
+            "avl-tree": cand._avl_cases, "kalah": cand._kalah_cases, "build-sched": cand._sched_cases}
+    search = {
         "go-game": [(f"_random_go({s}, 7, 60)", cand._random_go(s, 7, 60)) for s in range(100, 130)]
         + [(f"_random_go({s}, 6, 60)", cand._random_go(s, 6, 60)) for s in range(100, 105)],
-        "stack-vm": [(f"_random_stack_vm({s}, 60, 800)", cand._random_stack_vm(s, 60, 800))
-                     for s in range(100, 140)]
-        + [("an 800-step loop", cand._vm((0, 30), (6,), (10, 7), (0, 1), (2,), (6,), (9, 1), (8,), limit=800))],
         "josephus": [(f"_random_josephus({s}, 3)", cand._random_josephus(s, 3)) for s in range(100, 120)]
         + [("1e12 counting by 12 to 10", j_max), ("near 1e12 counting by 12", j_twelve)],
         "perm-rank": [(f"_random_perm_rank({s})", cand._random_perm_rank(s)) for s in range(100, 120)]
@@ -109,10 +103,22 @@ def candidate_inputs() -> dict[str, list[tuple[str, tuple]]]:
         + [("100 two-byte records", ([8, 1] * 100,)), ("22 nine-byte records", (([8] + [255] * 7 + [127]) * 22,))],
         "tennis": [(f"_random_tennis({s}, 400)", cand._random_tennis(s, 400)) for s in range(100, 130)]
         + [("400 alternating points", ([0, 1] * 200, 5, 2, False, 0))],
-        "timetable": [(f"_random_timetable({s}, 60)", cand._random_timetable(s, 60)) for s in range(100, 140)],
-        "expr-eval": [(f"_random_expr({s}, 60)", cand._random_expr(s, 60)) for s in range(100, 130)]
-        + [("29 nested parentheses", deep), ("powers near the bound", powers)],
+        "huffman": [(f"_random_huffman({s}, 20, 100)", cand._random_huffman(s, 20, 100)) for s in range(100, 130)]
+        + [("Fibonacci weights, the longest code 100 times", (fib, [0] * 100)),
+           ("twenty equal weights, every symbol", ([1] * 20, [s % 20 for s in range(100)]))],
+        "avl-tree": [(f"_random_avl({s}, 60)", cand._random_avl(s, 60)) for s in range(100, 130)]
+        + [("40 ascending inserts, then 20 deletes from the top", ([0] * 40 + [1] * 20,
+                                                                 list(range(40)) + list(range(39, 19, -1)))),
+           ("30 inserts, then deletes of keys with two children", ([0] * 30 + [1] * 30,
+                                                                  list(range(0, 900, 30)) + list(range(450, 0, -15))))],
+        "kalah": [(f"_random_kalah({s}, 80, 6, 6)", cand._random_kalah(s, 80, 6, 6)) for s in range(100, 130)],
+        "build-sched": [(f"_random_sched({s}, 16, 30)", cand._random_sched(s, 16, 30)) for s in range(100, 130)]
+        + [("sixteen tasks, no edges, one worker", ([20] * 16, [], [], [0] * 16, 1)),
+           ("a chain of thirty edges on four workers", ([1 + i % 20 for i in range(16)],
+                                                         [i % 15 for i in range(30)], [i % 15 + 1 for i in range(30)],
+                                                         [5] * 16, 4))],
     }
+    return {tid: [(f"hand case {i}", a) for i, a in enumerate(hand[tid]())] + search[tid] for tid in search}
 
 
 def agrees(tid: str, args, out: dict) -> bool:
