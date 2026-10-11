@@ -233,8 +233,8 @@ Every comparison in this run is between Python and Firth for one subject,
 where both arms see the same context apart from the language itself. One
 difference follows from how answers run: Python authors have `min`, `max`
 and the rest of Python's builtins, while Firth authors in this run have no
-stdlib and must define every word they use ("Pre-pin amendment"). The Firth-minus-Python difference is
-**not** compared across subjects. So the context is stated, not equalised.
+stdlib and must define every word they use ("Pre-pin amendment"). The
+Firth-minus-Python difference is **not** compared across subjects. So the context is stated, not equalised.
 
 Sub-agent authors are started from a session with no queued project
 message, and are not given the project's messages.
