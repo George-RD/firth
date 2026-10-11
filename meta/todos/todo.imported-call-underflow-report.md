@@ -33,10 +33,13 @@ no inputs, but its body takes 1 input." with the hint "Push the missing value
 before `v.g`, or take it as an input in the signature." The list of the
 values `v.g` takes is empty, and the call is named `v.g`, not `w.g` as the
 file writes it. The same word declared in the same file gets "`w.g` in `h`
-needs 2 values, ..." (#242). The message has the shape of the pipeline's
-account of the values (`shortExplanation`), not of erasure's shortfall, so an
-imported call seems to reach the account path with no input names; this is
-inferred from the output and not yet traced.
+needs 2 values, ..." (#242). The message and hint are the ones
+`shortExplanation` (`src/agent/Firth/Agent/ElaboratorDiagnostics.lean`) writes
+for the pipeline's account of the values ("takes ..., bottom to top, but
+..."), not `declaredInputsExplanation`'s ("needs ..."), which a call to a word
+declared in the same file gets. So the imported call reaches the account path
+with an account whose `inputs` list is empty and whose `operation` is the
+canonical name.
 
 ## Acceptance criteria
 

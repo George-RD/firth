@@ -625,10 +625,15 @@ private def runDeclaredInputsTests : IO Unit := do
     match elaboratePipeline pipelineContext pushed agentConfig with
     | .success _ => pure ()
     | .failure envelopes => fail s!"{label}: pushed where the hint says, the word is refused: {envelopes.map encode}"
-  -- The order matters: with the condition pushed first, `if` tests `2`.
+  -- The order matters: with the condition pushed first, `if` tests `2` and
+  -- its branches get `true`. The refusal must be that one, not another.
   match elaboratePipeline pipelineContext ": f ( -- r:Int^many ) true 1 2 [ prim + ] [ prim - ] if ;\n" agentConfig with
   | .success _ => fail "the condition pushed first: the word checks, so the hint need not give an order"
-  | .failure _ => pure ()
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      unless emitted.contains "firth.type.primitive-input-mismatch" && emitted.contains "`true` (Bool)" do
+        fail s!"the condition pushed first: refused, but not for its branches getting `true`: {emitted}"
+  | .failure envelopes => fail s!"the condition pushed first: expected one report, got {envelopes.map encode}"
   -- A quotation whose effect rests on a call to a word with no row is not
   -- exact, since typing has that word take the whole stack. The count still
   -- holds: had the call been refused with the input declared, it would be
