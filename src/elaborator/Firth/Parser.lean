@@ -350,6 +350,11 @@ private partial def lex (st : LexState) (acc : List Token) : Except (ParseError 
           lex after ({ kind := .identifier (charsToString whole), span := mkSpan st.position after.position } :: acc)
         else
         lex next ({ kind := .identifier (charsToString cs), span := mkSpan st.position next.position } :: acc)
+      -- A name that starts with `_`, as in `_helper`, is kept whole the same
+      -- way. A `_` with no letter after it is still the symbol.
+      else if c = '_' && (rest.dropWhile (· = '_')).head?.any isAsciiLetter then
+        let (whole, after) := readWhile (fun x => isNameChar x || x = '_') st []
+        lex after ({ kind := .identifier (charsToString whole), span := mkSpan st.position after.position } :: acc)
       else if c = '-' && rest.head? = some '-' then
         lex { chars := rest.drop 1, position := advance (advance st.position '-') '-' }
           ({ kind := .symbol "--", span := mkSpan st.position (advance (advance st.position '-') '-') } :: acc)
@@ -740,17 +745,21 @@ private partial def parseDeclarations (p : Parser) (closing : Option String) (im
     | .symbol ":" => parseName (bump p) false >>= fun (n, _, p1) => parseStackEffect p1 >>= fun (effect, p2) => parseItems p2 ";" >>= fun (body, p3, close) => parseDeclarations p3 closing |>.map (fun (ds, r, outerClose) => (.word { name := n, effect, body, span := mkSpan t.span.start close.stop } :: ds, r, outerClose))
     | _ => .error (err "firth.syntax.invalid-declaration" t.span .grammar)
 
-/-- The first name written with a `_` touching it, as in `white_took`,
-which `lex` keeps whole. The report gives the name with `-` for `_` as an
-example rename, unless the file already uses that name. -/
+/-- The first name written with a `_` touching it, as in `white_took` or
+`_helper`, which `lex` keeps whole. The report gives the name with `-` for
+`_` as an example rename, unless that is no name or the file already uses
+it. -/
 private def underscoreError (tokens : List Token) : Option ParseError :=
   tokens.findSome? fun token => match token.kind with
     | .identifier written =>
         if written.contains '_' then
-          let renamed := written.map fun x => if x = '_' then '-' else x
+          -- Leading `_`s are dropped, since a name cannot start with `-`;
+          -- an example that is still no name, or that the file already
+          -- uses, is not offered.
+          let renamed := (written.dropWhile (· = '_')).toString.map fun x => if x = '_' then '-' else x
           let taken := tokens.any (·.kind == .identifier renamed)
           some (err "firth.syntax.underscore-in-name" token.span .lexical
-            (if taken then none else some renamed) (some written))
+            (if taken || !validWordName renamed then none else some renamed) (some written))
         else none
     | _ => none
 

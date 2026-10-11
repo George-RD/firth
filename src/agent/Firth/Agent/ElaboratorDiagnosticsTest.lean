@@ -1668,6 +1668,19 @@ private def runSourceTypeTests : IO Unit := do
     let (code, message, _, _, _) := report (whiteTook.replace "white_took" renamed)
     unless code == "accepted" do
       fail s!"underscore in a word name: renamed to `{renamed}`, the program is refused: {code} {message}"
+  -- A leading `_` is part of the name too (Codex on #250); the example
+  -- drops it, since a name cannot start with `-`, and applied it checks.
+  let leading := ": _helper ( -- n:Int ) 0 ;\n: main ( -- n:Int ) _helper ;"
+  expectReport "a name that starts with `_`" leading
+    "firth.syntax.underscore-in-name" "`_helper` is not a name: a name cannot contain `_`."
+    (underscoreHint "helper") 1 3
+  let (leadingCode, leadingMessage, _, _, _) := report (leading.replace "_helper" "helper")
+  unless leadingCode == "accepted" do
+    fail s!"a name that starts with `_`: renamed, the program is refused: {leadingCode} {leadingMessage}"
+  expectReport "a local that starts with `_`"
+    ": f ( a:Int -- b:Int ) locals { _value } { _value } ;"
+    "firth.syntax.underscore-in-name" "`_value` is not a name: a name cannot contain `_`."
+    (underscoreHint "value") 1 33
   -- When the file already uses the example name, the hint offers none:
   -- `white-took` here would define a word twice.
   let taken := ": white-took ( -- n:Int ) 1 ;\n: white_took ( -- n:Int ) 0 ;"
@@ -1701,6 +1714,19 @@ private def runSourceTypeTests : IO Unit := do
     let (code, message, _, _, _) := report (bareSeq.replace "( Seq --" s!"( {typed} --")
     unless code == "accepted" do
       fail s!"an unnamed bare Seq: written `{typed}`, the program is refused: {code} {message}"
+  -- `Seq Foo` with no name: `name:Seq Foo` would be refused too (Codex on
+  -- #250), so the same two are given.
+  expectReport "an unnamed Seq of a made-up type" ": f ( Seq Foo -- n:Int ) drop 0 ;"
+    "firth.syntax.unnamed-stack-item"
+    "`Seq Foo` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7
+  -- An unknown type is reported before a refinement on it, and before the
+  -- body's `locals` (Codex on #250).
+  expectReport "an unknown type with a refinement" ": keep ( x:Foo{true} -- x:Foo ) ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `keep` is not a type." "The types a stack effect can declare are" 1 12
+  expectReport "an unknown type with misordered locals"
+    ": f ( a:Foo b:Int -- r:Int ) locals { b a } { b } ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9
   if (mismatch ("firth.syntax.unnamed-stack-item",
       "`Seq` here is a type with no name: every item in a stack effect is written `name:Type`.",
       "Give it a name, as in `name:Seq`. Any name will do: stack-effect names only document the stack.", 1, 7)

@@ -260,8 +260,9 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
           | none => "Rename it everywhere it appears, to a name the file does not already use.")
     | "firth.syntax.unnamed-stack-item" =>
         let type := error.actual.getD "Int"
-        -- `Seq` alone is no type either, so the example gives it one.
-        let shown := if type == "Seq" then "`name:Seq Int` or `name:Seq Bool`"
+        -- `Seq` alone, or over anything but `Int` or `Bool`, is no type
+        -- either, so the example gives the two that are.
+        let shown := if type == "Seq" || (type.startsWith "Seq " && !sourceTypes.contains type) then "`name:Seq Int` or `name:Seq Bool`"
           else s!"`{error.expected.getD s!"name:{type}"}`"
         (s!"`{type}` here is a type with no name: every item in a stack effect is written `name:Type`.",
           s!"Give it a name, as in {shown}. Any name will do: stack-effect names only document the stack.")

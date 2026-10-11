@@ -1210,17 +1210,18 @@ private def checkWord (config : PipelineConfig) (source : String)
   match resolution with
   | some error => .refused [.parse error]
   | none =>
+  -- A type the effect declares that is not one is the effect's first
+  -- error, before its refinements, the body's `locals` or anything that
+  -- counts or checks values of that type.
+  match unknownType typing word.effect with
+  | some diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
+  | none =>
   match checkInputLocals [word] (written.filter (·.name == word.name)) with
   | .error error => .refused [.parse (checkLocalsEdits config source words error)]
   | .ok () =>
   match unsupportedSourceRefinements word with
   | diagnostic :: _ => .refused [diagnostic]
   | [] =>
-  -- A type the effect declares that is not one is the effect's first
-  -- error, before anything counts or checks values of that type.
-  match unknownType typing word.effect with
-  | some diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
-  | none =>
   -- Before erasure: erasing a call to a word whose effect is refused reads
   -- that effect's shape all the same, and an underflow it finds there says
   -- nothing about this word. The word's own effect is its own error.
