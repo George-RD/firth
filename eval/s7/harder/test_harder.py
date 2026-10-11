@@ -2135,7 +2135,7 @@ def candidates_planted() -> None:
             "a point won by player 2, best of 4, final-set rule 3, a no-ad that is not a Bool and 401 points")
     refuses("huffman", ([1, 0], [0, 7]), [([], []), ([1] * 21, []), ([1_000_001], []), ([-1], []), ([1], [46]),
                                           ([1], [-6]), ([1], [0] * 101)],
-            "no symbols, 41 symbols, a frequency of 1,000,001 or -1, a message value of 46 or -6 and 101 values")
+            "no symbols, 21 symbols, a frequency of 1,000,001 or -1, a message value of 46 or -6 and 101 values")
     refuses("avl-tree", ([0, 1, 2], [0, 999, 5]), [([3], [1]), ([0], [1000]), ([0], [-1]), ([0, 0], [1]),
                                                     ([0] * 61, [1] * 61)],
             "op 3, key 1,000 or -1, unequal lengths and 61 operations")

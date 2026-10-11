@@ -728,7 +728,8 @@ _SCHED = (
     "0 if no task started), the idle time (summed over the workers, the time between 0 and "
     "the makespan when a worker had no task), and the number of tasks that never started. "
     "dur and prio have the same length, 1 to 16; each dur is 1 to 20 and each prio 0 to 9. "
-    "before and after have the same length, at most 30, and each is a task number."
+    "before and after have the same length, at most 30, and each is a task number. workers is "
+    "1 to 4."
 )
 
 # --- random inputs ---------------------------------------------------------------
