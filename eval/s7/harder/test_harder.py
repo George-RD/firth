@@ -1578,6 +1578,45 @@ def firth_mutant() -> None:
           "a Firth sokoban reference that counts a box in a corner on a goal as dead passes the example "
           f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
 
+# The scored run's Firth prompt says this once, appended after `tier.py
+# prompt` builds it (preregistration.md, "Pre-pin amendment").
+NO_IMPORTS = ("Imports are not available in this run: an `import` cannot reach `stdlib/`, "
+              "so define every word your answer uses in the answer itself.")
+STDLIB_IMPORT = ('import "../../stdlib/core.firth";\n'
+                 ": main\n  ( forall \u03c1; \u03c1 x:Int^many -- \u03c1 y:Int^many )\n  core.identity;\n")
+
+
+def import_problems(run) -> list[str]:
+    """What is wrong if RUN (`tier.run_firth`'s shape) lets a scored answer
+    import stdlib: each answer runs from its own temporary file, so the
+    import must be refused as outside the source root."""
+    out = run(STDLIB_IMPORT, (3,))
+    if out.get("ok"):
+        return [f"an answer importing stdlib ran: {out}"]
+    if "code: firth.name.import-path" not in out.get("error", ""):
+        return [f"an answer importing stdlib was refused for another reason: {out.get('error', '')[:200]}"]
+    return []
+
+
+def stdlib_import_refused() -> None:
+    """Pins why the scored Firth prompt says imports are unavailable. Planted:
+    a runner that accepts the import, and one that refuses it with another
+    code, are each caught."""
+    check(import_problems(tier.run_firth) == [],
+          "a scored answer that imports stdlib is refused with firth.name.import-path")
+    check(import_problems(lambda src, args: {"ok": True, "stack": [3]}) != [],
+          "planted: a runner that accepts a stdlib import is caught")
+    check(import_problems(lambda src, args: {"ok": False, "error": "code: firth.name.import-not-found"}) != [],
+          "planted: a stdlib import refused with another code is caught")
+
+
+def prompt_sentence_problems(text: str) -> list[str]:
+    """What is wrong with a scored Firth prompt TEXT: it must hold the
+    no-imports sentence exactly once."""
+    n = text.count(NO_IMPORTS)
+    return [] if n == 1 else [f"the Firth prompt holds the no-imports sentence {n} times, not once"]
+
+
 def prompt_and_repair() -> None:
     for name, tasks in SETS.items():
         for lang in ("firth", "python"):
@@ -1792,6 +1831,7 @@ def main() -> int:
             firth_references()
         firth_hand_values()
         firth_mutant()
+        stdlib_import_refused()
         regex_drafted_rerun()
         deepseek_sample_scored()
     print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")

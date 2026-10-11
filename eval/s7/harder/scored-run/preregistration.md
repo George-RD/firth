@@ -80,7 +80,8 @@ stands and the set is not edited or replaced
 
 **Sonnet and Haiku (sub-agents).** The tier's sub-agent protocol
 (`eval/s7/harder/README.md`, "Protocol").
-- `tier.py prompt` builds the prompts once, at the pin.
+- `tier.py prompt` builds the prompts once, at the pin. One sentence is
+  then appended to the Firth prompt ("Pre-pin amendment" below).
 - The author is started with this text, with the paths filled in:
 
   > You are the author in a programming evaluation. Use only two tools:
@@ -229,7 +230,10 @@ What each author sees besides its prompt is fixed here.
   reply and the feedback.
 
 Every comparison in this run is between Python and Firth for one subject,
-where both arms see the same context. The Firth-minus-Python difference is
+where both arms see the same context apart from the language itself. One
+difference follows from how answers run: Python authors have `min`, `max`
+and the rest of Python's builtins, while Firth authors in this run have no
+stdlib and must define every word they use ("Pre-pin amendment"). The Firth-minus-Python difference is
 **not** compared across subjects. So the context is stated, not equalised.
 
 Sub-agent authors are started from a session with no queued project
@@ -431,6 +435,32 @@ The void and crash counts per arm and by cause come from `outcome.json`,
 scan output.
 Its permutation test and bootstrap are checked against a hand-worked
 example in its own test.
+
+## Pre-pin amendment
+
+Recorded before the pin, so it is part of the pre-registration, not a
+change after it.
+
+After #241, `examples/programs/README.md` (an S7 input) shows `core.min-int`
+reached through `import "../../stdlib/core.firth"`. A scored answer cannot
+do that. `tier.run_firth` and `harness.check_one` write each answer to its
+own temporary file and check it there, in both rounds, so that file's
+directory is the source root. Measured on main at 6f8ceb4 after a fresh
+build: an answer with that import is refused with
+`code: firth.name.import-path` ("is not an import path"; the path must stay
+inside the source root), and the same answer without it runs.
+
+So, once `tier.py prompt` has built `prompt-firth.md` and before the pin,
+this sentence is appended to it, once, so every Firth author (Sonnet,
+Haiku and DeepSeek) reads the same text:
+
+> Imports are not available in this run: an `import` cannot reach
+> `stdlib/`, so define every word your answer uses in the answer itself.
+
+`tier.py` is not changed. `test_harder.py` pins the refusal through
+`tier.run_firth` (`stdlib_import_refused`, with a planted runner that
+accepts the import and one that refuses it with another code), and checks
+that the pinned `prompt-firth.md` holds the sentence exactly once.
 
 ## Before the pin
 
