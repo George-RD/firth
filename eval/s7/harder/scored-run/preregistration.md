@@ -441,12 +441,12 @@ example in its own test.
 Recorded before the pin, so it is part of the pre-registration, not a
 change after it.
 
-After #241, `examples/programs/README.md` (an S7 input) shows `core.min-int`
-reached through `import "../../stdlib/core.firth"`. A scored answer cannot
-do that. `tier.run_firth` and `harness.check_one` write each answer to its
-own temporary file and check it there, in both rounds, so that file's
-directory is the source root. Measured on main at 6f8ceb4 after a fresh
-build: an answer with that import is refused with
+`docs/getting-started.md` (an S7 input) says a program imports
+`stdlib/core.firth` by a relative path. A scored answer cannot do that.
+`tier.run_firth` and `harness.check_one` write each answer to its own
+temporary file and check it there, in both rounds, so that file's
+directory is the source root. Measured on main at 627a0eb after a fresh
+build: an answer with `import "../../stdlib/core.firth"` is refused with
 `code: firth.name.import-path` ("is not an import path"; the path must stay
 inside the source root), and the same answer without it runs.
 
@@ -464,9 +464,11 @@ that the pinned `prompt-firth.md` holds the sentence exactly once.
 
 ## Before the pin
 
-- [ ] No answer from the maintainer choosing otherwise than option (a).
-- [ ] Coordinator confirms the S7 inputs are settled and freezes them;
-  asked before the prompts are built.
+- [x] No answer from the maintainer choosing otherwise than option (a),
+  as of the pin (2026-10-11).
+- [x] Coordinator confirms the S7 inputs are settled and freezes them;
+  asked before the prompts are built. Confirmed on 2026-10-11 at main
+  627a0eb, frozen from the prompt build until authoring ends.
 - [x] `scored.py` merged with references, hidden tests, hand values,
   mutants and bounds checks covering order constraints (#229, #231).
 - [x] `context_seen.py` compares Sonnet and DeepSeek sample names whole
@@ -475,5 +477,7 @@ that the pinned `prompt-firth.md` holds the sentence exactly once.
   one end-to-end run (#232, #233, #234), and the listed-only round-2 rule
   shared by both paths (#235).
 - [x] The take rule checked on all 18 calibration samples (#237).
-- [ ] Prompts built at the pin and committed with `commit.txt`, this file
-  and `run-plan.md` in the run directory.
+- [x] Prompts built at the pin and committed with `commit.txt`, this file
+  and `run-plan.md` in the run directory: `runs/2026-10-11-scored/`,
+  built at main 627a0eb, with the no-imports sentence appended once to
+  `prompt-firth.md`.

@@ -17,9 +17,13 @@
    for every task, a planted Python mutant with one such mistake fails, and
    in each pool and the scored set a planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
+   The scored run's pinned Firth prompt says exactly once that imports are
+   not available, and the Python prompt does not say it.
 6. The audit refuses options that widen an author's tools, scoring refuses
    a link named as the answer directory, and the scan run before scoring
    Python finds planted copies of this tier's hidden files.
+7. A scored Firth answer that imports `stdlib/` is refused with
+   `firth.name.import-path`, which is why the Firth prompt says so.
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
@@ -1617,6 +1621,24 @@ def prompt_sentence_problems(text: str) -> list[str]:
     return [] if n == 1 else [f"the Firth prompt holds the no-imports sentence {n} times, not once"]
 
 
+SCORED_RUN = HERE / "runs" / "2026-10-11-scored"
+
+
+def pinned_prompts() -> None:
+    """The scored run's pinned Firth prompt holds the no-imports sentence
+    exactly once, and the Python prompt does not hold it. Planted: the
+    Firth prompt without the sentence, and with it twice, are each caught."""
+    firth = (SCORED_RUN / "prompt-firth.md").read_text()
+    python = (SCORED_RUN / "prompt-python.md").read_text()
+    check(prompt_sentence_problems(firth) == [],
+          "the pinned Firth prompt holds the no-imports sentence exactly once")
+    check(NO_IMPORTS not in python, "the pinned Python prompt does not hold the no-imports sentence")
+    check(prompt_sentence_problems(firth.replace(NO_IMPORTS, "")) != [],
+          "planted: a Firth prompt without the no-imports sentence is caught")
+    check(prompt_sentence_problems(firth + "\n" + NO_IMPORTS + "\n") != [],
+          "planted: a Firth prompt with the no-imports sentence twice is caught")
+
+
 def prompt_and_repair() -> None:
     for name, tasks in SETS.items():
         for lang in ("firth", "python"):
@@ -1826,6 +1848,7 @@ def main() -> int:
     deepseek_sample_driver()
     take_rule()
     prompt_and_repair()
+    pinned_prompts()
     if "--no-firth" not in sys.argv:
         if part is None:
             firth_references()
