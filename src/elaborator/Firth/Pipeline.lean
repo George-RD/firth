@@ -197,15 +197,16 @@ private def withAccount (config : PipelineConfig) (source : String)
       else .stackEffect diagnostic
   | other => other
 
-private def erasureSpan : ErasureError → Span
+/-- Where in the source an erasure report is. -/
+def erasureSpan : ErasureError → Span
   | .duplicateLocal _ span | .unboundLocal _ span | .unsupportedCapture _ span
   | .missingStackValue span _ | .linearCopy _ span _ | .linearUnused _ span
-  | .unresolvedEffect _ span | .effectUnderflow _ span _ | .usageMismatch _ span
+  | .unresolvedEffect _ span | .effectUnderflow _ span _ _ | .usageMismatch _ span
   | .unsupportedLiteral span | .unsupportedAtom _ span | .untrackedStack _ span _
   | .branchShape span .. | .hiddenLocal _ span => span
 
 /-- Where in the source a report is. -/
-private def PipelineDiagnostic.span? : PipelineDiagnostic → Option Span
+def PipelineDiagnostic.span? : PipelineDiagnostic → Option Span
   | .parse error => some error.primary
   | .erasure _ error => some (erasureSpan error)
   | .stackEffect diagnostic => some diagnostic.primary
@@ -261,7 +262,7 @@ private def PipelineDiagnostic.editConsulted : PipelineDiagnostic → List Strin
         ((diagnostic.ifAccount.bind (·.edit)).map (·.consulted)).getD [] ++
         ((diagnostic.conditionEdit.map (·.consulted)).getD [])
   | .erasure _ (.branchShape _ _ _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
-  | .erasure _ (.effectUnderflow _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
+  | .erasure _ (.effectUnderflow _ _ (some account) _) => ((account.edit.map (·.consulted)).getD [])
   | .assumes _ _ _ inner => inner.editConsulted
   | _ => []
 
@@ -774,7 +775,7 @@ private def withShortCall (config : PipelineConfig) (source : String)
       | some account =>
           .stackEffect { diagnostic with callAccount := some { account with edit := shortOrUnpushed config source word account } }
       | none => .stackEffect diagnostic
-  | .erasure name (.effectUnderflow operation span none) =>
+  | .erasure name (.effectUnderflow operation span none short) =>
       let account := Account.ofShortCall {
         words
         primitive := fun name => (config.typingEnv.primitive name).bind Account.primitiveShape
@@ -784,7 +785,7 @@ private def withShortCall (config : PipelineConfig) (source : String)
         source
         target := span.start.offset } span
       .erasure name (.effectUnderflow operation span
-        (account.map fun account => { account with edit := shortOrUnpushed config source word account }))
+        (account.map fun account => { account with edit := shortOrUnpushed config source word account }) short)
   | other => other
 
 /-- Whether a refused `if` at byte `ifStart` is shown checked when, after an
