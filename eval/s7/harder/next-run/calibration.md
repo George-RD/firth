@@ -67,8 +67,9 @@ conditions in "Before the pin" are met.
   where Firth is weaker: a straightforward Firth program costs far more
   steps than the same program in Python, and Python has no step budget at
   all. Whatever the scored run finds, it says nothing about such tasks.
-- No candidate is run more than once in calibration, and none is changed
-  after it.
+- Calibration is one campaign: the six authors below, plus replacements
+  for voids as stated. It is not repeated with further authors, and no
+  candidate is changed after it.
 
 ## Calibration run
 
