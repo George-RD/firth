@@ -5,7 +5,7 @@
 set -euo pipefail
 H=$(cd "$(dirname "$0")" && pwd)
 if [ "$1" = "--self-test" ]; then  # checks.sh --self-test RUN PIN: planted results each runner must reject
-  RUN=$2; PIN=$3
+  RUN=$(cd "$2" && pwd); PIN=$(cd "$3" && pwd)
   ! python3 "$H/run.py" "$RUN" "$PIN" sonnet-python-6 1 sokoban 3,8 || { echo "self-test FAILED: unpatched answer accepted"; exit 1; }
   ! python3 "$H/run.py" --expect-fail "$RUN" "$PIN" sonnet-python-6 1 sokoban 3,8 'boxes[k] = player + d' 'boxes[k] = player' || { echo "self-test FAILED: --expect-fail accepted a fix"; exit 1; }
   ! python3 "$H/run.py" "$RUN" "$PIN" deepseek-python-9 1 regex 9,12,14,16,20,21,25 'for r in m(s, q):' 'for r in m(q):' 'first = m(s, p)' 'first = m(p)' 'res |= m(s, p)' 'res |= m(p)' || { echo "self-test FAILED: a failing visible example accepted"; exit 1; }
@@ -14,7 +14,7 @@ if [ "$1" = "--self-test" ]; then  # checks.sh --self-test RUN PIN: planted resu
   rm -f "$H/.sf1-swiss.firth"
   echo "self-test ok"; exit 0
 fi
-RUN=$1; PIN=$2
+RUN=$(cd "$1" && pwd); PIN=$(cd "$2" && pwd)
 py() { python3 "$H/run.py" "$RUN" "$PIN" "$@"; }
 fr() { python3 "$H/runfirth.py" "$RUN" "$PIN" "$@"; }
 
