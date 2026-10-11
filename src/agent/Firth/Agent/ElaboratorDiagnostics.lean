@@ -617,7 +617,14 @@ private def declaredInputsExplanation (word : String) (short : Firth.Elaborator.
     | "if", 2 => "push them before the quotations `if` chooses between"
     | "if", _ => "push them before the condition `if` tests"
     | _, _ => s!"push them before {subject}"
-  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise {push}."
+  -- With only its quotations on the stack, `if` is missing its condition
+  -- too, which goes on top of the other values missing: `true 1 2` would
+  -- have it test `2`. With no input declared, a new last input is on top.
+  let condition := if short.operation != "if" || short.present != 2 then ""
+    else if short.needed - short.present == 1 then " The value missing is the `Bool` that `if` tests."
+    else if inputs.declared == 0 then " Either way, the `Bool` that `if` tests goes last, on top of the others."
+    else " If you push them, the `Bool` that `if` tests goes last, on top of the others."
+  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise {push}.{condition}"
   (message, hint)
 
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic

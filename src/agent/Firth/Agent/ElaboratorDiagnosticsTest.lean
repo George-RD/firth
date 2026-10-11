@@ -596,8 +596,21 @@ private def runDeclaredInputsTests : IO Unit := do
     ["`f` declares no inputs, but its body takes 2 inputs.", "Otherwise push them before the value `dip` keeps."]
     ": f ( a:Int^many b:Int^many -- r:Int^many ) 5 [ prim + ] dip prim + ;\n"
   declaredCase "if with no condition" ": f ( -- r:Int^many ) [ 1 ] [ 2 ] if ;\n"
-    ["`f` declares no inputs, but its body takes 1 input.", "Otherwise push them before the quotations `if` chooses between."]
+    ["`f` declares no inputs, but its body takes 1 input.",
+      "Otherwise push them before the quotations `if` chooses between. The value missing is the `Bool` that `if` tests."]
     ": f ( c:Bool^many -- r:Int^many ) [ 1 ] [ 2 ] if ;\n"
+  -- The condition is among the values missing, and goes on top of the
+  -- others: `true 1 2 [ prim + ] [ prim - ] if` would test `2` (below).
+  declaredCase "if with no condition, short of more" ": f ( -- r:Int^many ) [ prim + ] [ prim - ] if ;\n"
+    ["`if` in `f` needs 5 values, but only 2 values are on the stack before it. `f` declares no inputs, but its body takes 3 inputs.",
+      "Otherwise push them before the quotations `if` chooses between. Either way, the `Bool` that `if` tests goes last, on top of the others."]
+    ": f ( a:Int^many b:Int^many c:Bool^many -- r:Int^many ) [ prim + ] [ prim - ] if ;\n"
+  -- With an input declared, the new inputs may not go on top of it, so only
+  -- pushing them is given an order.
+  declaredCase "if with no condition, an input declared" ": f ( a:Int^many -- r:Int^many ) drop [ prim + ] [ prim - ] if ;\n"
+    ["`f` declares 1 input, but its body takes 4 inputs.",
+      "Otherwise push them before the quotations `if` chooses between. If you push them, the `Bool` that `if` tests goes last, on top of the others."]
+    ": f ( x:Int^many y:Int^many c:Bool^many a:Int^many -- r:Int^many ) drop [ prim + ] [ prim - ] if ;\n"
   -- The hint's other way, followed as written for each case above: the
   -- values pushed where it says, and the word checks.
   for (label, pushed) in [
@@ -605,10 +618,22 @@ private def runDeclaredInputsTests : IO Unit := do
       ("dip", ": f ( -- r:Int^many ) 5 [ 1 ] dip prim + ;\n"),
       ("dip keeping a value", ": f ( -- r:Int^many ) 7 8 5 [ prim + ] dip prim + ;\n"),
       ("if", ": f ( -- r:Int^many ) 3 4 true [ prim + ] [ prim - ] if ;\n"),
-      ("if with no condition", ": f ( -- r:Int^many ) true [ 1 ] [ 2 ] if ;\n")] do
+      ("if with no condition", ": f ( -- r:Int^many ) true [ 1 ] [ 2 ] if ;\n"),
+      ("if with no condition, short of more", ": f ( -- r:Int^many ) 1 2 true [ prim + ] [ prim - ] if ;\n"),
+      ("if with no condition, an input declared",
+        ": f ( a:Int^many -- r:Int^many ) drop 1 2 true [ prim + ] [ prim - ] if ;\n")] do
     match elaboratePipeline pipelineContext pushed agentConfig with
     | .success _ => pure ()
     | .failure envelopes => fail s!"{label}: pushed where the hint says, the word is refused: {envelopes.map encode}"
+  -- The order matters: with the condition pushed first, `if` tests `2` and
+  -- its branches get `true`. The refusal must be that one, not another.
+  match elaboratePipeline pipelineContext ": f ( -- r:Int^many ) true 1 2 [ prim + ] [ prim - ] if ;\n" agentConfig with
+  | .success _ => fail "the condition pushed first: the word checks, so the hint need not give an order"
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      unless emitted.contains "firth.type.primitive-input-mismatch" && emitted.contains "`true` (Bool)" do
+        fail s!"the condition pushed first: refused, but not for its branches getting `true`: {emitted}"
+  | .failure envelopes => fail s!"the condition pushed first: expected one report, got {envelopes.map encode}"
   -- A quotation whose effect rests on a call to a word with no row is not
   -- exact, since typing has that word take the whole stack. The count still
   -- holds: had the call been refused with the input declared, it would be
