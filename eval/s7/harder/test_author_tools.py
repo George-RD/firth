@@ -13,7 +13,9 @@ probe row, a malformed row, half a log, a meta file with no type, and a
 missing or empty log directory. A bad author is refused even if its sample
 was voided. Of the two real probe logs in
 `runs/2026-10-11-tool-probe/`, the built-in type with Read and Edit is
-refused for its type and its Edit, and the `s7-harder-author` passes.
+refused for its type and its Edit, and the `s7-harder-author` passes. Its
+calls must show it read `probe-prompt.md` and wrote `tools-seen.txt`; an
+altered copy of either, a tampered Write input and an extra call each fail.
 
     python3 eval/s7/harder/test_author_tools.py
 """
@@ -66,6 +68,39 @@ def expect(name: str, argv: list[str], code: int, needle: str, failures: list[st
     got, out = run(argv)
     if got != code or needle not in out:
         failures.append(f"{name}: exit {got} (wanted {code}), wanted {needle!r} in:\n{out}")
+
+
+def provenance(lines: list[dict], prompt: str, seen: str) -> list[str]:
+    """Why the probe log's calls do not show that the author read `prompt`
+    and wrote `seen` (empty if they do)."""
+    calls = [c for l in lines for c in l.get("tool_calls", [])]
+    results = [r["content"] for l in lines if isinstance(l.get("content"), list)
+               for r in l["content"] if r.get("type") == "tool_result"]
+    names = [c["name"] for c in calls]
+    if names != ["Read", "Write", "SubagentHandback"]:
+        return [f"real s7-harder-author probe: calls {names}"]
+    errors = []
+    shown = "".join(l.split("\t", 1)[1] + "\n" for l in results[0].split("\n") if "\t" in l)
+    if shown.rstrip("\n") != prompt.rstrip("\n"):
+        errors.append("real s7-harder-author probe: Read result is not probe-prompt.md")
+    if calls[1]["input"]["content"] != seen:
+        errors.append("real s7-harder-author probe: Write content is not tools-seen.txt")
+    return errors
+
+
+def tamper(lines: list[dict], tool: str, key, value) -> list[dict]:
+    """A copy of `lines` with `tool`'s input `key` set to `value`, or, with no
+    key, that call made twice."""
+    out = json.loads(json.dumps(lines))
+    for l in out:
+        for i, c in enumerate(l.get("tool_calls", [])):
+            if c["name"] == tool:
+                if key is None:
+                    l["tool_calls"].insert(i, json.loads(json.dumps(c)))
+                else:
+                    c["input"][key] = value
+                return out
+    raise AssertionError(f"no {tool} call to tamper with")
 
 
 def main() -> int:
@@ -190,17 +225,24 @@ def main() -> int:
     # Its log's own calls show where probe-prompt.md and tools-seen.txt came
     # from: the Read result is the prompt, and the Write content is the list.
     lines = [json.loads(l) for l in (real / "agent-aeaa153e26921b4be.jsonl").read_text().splitlines()]
-    calls = [c for l in lines for c in l.get("tool_calls", [])]
-    results = [r["content"] for l in lines if isinstance(l.get("content"), list)
-               for r in l["content"] if r.get("type") == "tool_result"]
-    if [c["name"] for c in calls] != ["Read", "Write", "SubagentHandback"]:
-        failures.append(f"real s7-harder-author probe: calls {[c['name'] for c in calls]}")
-    else:
-        shown = "".join(l.split("\t", 1)[1] + "\n" for l in results[0].split("\n") if "\t" in l)
-        if shown.rstrip("\n") != (real / "probe-prompt.md").read_text().rstrip("\n"):
-            failures.append("real s7-harder-author probe: Read result is not probe-prompt.md")
-        if calls[1]["input"]["content"] != (real / "tools-seen.txt").read_text():
-            failures.append("real s7-harder-author probe: Write content is not tools-seen.txt")
+    prompt = (real / "probe-prompt.md").read_text()
+    seen = (real / "tools-seen.txt").read_text()
+    failures += provenance(lines, prompt, seen)
+    # Planted: an altered copy of each file, and a tampered call, each fail.
+    planted = [
+        ("altered prompt", lines, prompt.replace("no task", "no task at all"), seen,
+         "Read result is not probe-prompt.md"),
+        ("altered list", lines, prompt, seen.replace("Write", "Edit"),
+         "Write content is not tools-seen.txt"),
+        ("tampered Write input", tamper(lines, "Write", "content", "Read\nEdit\n"), prompt, seen,
+         "Write content is not tools-seen.txt"),
+        ("extra call", tamper(lines, "Write", None, None), prompt, seen,
+         "calls ['Read', 'Write', 'Write', 'SubagentHandback']"),
+    ]
+    for name, ls, pr, sn, needle in planted:
+        got = provenance(ls, pr, sn)
+        if len(got) != 1 or needle not in got[0]:
+            failures.append(f"planted {name}: wanted only {needle!r}, got {got}")
 
     for f in failures:
         print("FAIL", f)
