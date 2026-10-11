@@ -59,7 +59,8 @@ if [ "$1" = "--self-test" ]; then
 fi
 
 PIN=$1; OUT=$2; shift 2; ONLY="$*"
-mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd)  # tier.py runs from the pin checkout
+PIN=$(cd "$PIN" && pwd)  # both are used after changing into the pin checkout
+mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd)
 [ "$(git -C "$PIN" rev-parse HEAD)" = 627a0ebf59eb18839e54b9bb20f25353108a1a09 ] || { echo "not a checkout of the pin"; exit 1; }
 T=$PIN/eval/s7/harder/tier.py
 mkdir -p "$OUT"
