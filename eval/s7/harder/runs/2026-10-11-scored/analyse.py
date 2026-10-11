@@ -328,8 +328,9 @@ def guarantees(kept: list[dict]) -> dict:
                     runs = any(case_cause("firth", c) != "refusal" for c in h2)
                 for rw in rows:
                     g["refusals"][rw] += 1
-                    g["catches"][rw] += bool(differs)
-                    g["catches_run"][rw] += bool(differs and runs)
+                    if rw != "other refusal":  # never counted as a guarantee catch
+                        g["catches"][rw] += bool(differs)
+                        g["catches_run"][rw] += bool(differs and runs)
                 g["refusal_list"].append({"sample": s["name"], "task": t, "codes": cs, "rows": rows,
                                           "round2_differs": differs, "round2_runs": runs})
         for n, r in enumerate(s["results"], 1):
@@ -415,7 +416,10 @@ def report(samples: dict, results_dir: str) -> str:
         out.append("| row | diagnostics | refusals (round 1, visible) | round 2 differs on a hidden test | of those, round 2 ran |")
         out.append("| --- | --- | --- | --- | --- |")
         for rw in ROWS:
-            out.append(f"| {rw} | {g['diagnostics'][rw]} | {g['refusals'][rw]} | {g['catches'][rw]} | {g['catches_run'][rw]} |")
+            if rw == "other refusal":
+                out.append(f"| {rw} | {g['diagnostics'][rw]} | {g['refusals'][rw]} | never a catch | never a catch |")
+            else:
+                out.append(f"| {rw} | {g['diagnostics'][rw]} | {g['refusals'][rw]} | {g['catches'][rw]} | {g['catches_run'][rw]} |")
         out.append("| declared effects | not exercised | | | |\n")
         if g["no_code"]:
             out.append("Refusals with no `code:` line (other refusal): " + "; ".join(g["no_code"]) + "\n")
@@ -505,6 +509,21 @@ def self_test() -> None:
     assert task_cause("firth", {"submitted": False})[0] == "no answer"
     assert task_cause("firth", {"submitted": True, "pass": False, "cases": [
         {"ok": True, "pass": False}, {"ok": False, "error": "trap fuel-exhausted"}]})[0] == "out of steps"
+    # Guarantee catches: a refusal whose round-2 answer behaves differently on a
+    # hidden test counts under its guarantee row, never under other refusal.
+    def refused(code):
+        err = f"code: {code}\nmessage: m"
+        return {"submitted": True, "pass": False, "cases": [{"visible": True, "ok": False, "error": err},
+                                                             {"visible": False, "ok": False, "error": err}]}
+    fixed = {"submitted": True, "pass": True, "cases": [{"visible": True, "ok": True, "pass": True, "kernel_cost": 1},
+                                                        {"visible": False, "ok": True, "pass": True, "kernel_cost": 1}]}
+    r1 = {"tasks": {t: fixed for t in TASKS}}
+    r1["tasks"]["sokoban"] = refused("firth.type.stack-mismatch")
+    r1["tasks"]["regex"] = refused("firth.syntax.invalid-declaration")
+    g = guarantees([{"name": "s", "results": [r1, {"tasks": {t: fixed for t in TASKS}}]}])
+    assert g["refusals"]["stack effects"] == 1 and g["catches"]["stack effects"] == 1
+    assert g["refusals"]["other refusal"] == 1 and g["catches"]["other refusal"] == 0, g["catches"]
+    assert g["catches_run"]["other refusal"] == 0
     # Voids from planted sample files, and the voids.txt cross-check.
     with tempfile.TemporaryDirectory() as tmp:
         run = Path(tmp)
