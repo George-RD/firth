@@ -359,6 +359,31 @@ reports each.
   its output, `continuation.txt`, gives each author's count, log line,
   time and length, and the item's one text. It cannot be re-run from this
   PR without those logs.
+- The session's tool list changed during the run, so the pre-registration's
+  description of the known injected items as "the same for every sub-agent
+  author" did not hold. Between sonnet-python-2's start (04:59Z) and
+  haiku-firth-2's (05:27Z), the list every later author was given dropped
+  16 deferred tools (CronCreate, CronDelete, CronList, DesignSync,
+  ListConnectors, ListMcpResourcesTool, PushNotification,
+  ReadMcpResourceDirTool, ReadMcpResourceTool, SearchMcpRegistry,
+  SuggestConnectors, SuggestPluginInstall, TaskCreate, TaskGet, TaskList,
+  TaskUpdate) and four tool schemas (ListAgents, ReportFindings,
+  ShowOnboardingRolePicker, SuggestSkills), and gained five project skills
+  (`firth-ds:cairn-*`). In `context-seen.json` the deferred-tools item goes
+  from 18,005 to 17,441 characters, the skill listing from 28,255 to 30,300
+  and the tool-schema snapshot from 159,677 to 150,068. Six kept authors
+  saw the earlier list (Sonnet Python 2, Sonnet Firth 2, Haiku Python 1,
+  Haiku Firth 1) and 17 the later one (Sonnet Python 6, Sonnet Firth 6,
+  Haiku Python 4, Haiku Firth 1); DeepSeek is not affected. Nothing in
+  either list names an author, and no author called any of the changed
+  tools: every call in every `transcript.json` is Read, Write or the
+  hand-back, apart from the two `send_message` calls that voided
+  haiku-firth-2 and haiku-python-3. The reviewer ruled that the
+  description is not a void condition, so no sample is void and no number
+  changes. `toollist.py` read the raw session logs, which are not
+  committed, and its output, `toollist.txt`, gives each author's digests
+  and the difference between the two versions; it cannot be re-run from
+  this PR without those logs.
 - The S7 inputs were frozen during authoring (`run-notes.md`); every author
   saw the same version of the guide and prompts, built at the pin.
 - Each kept transcript's model id is in `analysis-output.md`:
