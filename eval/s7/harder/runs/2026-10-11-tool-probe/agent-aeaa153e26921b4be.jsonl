@@ -10,14 +10,14 @@
 {"type": "attachment", "timestamp": "2026-10-11T13:47:42.952Z", "cwd": "/home/user/firth", "attachment": {"type": "prompt_snapshot"}}
 {"type": "assistant", "timestamp": "2026-10-11T13:47:43.895Z", "cwd": "/home/user/firth", "tool_calls": ["Read"]}
 {"type": "user", "timestamp": "2026-10-11T13:47:43.982Z", "cwd": "/home/user/firth"}
-{"type": "attachment", "timestamp": "2026-10-11T13:47:43.935Z", "cwd": "/home/user/firth", "attachment": {"type": "hook_non_blocking_error", "hookName": "PostToolUse:Read"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:47:43.935Z", "cwd": "/home/user/firth", "attachment": {"type": "hook_non_blocking_error", "hookName": "PostToolUse:Read", "hookEvent": "PostToolUse", "command": "/Users/george/.local/share/uv/tools/omega-memory/bin/python /Users/george/repos/omega-memory/hooks/fast_hook.py surface_memories", "exitCode": 127, "stdout": "", "stderr": "Failed with non-blocking status code: /bin/sh: 1: /Users/george/.local/share/uv/tools/omega-memory/bin/python: not found"}}
 {"type": "attachment", "timestamp": "2026-10-11T13:47:43.991Z", "cwd": "/home/user/firth", "attachment": {"type": "prompt_snapshot", "tools": [{"name": "Read"}, {"name": "Write"}, {"name": "SubagentHandback"}]}}
 {"type": "attachment", "timestamp": "2026-10-11T13:47:43.995Z", "cwd": "/home/user/firth", "attachment": {"type": "mcp_instructions_delta", "addedNames": ["Claude_Docs", "github", "Gmail", "Notion", "Supabase"], "removedNames": []}}
 {"type": "attachment", "timestamp": "2026-10-11T13:47:43.995Z", "cwd": "/home/user/firth", "attachment": {"type": "total_tokens_reminder"}}
 {"type": "assistant", "timestamp": "2026-10-11T13:47:45.621Z", "cwd": "/home/user/firth"}
 {"type": "assistant", "timestamp": "2026-10-11T13:47:45.956Z", "cwd": "/home/user/firth", "tool_calls": ["Write"]}
 {"type": "user", "timestamp": "2026-10-11T13:47:46.032Z", "cwd": "/home/user/firth"}
-{"type": "attachment", "timestamp": "2026-10-11T13:47:45.987Z", "cwd": "/home/user/firth", "attachment": {"type": "hook_non_blocking_error", "hookName": "PostToolUse:Write"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:47:45.987Z", "cwd": "/home/user/firth", "attachment": {"type": "hook_non_blocking_error", "hookName": "PostToolUse:Write", "hookEvent": "PostToolUse", "command": "/Users/george/.local/share/uv/tools/omega-memory/bin/python /Users/george/repos/omega-memory/hooks/fast_hook.py surface_memories", "exitCode": 127, "stdout": "", "stderr": "Failed with non-blocking status code: /bin/sh: 1: /Users/george/.local/share/uv/tools/omega-memory/bin/python: not found"}}
 {"type": "attachment", "timestamp": "2026-10-11T13:47:46.041Z", "cwd": "/home/user/firth", "attachment": {"type": "total_tokens_reminder"}}
 {"type": "assistant", "timestamp": "2026-10-11T13:47:46.657Z", "cwd": "/home/user/firth", "tool_calls": ["SubagentHandback"]}
 {"type": "user", "timestamp": "2026-10-11T13:47:48.325Z", "cwd": "/home/user/firth"}

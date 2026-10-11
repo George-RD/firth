@@ -57,7 +57,8 @@ called Read on the prompt, Write on its list and `SubagentHandback`
   `SubagentHandback`.
 
 `agent-aeaa153e26921b4be.jsonl` is its log trimmed as above, keeping also
-the hook names and the tool-call names. `tool-probe.txt` is
+the tool-call names and each hook error's name, event, command, exit code,
+stdout and stderr. `tool-probe.txt` is
 
     python3 eval/s7/harder/author_tools.py \
       --logs eval/s7/harder/runs/2026-10-11-tool-probe \
@@ -78,8 +79,13 @@ Fixing the tools does not fix everything the author is shown. The
 - an `mcp_instructions_delta` attachment carrying the instructions of the
   session's MCP servers (Claude_Docs, github, Gmail, Notion, Supabase),
   although the author has none of their tools;
-- two `hook_non_blocking_error` items, after its Read and its Write, from a
-  PostToolUse hook that runs `omega-memory` and is not found;
+- two `hook_non_blocking_error` items, after its Read and its Write. Both
+  are a PostToolUse hook whose command runs
+  `/Users/george/.local/share/uv/tools/omega-memory/bin/python` on
+  `.../omega-memory/hooks/fast_hook.py surface_memories`, which exits 127
+  with "not found" on stderr (the two lines are kept whole, apart from the
+  tool-use id and duration, in `agent-aeaa153e26921b4be.jsonl`; they hold
+  local paths and no credential);
 - `total_tokens_reminder` items, and the session's environment, model,
   instructions, session context, date, credential and session-change
   attachments at the start.
