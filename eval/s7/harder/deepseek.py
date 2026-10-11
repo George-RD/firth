@@ -79,7 +79,8 @@ def join(lines: list[str]) -> str:
     `message.content` and `message.thinking` are the chunks' text in order,
     and every other field is the last chunk's (`done`, `done_reason`, the
     token counts). Each chunk must be a chat chunk from the same model and
-    role, and only the last may be `done`. Anything else (a line that is not
+    role, only the last may be `done` (each other one's `done` is `false`),
+    and at least one must carry `content`. Anything else (a line that is not
     a JSON object, an `error` chunk, a chunk after the done one, mixed models
     or roles, no chunks) is returned as the raw text, which `run` cannot read
     as one chat reply and so voids; a stream that ends before its done chunk
@@ -96,7 +97,10 @@ def join(lines: list[str]) -> str:
         if not isinstance(chunk, dict) or "error" in chunk or not isinstance(chunk.get("message"), dict):
             return raw
         chunks.append(chunk)
-    if not chunks or any(c.get("done") is True for c in chunks[:-1]):
+    if not chunks or any(c.get("done", False) is not False for c in chunks[:-1]):
+        return raw
+    # As in a non-streamed reply, where `run` reads `message.content`.
+    if not any("content" in c["message"] for c in chunks):
         return raw
     first = chunks[0]
     if any(c.get("model") != first.get("model") or c["message"].get("role") != first["message"].get("role")
@@ -250,6 +254,11 @@ def join_problems(joiner) -> list[str]:
                        ("a chunk from another model", whole[:2] + [chunk("x", model="deepseek-v4-pro")] + whole[2:]),
                        ("a chunk in another role", whole[:2] + [chunk("x", role="user")] + whole[2:]),
                        ("a chunk whose content is not text", whole[:2] + [chunk(None)] + whole[2:]),
+                       ("a chunk before the last whose done is not false",
+                        whole[:2] + [chunk("x", done=1)] + whole[2:]),
+                       ("a stream with no content field", [
+                           json.dumps({"model": MODEL, "message": {"role": "assistant", "thinking": "t"},
+                                       "done": d, **(end if d else {})}) + "\n" for d in (False, True)]),
                        ("no chunks", [])):
         got = reply_of(lines)
         if got is not None and got[2:] == (MODEL, True, "stop") and got[1] == "assistant":
@@ -393,15 +402,23 @@ def self_test() -> None:
     for mutant in (drops_last, says_stop, no_thinking, drops_counts, scored_fields_only,
                    keeps_after_done):
         assert join_problems(mutant) != [], mutant.__name__
-    # Streamed, so a long think is not cut at the ~30 s idle limit. Planted:
-    # this file's own `run` with the request reverted to non-streamed is caught.
-    assert asks_streamed(run)
+    # Planted: this file's own code with one check undone. Each needle is
+    # split so that only the line it names matches.
     source = Path(__file__).read_text(encoding="utf-8")
-    streamed = '"stream": ' + "True}"  # split, so only `run`'s line matches
-    assert source.count(streamed) == 1
-    reverted = {"__name__": "deepseek_reverted"}
-    exec(compile(source.replace(streamed, '"stream": ' + "False}"), __file__, "exec"), reverted)
-    assert not asks_streamed(reverted["run"])
+    def mutant(old, new):
+        assert source.count(old) == 1, old
+        m = {"__name__": "deepseek_mutant"}
+        exec(compile(source.replace(old, new), __file__, "exec"), m)
+        return m
+    # `join` that lets a non-final chunk's `done` be anything but `true`, or
+    # joins a stream with no `content` field to an empty answer, is caught.
+    assert join_problems(mutant('c.get("done", False) ' + "is not False", 'c.get("done") ' + "is True")["join"])
+    assert join_problems(mutant('if not any("content" in c["message"] ' + "for c in chunks):",
+                                'if not any("content" in c["message"] ' + "for c in []):")["join"])
+    # Streamed, so a long think is not cut at the ~30 s idle limit; `run` with
+    # the request reverted to non-streamed is caught.
+    assert asks_streamed(run)
+    assert not asks_streamed(mutant('"stream": ' + "True}", '"stream": ' + "False}")["run"])
     print("self-test ok")
 
 
