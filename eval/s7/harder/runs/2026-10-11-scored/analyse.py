@@ -298,15 +298,33 @@ def check_voids(samples: dict, listed: str) -> list[str]:
 
 # ---------------------------------------------------------------- report
 
+def listed(r1: dict, task: str) -> bool:
+    """Whether round 1's feedback listed TASK: no answer, or its visible
+    example failed. Only listed tasks are taken in round 2; the rest are
+    scored again from the same round-1 code, so round 2 adds no new run."""
+    t = r1["tasks"][task]
+    vis = [c for c in t.get("cases", []) if c.get("visible")]
+    return not t.get("submitted") or not vis or not all(c.get("pass") for c in vis)
+
+
+def runs(s: dict):
+    """(round, task, task record) for every run of an author's answer: every
+    task in round 1, and in round 2 only the tasks round 1's feedback listed."""
+    for n, r in enumerate(s["results"], 1):
+        for t in TASKS:
+            if n == 1 or listed(s["results"][0], t):
+                yield n, t, r["tasks"][t]
+
+
 def guarantees(kept: list[dict]) -> dict:
     """Firth guarantees: round-1 visible refusals sorted by row, out of steps,
     runtime refusals on hidden inputs, and measured kernel cost."""
     g = {"diagnostics": {r: 0 for r in ROWS}, "refusals": {r: 0 for r in ROWS},
          "catches": {r: 0 for r in ROWS}, "catches_run": {r: 0 for r in ROWS},
          "no_code": [], "refusal_list": [], "out_of_steps": [], "hidden_runtime": [],
-         "cost": {t: {"passed": [], "wrong": []} for t in TASKS}, "no_cost": {}}
+         "cost": {n: {t: {"passed": [], "wrong": []} for t in TASKS} for n in (1, 2)}, "no_cost": {}}
     for s in kept:
-        r1, rl = s["results"][0], s["results"][-1]
+        r1 = s["results"][0]
         for t in TASKS:
             task = r1["tasks"][t]
             vis = next((c for c in task.get("cases", []) if c.get("visible")), None)
@@ -319,77 +337,81 @@ def guarantees(kept: list[dict]) -> dict:
                     g["diagnostics"][row(c)] += 1
                 # Behaves differently on some hidden test: a hidden case's outcome
                 # in round 2 differs from round 1's (round 1's were all refused).
-                differs = runs = False
+                differs = ran = False
                 if len(s["results"]) == 2:
                     h1 = [c for c in task["cases"] if not c.get("visible")]
                     h2 = [c for c in s["results"][1]["tasks"][t]["cases"] if not c.get("visible")]
                     key = lambda c: (c.get("pass"), c.get("stack"), c.get("error"))
                     differs = [key(c) for c in h1] != [key(c) for c in h2]
-                    runs = any(case_cause("firth", c) != "refusal" for c in h2)
+                    ran = any(case_cause("firth", c) != "refusal" for c in h2)
                 for rw in rows:
                     g["refusals"][rw] += 1
                     if rw != "other refusal":  # never counted as a guarantee catch
                         g["catches"][rw] += bool(differs)
-                        g["catches_run"][rw] += bool(differs and runs)
+                        g["catches_run"][rw] += bool(differs and ran)
                 g["refusal_list"].append({"sample": s["name"], "task": t, "codes": cs, "rows": rows,
-                                          "round2_differs": differs, "round2_runs": runs})
-        for n, r in enumerate(s["results"], 1):
-            for t in TASKS:
-                for c in r["tasks"][t].get("cases", []):
-                    k = case_cause("firth", c)
-                    if k == "out of steps":
-                        g["out_of_steps"].append(f"{s['name']} r{n} {t} {'visible' if c.get('visible') else 'hidden'}")
-                    if k == "runtime error" and not c.get("visible"):
-                        g["hidden_runtime"].append(f"{s['name']} r{n} {t} {c['error'].splitlines()[0]}")
-        for t in TASKS:
-            for c in rl["tasks"][t].get("cases", []):
+                                          "round2_differs": differs, "round2_runs": ran})
+        for n, t, task in runs(s):
+            for c in task.get("cases", []):
                 k = case_cause("firth", c)
+                if k == "out of steps":
+                    g["out_of_steps"].append(f"{s['name']} r{n} {t} {'visible' if c.get('visible') else 'hidden'}")
+                if k == "runtime error" and not c.get("visible"):
+                    g["hidden_runtime"].append(f"{s['name']} r{n} {t} {c['error'].splitlines()[0]}")
                 if k in ("passed", "wrong result") and c.get("kernel_cost") is not None:
-                    g["cost"][t]["passed" if k == "passed" else "wrong"].append(c["kernel_cost"])
+                    g["cost"][n][t]["passed" if k == "passed" else "wrong"].append(c["kernel_cost"])
                 elif k not in ("passed", "wrong result"):
                     g["no_cost"][k] = g["no_cost"].get(k, 0) + 1
     return g
 
 
-def hidden_failures(kept: list[dict]) -> set[tuple[str, str, int]]:
-    """(sample, task, case index) of every hidden test a kept author's final
-    answer ran and failed: a wrong result, runtime error, out of steps or
-    timeout. These are what "A reading nobody listed" traces; a refusal or no
-    answer turns on no sentence of the task."""
+def hidden_failures(kept: list[dict]) -> set[tuple[str, int, str, int]]:
+    """(sample, round, task, case index) of every hidden test an answer ran
+    and failed, in each round (round 2: the tasks it took): a wrong result,
+    runtime error, out of steps or timeout. These are what "A reading nobody
+    listed" traces; a refusal or no answer turns on no sentence of the task."""
     out = set()
     for s in kept:
-        for t in TASKS:
-            for i, c in enumerate(s["results"][-1]["tasks"][t].get("cases", [])):
+        for n, t, task in runs(s):
+            for i, c in enumerate(task.get("cases", [])):
                 if not c.get("visible") and case_cause(s["lang"], c) in (
                         "wrong result", "runtime error", "out of steps", "timeout"):
-                    out.add((s["name"], t, i))
+                    out.add((s["name"], n, t, i))
     return out
 
 
-def readings_check(kept: list[dict], readings: dict | None) -> tuple[list[str], dict[str, set[str]]]:
-    """Problems with the traces in `readings.json`, and per subject the tasks
-    the reviewer ruled admit another reading.
+def readings_check(kept: list[dict], readings: dict | None) -> tuple[list[str], dict[str, set[str]], list[dict]]:
+    """Problems with the traces in `readings.json`, per subject the tasks the
+    reviewer ruled admit another reading, and the traces that follow another
+    reading (the report lists each).
 
-    readings.json: {"traces": [{"sample", "task", "cases": [i, ...], "rule",
-    "other_reading": bool, "note"}], "rulings": [{"subject", "task", "sentence",
-    "admits": bool, "by"}]}. Every hidden failure must be traced; every trace
-    with another reading needs a ruling for its subject and task."""
+    readings.json: {"traces": [{"sample", "round", "task", "cases": [i, ...],
+    "rule", "other_reading": bool, "note"}], "rulings": [{"subject", "task",
+    "rule", "sentence", "admits": bool, "by"}]}. Every hidden failure must be
+    traced; every trace with another reading needs the ruling on that same
+    rule, for its subject and task."""
     want = hidden_failures(kept)
     if readings is None:
-        return [f"readings.json is missing: {len(want)} failed hidden tests are not traced"], {}
-    got, problems, admitted = set(), [], {}
-    rulings = {(r["subject"], r["task"]): r for r in readings.get("rulings", [])}
+        return [f"readings.json is missing: {len(want)} failed hidden tests are not traced"], {}, []
+    names = {s["name"] for s in kept}
+    got, problems, admitted, other = set(), [], {}, []
+    rulings = {(r["subject"], r["task"], r["rule"]): r for r in readings.get("rulings", [])}
     for tr in readings.get("traces", []):
+        if tr["sample"] not in names:
+            continue
         for i in tr["cases"]:
-            got.add((tr["sample"], tr["task"], i))
-        if tr.get("other_reading") and (tr["sample"].split("-")[0], tr["task"]) not in rulings:
-            problems.append(f"no ruling for {tr['sample']} {tr['task']}, traced to another reading")
+            got.add((tr["sample"], tr["round"], tr["task"], i))
+        if tr.get("other_reading"):
+            other.append(tr)
+            r = rulings.get((tr["sample"].split("-")[0], tr["task"], tr["rule"]))
+            if r is None:
+                problems.append(f"no ruling on rule {tr['rule']!r} for {tr['sample']} r{tr['round']} {tr['task']}, "
+                                "traced to another reading")
+            elif r.get("admits"):
+                admitted.setdefault(tr["sample"].split("-")[0], set()).add(tr["task"])
     if want - got:
         problems.append(f"{len(want - got)} failed hidden tests not traced, e.g. {sorted(want - got)[:3]}")
-    for (subj, task), r in rulings.items():
-        if r.get("admits"):
-            admitted.setdefault(subj, set()).add(task)
-    return problems, admitted
+    return problems, admitted, other
 
 
 def report(samples: dict, results_dir: str, readings: dict | None = None) -> str:
@@ -447,18 +469,24 @@ def report(samples: dict, results_dir: str, readings: dict | None = None) -> str
                            f"Firth {v['firth_mean']:.3f}, Python {v['python_mean']:.3f}, difference "
                            f"{v['difference']:+.3f}, exact two-sided p {v['p']:.4f}, 95% bootstrap interval "
                            f"[{v['interval'][0]:+.3f}, {v['interval'][1]:+.3f}]: {v['rule']}.\n")
-        problems, admitted = readings_check(arms["firth"] + arms["python"], readings)
+        problems, admitted, other = readings_check(arms["firth"] + arms["python"], readings)
+        for tr in other:
+            out.append(f"- Another reading: {tr['sample']} round {tr['round']} {tr['task']}, hidden cases "
+                       f"{tr['cases']}, rule {tr['rule']!r}: {tr.get('note', '')}")
+        if other:
+            out.append("")
         if problems:
             out.append("**Readings (preregistration.md, \"A reading nobody listed\") not complete:** "
                        + "; ".join(problems) + ". The result above is not final until they are.\n")
         elif admitted.get(subj) and arms["firth"] and arms["python"]:
             keep = [t for t in TASKS if t not in admitted[subj]]
-            per = lambda a: [sum(s["results"][-1]["tasks"][t]["pass"] for t in keep) for s in a]
-            v = verdict(per(arms["firth"]), per(arms["python"]), incomplete)
-            out.append(f"**Sensitivity check, never the headline:** leaving out {sorted(admitted[subj])} "
-                       f"(ruled to admit another reading), within two rounds: Firth {v['firth_mean']:.3f}, "
-                       f"Python {v['python_mean']:.3f}, difference {v['difference']:+.3f}, p {v['p']:.4f}, "
-                       f"interval [{v['interval'][0]:+.3f}, {v['interval'][1]:+.3f}].\n")
+            for label, idx in (("within two rounds", -1), ("round 1", 0)):
+                per = lambda a: [sum(s["results"][idx]["tasks"][t]["pass"] for t in keep) for s in a]
+                v = verdict(per(arms["firth"]), per(arms["python"]), incomplete)
+                out.append(f"**Sensitivity check, never the headline:** leaving out {sorted(admitted[subj])} "
+                           f"(ruled to admit another reading), {label}: Firth {v['firth_mean']:.3f}, "
+                           f"Python {v['python_mean']:.3f}, difference {v['difference']:+.3f}, p {v['p']:.4f}, "
+                           f"interval [{v['interval'][0]:+.3f}, {v['interval'][1]:+.3f}].\n")
         else:
             out.append("Readings: every failed hidden test is traced; no sentence was ruled to admit another reading.\n")
         if abs(nv["firth"] - nv["python"]) >= 2:
@@ -480,14 +508,16 @@ def report(samples: dict, results_dir: str, readings: dict | None = None) -> str
             out.append("Refusals with no `code:` line (other refusal): " + "; ".join(g["no_code"]) + "\n")
         out.append(f"Out of steps (1,000,000-step budget used up): {len(g['out_of_steps'])} {g['out_of_steps']}\n")
         out.append(f"Runtime refusals on hidden inputs: {len(g['hidden_runtime'])} {g['hidden_runtime']}\n")
-        out.append("Measured kernel steps (reference interpreter), cases that ran to completion, within two rounds. "
-                   "Measured, not a bound; no task has a Lean cost contract, so no proved bound applies.\n")
-        out.append("| task | passed cases | passed steps | wrong cases | wrong steps | total steps |")
-        out.append("| --- | --- | --- | --- | --- | --- |")
-        for t in TASKS:
-            c = g["cost"][t]
-            out.append(f"| {t} | {len(c['passed'])} | {sum(c['passed'])} | {len(c['wrong'])} | {sum(c['wrong'])} | "
-                       f"{sum(c['passed']) + sum(c['wrong'])} |")
+        out.append("Measured kernel steps (reference interpreter), every case that ran to completion, per "
+                   "round (round 2: the tasks it took). Measured, not a bound; no task has a Lean cost "
+                   "contract, so no proved bound applies.\n")
+        out.append("| round | task | passed cases | passed steps | wrong cases | wrong steps | total steps |")
+        out.append("| --- | --- | --- | --- | --- | --- | --- |")
+        for n in (1, 2):
+            for t in TASKS:
+                c = g["cost"][n][t]
+                out.append(f"| {n} | {t} | {len(c['passed'])} | {sum(c['passed'])} | {len(c['wrong'])} | "
+                           f"{sum(c['wrong'])} | {sum(c['passed']) + sum(c['wrong'])} |")
         out.append(f"\nCases with no measured cost, by cause: {g['no_cost']}\n")
     return "\n".join(out), verdicts
 
@@ -581,15 +611,27 @@ def self_test() -> None:
     assert g["catches_run"]["other refusal"] == 0
     # Readings: an untraced hidden failure, and a traced other reading with no
     # ruling, are each reported; an admitted reading gives a sensitivity check.
-    wrong = {"submitted": True, "pass": False, "cases": [{"visible": True, "ok": True, "pass": True},
-                                                        {"visible": False, "ok": True, "pass": False}]}
-    ks = [{"name": "sonnet-firth-1", "lang": "firth", "results": [{"tasks": {**{t: fixed for t in TASKS}, "swiss": wrong}}]}]
+    wrong = {"submitted": True, "pass": False, "cases": [{"visible": True, "ok": True, "pass": True, "kernel_cost": 1},
+                                                        {"visible": False, "ok": True, "pass": False, "kernel_cost": 1}]}
+    # Round 1: swiss runs and fails a hidden test; regex has no answer, so it is
+    # listed and taken in round 2, where it fails a hidden test too.
+    r1 = {"tasks": {**{t: fixed for t in TASKS}, "swiss": wrong, "regex": {"submitted": False}}}
+    r2 = {"tasks": {**{t: fixed for t in TASKS}, "swiss": wrong, "regex": wrong}}
+    ks = [{"name": "sonnet-firth-1", "lang": "firth", "results": [r1, r2]}]
+    assert hidden_failures(ks) == {("sonnet-firth-1", 1, "swiss", 1), ("sonnet-firth-1", 2, "regex", 1)}
     assert readings_check(ks, None)[0]
-    assert readings_check(ks, {"traces": []})[0], "untraced failure not reported"
-    tr = {"sample": "sonnet-firth-1", "task": "swiss", "cases": [1], "rule": "r", "other_reading": True}
-    assert readings_check(ks, {"traces": [tr]})[0], "missing ruling not reported"
-    ok = {"traces": [tr], "rulings": [{"subject": "sonnet", "task": "swiss", "admits": True}]}
-    assert readings_check(ks, ok) == ([], {"sonnet": {"swiss"}})
+    t1 = {"sample": "sonnet-firth-1", "round": 1, "task": "swiss", "cases": [1], "rule": "r", "other_reading": True}
+    t2 = {"sample": "sonnet-firth-1", "round": 2, "task": "regex", "cases": [1], "rule": "q", "other_reading": False}
+    assert readings_check(ks, {"traces": [t1]})[0], "untraced round-2 failure not reported"
+    assert readings_check(ks, {"traces": [t1, t2]})[0], "missing ruling not reported"
+    wrong_rule = [{"subject": "sonnet", "task": "swiss", "rule": "other", "admits": True}]
+    assert readings_check(ks, {"traces": [t1, t2], "rulings": wrong_rule})[0], "ruling on another rule accepted"
+    ok = {"traces": [t1, t2], "rulings": [{"subject": "sonnet", "task": "swiss", "rule": "r", "admits": True}]}
+    assert readings_check(ks, ok) == ([], {"sonnet": {"swiss"}}, [t1])
+    # Costs: round 1's runs count, and round 2 counts only the task it took.
+    g = guarantees([{"name": "sonnet-firth-1", "lang": "firth", "results": [r1, r2]}])
+    assert len(g["cost"][1]["sokoban"]["passed"]) == 2 and not g["cost"][2]["sokoban"]["passed"]
+    assert len(g["cost"][2]["regex"]["wrong"]) == 1 and len(g["cost"][1]["swiss"]["wrong"]) == 1
     # Voids from planted sample files, and the voids.txt cross-check.
     with tempfile.TemporaryDirectory() as tmp:
         run = Path(tmp)
