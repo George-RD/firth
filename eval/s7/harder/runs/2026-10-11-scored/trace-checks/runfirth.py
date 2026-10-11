@@ -3,7 +3,8 @@
 usage: runfirth.py RUN PIN FIRTH_FILE SAMPLE ROUND TASK CASES
 Runs PIN/tools/loop/firth_run.py (cwd PIN, fuel 1,000,000) on each case in
 CASES (comma-separated) from RUN/rescore-pin/SAMPLE/results-ROUND.json and
-prints one line: which cases match the recorded expected output.
+prints one line: which cases match the recorded expected output. Exits 1
+unless every case matches.
 """
 import json, os, subprocess, sys
 run, pin, src, sample, rnd, task, cases = sys.argv[1:8]
@@ -24,3 +25,4 @@ for i in [int(x) for x in cases.split(",")]:
     else:
         bad.append((i, out.get("status")))
 print(f"{sample} r{rnd} {task} {os.path.basename(src)}: OK {ok} FAIL {bad}")
+sys.exit(0 if not bad else 1)
