@@ -25,3 +25,6 @@ haiku-python-2 (a577fec4499d70a93)
 sonnet-python-3 (abadde0a312ec8aaf)
   others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
   attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-firth-3 (a358633a5e9d259c1)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}

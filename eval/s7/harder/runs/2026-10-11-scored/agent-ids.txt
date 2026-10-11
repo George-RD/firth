@@ -7,3 +7,4 @@ sonnet-python-2 a829da11bdf8ea410
 haiku-firth-2 a04508dc5bacaf3b4
 haiku-python-2 a577fec4499d70a93
 sonnet-python-3 abadde0a312ec8aaf
+sonnet-firth-3 a358633a5e9d259c1
