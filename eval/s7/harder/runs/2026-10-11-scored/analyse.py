@@ -351,7 +351,48 @@ def guarantees(kept: list[dict]) -> dict:
     return g
 
 
-def report(samples: dict, results_dir: str) -> str:
+def hidden_failures(kept: list[dict]) -> set[tuple[str, str, int]]:
+    """(sample, task, case index) of every hidden test a kept author's final
+    answer ran and failed: a wrong result, runtime error, out of steps or
+    timeout. These are what "A reading nobody listed" traces; a refusal or no
+    answer turns on no sentence of the task."""
+    out = set()
+    for s in kept:
+        for t in TASKS:
+            for i, c in enumerate(s["results"][-1]["tasks"][t].get("cases", [])):
+                if not c.get("visible") and case_cause(s["lang"], c) in (
+                        "wrong result", "runtime error", "out of steps", "timeout"):
+                    out.add((s["name"], t, i))
+    return out
+
+
+def readings_check(kept: list[dict], readings: dict | None) -> tuple[list[str], dict[str, set[str]]]:
+    """Problems with the traces in `readings.json`, and per subject the tasks
+    the reviewer ruled admit another reading.
+
+    readings.json: {"traces": [{"sample", "task", "cases": [i, ...], "rule",
+    "other_reading": bool, "note"}], "rulings": [{"subject", "task", "sentence",
+    "admits": bool, "by"}]}. Every hidden failure must be traced; every trace
+    with another reading needs a ruling for its subject and task."""
+    want = hidden_failures(kept)
+    if readings is None:
+        return [f"readings.json is missing: {len(want)} failed hidden tests are not traced"], {}
+    got, problems, admitted = set(), [], {}
+    rulings = {(r["subject"], r["task"]): r for r in readings.get("rulings", [])}
+    for tr in readings.get("traces", []):
+        for i in tr["cases"]:
+            got.add((tr["sample"], tr["task"], i))
+        if tr.get("other_reading") and (tr["sample"].split("-")[0], tr["task"]) not in rulings:
+            problems.append(f"no ruling for {tr['sample']} {tr['task']}, traced to another reading")
+    if want - got:
+        problems.append(f"{len(want - got)} failed hidden tests not traced, e.g. {sorted(want - got)[:3]}")
+    for (subj, task), r in rulings.items():
+        if r.get("admits"):
+            admitted.setdefault(subj, set()).add(task)
+    return problems, admitted
+
+
+def report(samples: dict, results_dir: str, readings: dict | None = None) -> str:
     out = [f"# Scored run analysis\n\nResults read from `{results_dir}`. Produced by `analyse.py`.\n"]
     voids = [s for s in samples.values() if s["void"]]
     out.append("## Voids and crashes\n")
@@ -406,6 +447,20 @@ def report(samples: dict, results_dir: str) -> str:
                            f"Firth {v['firth_mean']:.3f}, Python {v['python_mean']:.3f}, difference "
                            f"{v['difference']:+.3f}, exact two-sided p {v['p']:.4f}, 95% bootstrap interval "
                            f"[{v['interval'][0]:+.3f}, {v['interval'][1]:+.3f}]: {v['rule']}.\n")
+        problems, admitted = readings_check(arms["firth"] + arms["python"], readings)
+        if problems:
+            out.append("**Readings (preregistration.md, \"A reading nobody listed\") not complete:** "
+                       + "; ".join(problems) + ". The result above is not final until they are.\n")
+        elif admitted.get(subj) and arms["firth"] and arms["python"]:
+            keep = [t for t in TASKS if t not in admitted[subj]]
+            per = lambda a: [sum(s["results"][-1]["tasks"][t]["pass"] for t in keep) for s in a]
+            v = verdict(per(arms["firth"]), per(arms["python"]), incomplete)
+            out.append(f"**Sensitivity check, never the headline:** leaving out {sorted(admitted[subj])} "
+                       f"(ruled to admit another reading), within two rounds: Firth {v['firth_mean']:.3f}, "
+                       f"Python {v['python_mean']:.3f}, difference {v['difference']:+.3f}, p {v['p']:.4f}, "
+                       f"interval [{v['interval'][0]:+.3f}, {v['interval'][1]:+.3f}].\n")
+        else:
+            out.append("Readings: every failed hidden test is traced; no sentence was ruled to admit another reading.\n")
         if abs(nv["firth"] - nv["python"]) >= 2:
             out.append(f"Voids and crashes differ between arms by {abs(nv['firth'] - nv['python'])} "
                        f"(Firth {nv['firth']}, Python {nv['python']}): the surviving samples may differ between arms.\n")
@@ -524,6 +579,17 @@ def self_test() -> None:
     assert g["refusals"]["stack effects"] == 1 and g["catches"]["stack effects"] == 1
     assert g["refusals"]["other refusal"] == 1 and g["catches"]["other refusal"] == 0, g["catches"]
     assert g["catches_run"]["other refusal"] == 0
+    # Readings: an untraced hidden failure, and a traced other reading with no
+    # ruling, are each reported; an admitted reading gives a sensitivity check.
+    wrong = {"submitted": True, "pass": False, "cases": [{"visible": True, "ok": True, "pass": True},
+                                                        {"visible": False, "ok": True, "pass": False}]}
+    ks = [{"name": "sonnet-firth-1", "lang": "firth", "results": [{"tasks": {**{t: fixed for t in TASKS}, "swiss": wrong}}]}]
+    assert readings_check(ks, None)[0]
+    assert readings_check(ks, {"traces": []})[0], "untraced failure not reported"
+    tr = {"sample": "sonnet-firth-1", "task": "swiss", "cases": [1], "rule": "r", "other_reading": True}
+    assert readings_check(ks, {"traces": [tr]})[0], "missing ruling not reported"
+    ok = {"traces": [tr], "rulings": [{"subject": "sonnet", "task": "swiss", "admits": True}]}
+    assert readings_check(ks, ok) == ([], {"sonnet": {"swiss"}})
     # Voids from planted sample files, and the voids.txt cross-check.
     with tempfile.TemporaryDirectory() as tmp:
         run = Path(tmp)
@@ -587,7 +653,8 @@ def main() -> None:
     problems = check_voids(samples, (HERE / "voids.txt").read_text())
     if problems:
         raise SystemExit("voids differ from voids.txt:\n" + "\n".join(problems))
-    text, _ = report(samples, results)
+    rf = HERE / "readings.json"
+    text, _ = report(samples, results, json.loads(rf.read_text()) if rf.exists() else None)
     print(text)
 
 
