@@ -1198,7 +1198,7 @@ private def namedUnknownType (word : WordDefinition) (diagnostic : StackEffect.D
   else diagnostic
 
 /-- One word, stage by stage, as the whole-program pipeline would check it:
-names, the `locals` order, source refinements, erasure, the declared effect,
+the declared types, names, the `locals` order, source refinements, erasure, the declared effect,
 typing and refinements. A word that calls a word whose effect is refused is
 skipped before erasure, unless its own effect is refused too. The other words are trusted to have their declared
 effects, whatever their bodies do, so an error in one word is never charged
@@ -1207,14 +1207,15 @@ private def checkWord (config : PipelineConfig) (source : String)
     (words written : List WordDefinition) (env : EffectEnv) (typing : Env)
     (unusable : List String) (word : WordDefinition) (resolution : Option ParseError) :
     WordOutcome :=
-  match resolution with
-  | some error => .refused [.parse error]
-  | none =>
   -- A type the effect declares that is not one is the effect's first
-  -- error, before its refinements, the body's `locals` or anything that
-  -- counts or checks values of that type.
+  -- error, before a name in the body that does not resolve, its
+  -- refinements, the body's `locals` or anything that counts or checks
+  -- values of that type.
   match unknownType typing word.effect with
   | some diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
+  | none =>
+  match resolution with
+  | some error => .refused [.parse error]
   | none =>
   match checkInputLocals [word] (written.filter (·.name == word.name)) with
   | .error error => .refused [.parse (checkLocalsEdits config source words error)]

@@ -1738,8 +1738,16 @@ private def runSourceTypeTests : IO Unit := do
     "firth.syntax.unnamed-stack-item"
     "`Seq Foo` here is a type with no name: every item in a stack effect is written `name:Type`."
     "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7
-  -- An unknown type is reported before a refinement on it, and before the
-  -- body's `locals` (Codex on #250).
+  -- An unknown type is reported before a refinement on it, before the
+  -- body's `locals`, and before a name in the body that does not resolve
+  -- (Codex on #250).
+  expectReport "an unknown type before an unresolved name"
+    ": f ( x:Foo -- y:Foo ) missing ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9
+  -- Planted: the report a288045 gave, at `missing`, fails the check.
+  if (mismatch (report ": f ( x:Int -- y:Int ) missing ;")
+      "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9).isNone then
+    fail "source types: the unresolved-name report ahead of `Foo` passes the check"
   expectReport "an unknown type with a refinement" ": keep ( x:Foo{true} -- x:Foo ) ;"
     "firth.type.unknown-type" "`Foo` in the stack effect of `keep` is not a type." "The types a stack effect can declare are" 1 12
   expectReport "an unknown type with misordered locals"
