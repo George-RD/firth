@@ -2075,7 +2075,7 @@ private def runInnerReachTests : IO Unit := do
   -- `if`, not only the outer branch's count (todo.branch-report-inner-operation).
   let fillb := ": rd (forall ρ; ρ m:Seq Int i:Int -- ρ v:Int) prim seq-int.at ;\n: wr (forall ρ; ρ m:Seq Int i:Int v:Int -- ρ r:Seq Int) prim seq-int.set ;\n: addto (forall ρ; ρ m:Seq Int i:Int d:Int -- ρ r:Seq Int)\n  locals { m i d } { m i m i rd d prim + wr } ;\n: inc (forall ρ; ρ m:Seq Int i:Int -- ρ r:Seq Int) 1 addto ;\n: pad (forall ρ; ρ m:Seq Int n:Int -- ρ r:Seq Int)\n  locals { m n } { m prim seq-int.len n prim >= [ m ] [ m 0 prim seq-int.push n pad ] if } ;\n: col (forall ρ; ρ m:Seq Int b:Int k:Int n:Int acc:Seq Int -- ρ r:Seq Int)\n  locals { m b k n acc } {\n    k n prim >= [ acc ]\n    [ m b k 1 prim + n acc m b k prim + rd prim seq-int.push col ] if } ;\n: cpyin (forall ρ; ρ m:Seq Int s:Seq Int dst:Int k:Int -- ρ r:Seq Int)\n  locals { m s dst k } {\n    k s prim seq-int.len prim >= [ m ]\n    [ m dst k prim + s k prim seq-int.at wr s dst k 1 prim + cpyin ] if } ;\n\n: qi (forall ρ; ρ p:Int k:Int -- ρ i:Int) swap 120 prim * prim + 600 prim + ;\n: xi (forall ρ; ρ p:Int k:Int -- ρ i:Int) qi 600 prim + ;\n: bqi (forall ρ; ρ p:Int k:Int -- ρ i:Int) swap 84 prim * prim + 1800 prim + ;\n\n: shl (forall ρ; ρ m:Seq Int p:Int k:Int -- ρ r:Seq Int)\n  locals { m p k } {\n    k m 10 p prim + rd prim >=\n    [ m 10 p prim + m 10 p prim + rd 1 prim - wr ]\n    [ m p k 1 prim - qi m p k qi rd wr\n      p k 1 prim - xi m p k xi rd wr\n      p k 1 prim + shl ] if } ;\n: shu (forall ρ; ρ m:Seq Int p:Int k:Int pos:Int -- ρ r:Seq Int)\n  locals { m p k pos } {\n    k pos prim <= [ m ]\n    [ m p k qi m p k 1 prim - qi rd wr\n      p k xi m p k 1 prim - xi rd wr\n      p k 1 prim - pos shu ] if } ;\n: fpos (forall ρ; ρ m:Seq Int p:Int e:Int k:Int -- ρ r:Int)\n  locals { m p e k } {\n    k m 10 p prim + rd prim >=\n    [ k ]\n    [ m p k xi rd e prim > [ k ] [ m p e k 1 prim + fpos ] if ] if } ;\n: insert (forall ρ; ρ m:Seq Int p:Int q:Int e:Int -- ρ r:Seq Int)\n  locals { m p q e } {\n    m p e 0 fpos\n    locals { pos } {\n      m p m 10 p prim + rd pos shu\n      p pos qi q wr\n      p pos xi e wr\n      10 p prim + 1 addto } } ;\n: takeq (forall ρ; ρ m:Seq Int p:Int q:Int -- ρ r:Seq Int)\n  locals { m p q } {\n    q 0 prim <= m 10 p prim + rd 0 prim = prim or\n    [ m ]\n    [ m p 0 qi rd\n      locals { f } {\n        f q prim < [ f ] [ q ] if\n        locals { t } {\n          m p 0 qi f t prim - wr\n          20 p prim + 0 t prim - addto\n          521 t addto\n          520 t m 60 p prim + rd prim * addto\n          526 t addto\n          f t prim = [ p 1 shl ] [ ] if\n          p q t prim - takeq } } ] if } ;\n: fillb (forall ρ; ρ m:Seq Int p:Int -- ρ r:Seq Int)\n  locals { m p } {\n    m 30 p prim + rd m 40 p prim + rd prim <\n    m 20 p prim + rd 0 prim > prim and\n    [ m 526 0 wr p m p m 30 p prim + rd bqi rd takeq\n      locals { m2 } {\n        m2 p m2 30 p prim + rd bqi\n        m2 p m2 30 p prim + rd bqi rd m2 526 rd prim - wr\n        locals { m3 } {\n          m3 p m3 30 p prim + rd bqi rd 0 prim =\n          [ 30 p prim + 1 addto ] [ ] if\n          p fillb } } ]\n    [ m ] if } ;\n"
   let fillbNeedles :=
-    ["In the true branch `[ m 526 0 wr p m p ...` of the `if` in `fillb`, `addto` (in the true branch of the `if` on line 72, inside that branch) needs 3 values (m:Seq Int, i:Int, d:Int), but the branch has pushed only 2 values before it (the result of `prim +` and `1`)."]
+    ["In the true branch `[ m 526 0 wr p m p ...` of the `if` in `fillb`, `addto` (in the true branch of the `if` at line 72, column 39, inside that branch) needs 3 values (m:Seq Int, i:Int, d:Int), but the branch has pushed only 2 values before it (the result of `prim +` and `1`)."]
   branchReport "fillb" fillb fillbNeedles
   -- Planted in each case below: main's report at 2acf715 fails the same
   -- check. For fillb it says only that the true branch takes a value from
@@ -2087,19 +2087,29 @@ private def runInnerReachTests : IO Unit := do
   -- local `x`, which the branch does not use.
   let falsePath := ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true [ true [ ] [ 1 prim + ] if ] [ 0 ] if } ;"
   let falsePathNeedles :=
-    ["`prim +` (in the false branch of the `if` on line 1, inside that branch) needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`)."]
+    ["`prim +` (in the false branch of the `if` at line 1, column 90, inside that branch) needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`)."]
   branchReport "inner if, false path short" falsePath falsePathNeedles
   unless needlesMissing "The two branches of `if` in `g` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The condition and the values the branches take from below the `if` are looked for where the local `x` would be, but a local is not a value on the stack." falsePathNeedles do
     fail "inner if, false path short: main's report passes the check"
   -- A quotation run by `call` or `dip` in the branch is named by the atom
   -- that runs it.
   let called := ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true [ [ 1 prim + ] call ] [ 0 ] if } ;"
-  let calledNeedles := ["`prim +` (in the quotation run by `call` on line 1, inside that branch) needs 2 values (Int, Int)"]
+  let calledNeedles := ["`prim +` (in the quotation run by `call` at line 1, column 81, inside that branch) needs 2 values (Int, Int)"]
   branchReport "short inside call" called calledNeedles
   unless needlesMissing "In the true branch `[ [ 1 prim + ] call ]` of the `if` in `g`, `prim +` (inside a quotation in that branch) needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`)." calledNeedles do
     fail "short inside call: main's report passes the check"
+  -- Quotations run inside one another: after the inner `[ 2 ] call` the
+  -- walk is back in the outer quotation, run by the `call` on line 4, and
+  -- the report names that one, not the `call` on line 3.
+  let nestedCalls := ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } {\n  true [\n    [ [ 2 ] call drop\n      1 prim + ] call ] [ 0 ] if } ;"
+  branchReport "short after an inner call" nestedCalls
+    ["`prim +` (in the quotation run by `call` at line 4, column 18, inside that branch) needs 2 values (Int, Int)"]
+  -- The inner `if` shares line 1 with the refused one, so the place is
+  -- given by its column too: with only the line, the two `if`s read alike.
+  unless needlesMissing "`prim +` (in the false branch of the `if` on line 1, inside that branch) needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`)." falsePathNeedles do
+    fail "inner if, false path short: a place by line alone passes the check"
   let dipped := ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true [ 2 [ 1 prim + ] dip drop ] [ 0 ] if } ;"
-  let dippedNeedles := ["`prim +` (in the quotation run by `dip` on line 1, inside that branch) needs 2 values (Int, Int)"]
+  let dippedNeedles := ["`prim +` (in the quotation run by `dip` at line 1, column 83, inside that branch) needs 2 values (Int, Int)"]
   branchReport "short inside dip" dipped dippedNeedles
   unless needlesMissing "In the true branch `[ 2 [ 1 prim + ] dip drop ]` of the `if` in `g`, `prim +` (inside a quotation in that branch) needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`)." dippedNeedles do
     fail "short inside dip: main's report passes the check"

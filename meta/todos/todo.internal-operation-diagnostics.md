@@ -46,8 +46,9 @@ the checker wrote, not the author:
   when an operation in a branch is handed values of the wrong type.
 - A branch-mismatch report whose operation is inside a quotation in the
   branch points `at:` the outer `if`. It now says which quotation holds the
-  operation where one path leads there: "in the true branch of the `if` on
-  line 72", or the quotation run by `call` or `dip` on a line. Where the
+  operation where one path leads there: "in the true branch of the `if` at
+  line 72, column 39", or the quotation run by `call` or `dip` at a line
+  and column. Where the
   two paths of an inner `if` reach the same operation, it still says only
   "inside a quotation in that branch" (keep-positive 19:5 and longest-run
   23:15 in the #164 review).

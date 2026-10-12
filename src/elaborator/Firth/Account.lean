@@ -394,13 +394,13 @@ mutual
         let (taken, walk) := take walk "`call`" [] 1
         match taken with
         | [{ quotation := some (body, _), scope, .. }] =>
-            runQuotation context walk body scope s!"the quotation run by `call` on line {span.start.line}"
+            runQuotation context walk body scope s!"the quotation run by `call` at line {span.start.line}, column {span.start.column}"
         | _ => .lost
     | .atom "dip" span =>
         let (taken, walk) := take walk "`dip`" [] 2
         match taken with
         | [{ quotation := some (body, _), scope, .. }, kept] =>
-            match runQuotation context walk body scope s!"the quotation run by `dip` on line {span.start.line}" with
+            match runQuotation context walk body scope s!"the quotation run by `dip` at line {span.start.line}, column {span.start.column}" with
             | .next after => .next { after with stack := { kept with own := true, origin := none } :: after.stack }
             | other => other
         | _ => .lost
@@ -444,8 +444,8 @@ mutual
                            onTrue := onTrueAccount, onFalse := onFalseAccount }
               | _, _ => .lost
             else
-              match runQuotation context below onTrue trueScope s!"the true branch of the `if` on line {span.start.line}",
-                  runQuotation context below onFalse falseScope s!"the false branch of the `if` on line {span.start.line}" with
+              match runQuotation context below onTrue trueScope s!"the true branch of the `if` at line {span.start.line}, column {span.start.column}",
+                  runQuotation context below onFalse falseScope s!"the false branch of the `if` at line {span.start.line}, column {span.start.column}" with
               | .found account, _ | _, .found account => .found account
               | .called account, _ | _, .called account => .called account
               | .next afterTrue, .next afterFalse =>

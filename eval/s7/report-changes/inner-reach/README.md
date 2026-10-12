@@ -17,5 +17,5 @@ Run on 12 October 2026, main at 2acf715 against this change. Of 6,959
 sources, 54 get a different report (`changes.jsonl`, one line each). None
 changes between accepted and refused, or in its code or location. In 32 the
 message changes only where it said "inside a quotation in that branch": it
-now names the quotation, and nothing else in the message or hint changes. In the other 22 the report named no operation on
+now names the quotation by line and column, and nothing else in the message or hint changes. In the other 22 the report named no operation on
 main and now names the one that takes a value that is not there.
