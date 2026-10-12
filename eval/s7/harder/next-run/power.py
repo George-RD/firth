@@ -136,7 +136,9 @@ def main() -> None:
     print(f"replicates {REPLICATES}, bootstrap {BOOT}, seed {SEED}")
     print("true means (higher arm vs lower arm) | n per arm | power")
     for n in (8, 12):
-        for mean_lo, mean_hi in ((4.5, 5.5), (4.0, 5.5), (3.5, 5.5)):
+        # The last pair is the 11 October run's Sonnet round-1 means (Python
+        # 5.75, Firth 4.38), the gap this run is powered for.
+        for mean_lo, mean_hi in ((4.5, 5.5), (4.0, 5.5), (3.5, 5.5), (4.38, 5.75)):
             p = power(n, mean_hi, mean_lo, rng)
             print(f"{mean_hi} vs {mean_lo} | {n} | {p:.2f}")
 

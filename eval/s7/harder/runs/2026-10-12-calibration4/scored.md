@@ -179,23 +179,32 @@ subject, with these sample sizes:
   holds for a non-Anthropic model.
 
 **Sample size.** `power.py` next to this file simulates the rule
-(binomial tasks, 2,000 replicates, seed 0; `power-output.txt`), for a true
-mean of 5.5 tasks in the higher arm:
+(binomial tasks, 2,000 replicates, seed 0; `power-output.txt`):
 
-| True difference | 8 per arm (DeepSeek) | 12 per arm (Sonnet) |
+| True means (higher arm vs lower) | 8 per arm (DeepSeek) | 12 per arm (Sonnet) |
 | --- | --- | --- |
-| 1 task (4.5) | 0.40 | 0.54 |
-| 1.5 tasks (4.0) | 0.76 | 0.91 |
-| 2 tasks (3.5) | 0.93 | 0.99 |
+| 5.5 vs 4.5 (1 task) | 0.40 | 0.54 |
+| 5.5 vs 4.0 (1.5 tasks) | 0.76 | 0.90 |
+| 5.5 vs 3.5 (2 tasks) | 0.93 | 0.99 |
+| 5.75 vs 4.38 (1.37 tasks) | 0.74 | 0.90 |
 
-So Sonnet's row has about 0.9 power for a true difference of 1.5 tasks and
-about 0.5 for 1 task, the smallest material one. Calibration is there to
+**The effect size this run is powered for** is the gap the 11 October run
+measured for Sonnet on the first attempt, Python 5.75 against Firth 4.38
+(`runs/2026-10-11-scored/results.md`): at 12 per arm the rule finds a
+true gap of that size with power 0.90. It is underpowered for a gap of one
+task, the smallest material one (0.54 at 12 per arm, 0.40 at 8). So a
+result that is not material, where the true gap may be near one task, is
+not evidence of parity. Calibration is there to
 choose tasks where Sonnet's Python arm sits below the ceiling; if it does
 not, the ceiling rule decides the row whatever the sample size. A
 difference that is not material is reported with its interval and is not
 evidence of parity beyond it. The calibration means on the selected set,
 with `power.py`'s estimate at those means, are reported before the first
 scored sample (`calibration.md`).
+
+**Voids beside every result.** Each subject's row gives its voids and
+crashes per arm and by cause, next to its difference, so a lopsided void
+pattern is visible where the result is read.
 
 **The guarantees, and sorting a case's error:** as in
 `../scored-run/preregistration.md`, with its table of diagnostic codes. If
