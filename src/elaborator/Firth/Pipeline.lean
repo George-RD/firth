@@ -630,6 +630,23 @@ private partial def everyItem : List Item → List (Item × Span)
   | item@(.atom _ span) :: rest => (item, span) :: everyItem rest
   | item@(.primitive _ span) :: rest => (item, span) :: everyItem rest
 
+/-- Whether the item starting at `candidate` and the one starting at
+`operation` are in the same list of items with no quotation or `locals`
+block between them: in the same run of items, told from the parse, so a
+sequence literal `{ 1 }` between them is no bracket. -/
+private partial def sameRun (candidate operation : Nat) (items : List Item) : Bool :=
+  let starts := items.map (itemSpan · |>.start.offset)
+  if starts.contains candidate && starts.contains operation then
+    !items.any fun item =>
+      let span := itemSpan item
+      span.start.offset > candidate && span.start.offset < operation &&
+        match item with
+        | .quotation _ _ | .locals _ _ _ => true
+        | _ => false
+  else items.any fun
+    | .quotation inner _ | .locals _ inner _ => sameRun candidate operation inner
+    | _ => false
+
 /-- For a word or primitive handed values it does not take, where no other
 edit was found: the edit that removes one value written before it, in the
 same run of items, as the extra `m` in `m e m m e 16 prim div dlt undo4`
@@ -639,7 +656,7 @@ value inside brackets), is removed in turn and the word checked again
 (`checkCallEdit`). An edit is named only when exactly one edited source lets
 the word check, so removing either of two adjacent `m`s, which leaves one
 text, counts once, and only when that removal is of a local or a literal
-with no bracket between it and the operation. It never changes what is
+in the same run of items as the operation (`sameRun`). It never changes what is
 accepted. -/
 private def extraValueEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
     (operation : Span) : Option CallEdit :=
@@ -664,15 +681,13 @@ private def extraValueEdit (config : PipelineConfig) (source : String) (word : W
   match (checking.map (·.1)).eraseDups with
   | [_] =>
       -- Named only as a local or a literal in the same run of items as the
-      -- operation: no bracket between them, whether or not it touches the
-      -- items beside it (`[i]`, `{x}`).
+      -- operation (`sameRun`): no quotation or `locals` block between them.
       let named := checking.filter fun (_, item, span) =>
         let value := match item with
           | .literal _ _ => true
           | .word _ _ => locals.contains span.start.offset
           | _ => false
-        value && !(bytesText source span.stop.offset opStart).any
-          (fun c => c == '[' || c == ']' || c == '{' || c == '}')
+        value && sameRun span.start.offset opStart word.body
       named.getLast?.bind fun (_, _, span) =>
         let start := span.start.offset
         let removed := bytesText source start span.stop.offset

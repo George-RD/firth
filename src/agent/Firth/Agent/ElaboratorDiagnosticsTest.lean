@@ -1596,6 +1596,10 @@ private def runExtraValueTests : IO Unit := do
   extraReport "the order is open" "firth.type.word-input-mismatch"
     ": count-loop (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many cnt:Int^many -- ρ count:Int^many)\n  locals { xs k i cnt } { cnt } ;\n: main (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { xs k xs k 0 count-loop } ;"
     ["`count-loop` in `main`"] ["Remove the", "One value too many"]
+  -- A sequence literal between the value and the operation is no bracket:
+  -- removing the second `m` is the one removal that checks, and it is named.
+  extraReport "a sequence literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1 } drop undo4 } ;")
+    ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24: write `e { 1 } drop` in place of `m e { 1 } drop` on line 5. With that edit `u` checks."] []
   -- The text from the value to the operation crosses a line, so it is not
   -- written out in place: the hint names the value alone.
   extraReport "a removal across lines" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m\n  e undo4 } ;")
