@@ -325,6 +325,12 @@ def runParserTests : IO Unit := do
   -- error comes before it.
   expectSpanFailure ": f ( -- r:Int ) a_b @ ;" "firth.syntax.underscore-in-name" 17 20
   expectSpanFailure ": f ( -- r:Int ) a_b : @ ;" "firth.syntax.underscore-in-name" 17 20
+  -- A lexical error that starts where the name with `_` does loses the tie.
+  expectSpanFailure ": f ( -- ) a_b' ;" "firth.syntax.underscore-in-name" 11 14
+  -- A cut inside a refinement is not an error of its own (the stack effect
+  -- needs its `)`), while an unterminated one before the error still is.
+  expectSpanFailure ": f ( -- x:Int{positive @ } ) ;" "firth.syntax.invalid-token" 24 25
+  expectSpanFailure ": f ( x:Int{positive ) @ ;" "firth.syntax.unterminated-refinement" 11 12
   IO.println "parser tests passed"
 
 def main : IO Unit := runParserTests
