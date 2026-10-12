@@ -1549,6 +1549,64 @@ def calibration_mismatches(samples: list) -> dict[str, list[str]]:
     return out
 
 
+SCORED = HERE / "runs" / "2026-10-11-scored"
+EDIT = re.compile(r"write `([^`]*)` in place of `([^`]+)` on line (\d+)\.")
+
+
+def applied(source: str, hint: str) -> str | None:
+    """`source` with the edit a hint names applied literally: on the line it
+    names, the text it replaces (found once there) replaced. `None` when the
+    hint names no edit or the text is not found once on that line."""
+    m = EDIT.search(hint)
+    if not m:
+        return None
+    new, old, line = m.group(1), m.group(2), int(m.group(3))
+    lines = source.split("\n")
+    if not 0 < line <= len(lines) or lines[line - 1].count(old) != 1:
+        return None
+    lines[line - 1] = lines[line - 1].replace(old, new)
+    return "\n".join(lines)
+
+
+def count_edit_hints() -> None:
+    """The checker's report for the two round-1 Sonnet answers refused for one
+    value too many (scored run, sonnet-firth-6) names the value to remove. The
+    edit, applied literally, gives the author's own round-2 answer: sokoban's
+    then passes every hidden test, and regex's checks but fails the hidden
+    tests it failed in round 2 (16 of 25, results-2.json), from mistakes
+    elsewhere in it."""
+    first = json.loads((SCORED / "sonnet-firth-6" / "solutions-1.json").read_text())
+    second = json.loads((SCORED / "sonnet-firth-6" / "solutions-2.json").read_text())
+    edits = {}
+    for tid in ("sokoban", "regex"):
+        report = harness.check_one(first[tid])
+        hint = next((l[len("hint: "):] for l in report.split("\n") if l.startswith("hint: ")), "")
+        check(hint.startswith("Remove the `m` written at line "),
+              f"one value too many in sonnet-firth-6's {tid}: the hint names the value to remove: {hint}")
+        edited = edits[tid] = applied(first[tid], hint)
+        check(edited == second[tid], f"one value too many in sonnet-firth-6's {tid}: the edit applied gives the round-2 answer")
+        check(edited is not None and harness.check_one(edited) == "ok",
+              f"one value too many in sonnet-firth-6's {tid}: with the edit applied the program checks")
+    sokoban = [BY_ID["sokoban"]]
+    res = tier.score({"sokoban": edits["sokoban"] or ""}, "firth", sokoban)["tasks"]["sokoban"]
+    check(res["pass"] and res["hidden_passed"] == res["hidden_total"],
+          f"sokoban with the named edit applied: hidden {res['hidden_passed']}/{res['hidden_total']}")
+    regex = json.loads((SCORED / "sonnet-firth-6" / "results-2.json").read_text())["tasks"]["regex"]["cases"]
+    check(sum(not c["pass"] for c in regex if not c["visible"]) == 16,
+          "regex with the named edit (the round-2 answer) failed 16 hidden tests in the scored run")
+    # Planted: the report main gave names no edit, and an edit that checks
+    # but is wrong (`mod` for `div` beside the removal) fails a hidden test,
+    # so the hidden tests can tell a right edit from a wrong one here.
+    generic = ("The second value from the top, `m` (Seq Int), is not what `undo4` takes there (Int). "
+               "Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.")
+    check(applied(first["sokoban"], generic) is None, "planted: the old one-value-too-many hint names no edit")
+    wrong = first["sokoban"].replace("{ m e m m e 16 prim div dlt undo4 }", "{ m e m e 16 prim mod dlt undo4 }")
+    check(wrong != first["sokoban"] and harness.check_one(wrong) == "ok", "planted: the wrong edit applies and checks")
+    bad = tier.score({"sokoban": wrong}, "firth", sokoban)["tasks"]["sokoban"]
+    check(bad["hidden_passed"] < bad["hidden_total"],
+          f"planted: the wrong edit fails a hidden test: hidden {bad['hidden_passed']}/{bad['hidden_total']}")
+
+
 def deepseek_sample_scored() -> None:
     """End to end with the real scorer: a planted DeepSeek sample answers the
     first calibration pool with its Firth references, one of them broken, and
@@ -2312,6 +2370,7 @@ def main() -> int:
         task_names()
         regex_drafted_rerun()
         deepseek_sample_scored()
+        count_edit_hints()
     print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
     return 1 if FAILED else 0
 

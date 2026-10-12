@@ -1089,6 +1089,16 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
         | none, some word => s!" With that edit `{word}` checks."
         | some (line, column), some word => s!" With that edit, the next error in `{word}` is at line {line}, column {column}."
         | _, none => ""
+      match edit.removed with
+      | some (removed, line, column) =>
+          -- Found by removing each item written before the operation in
+          -- turn: this one alone lets the word check. Written out in place
+          -- only when the text replaced is on one line.
+          let rewrite := if edit.replacement.isEmpty then ""
+            else s!": write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}"
+          pure (s!"{message} One value too many is pushed before it.",
+            s!"Remove the `{removed}` written at line {line}, column {column}{rewrite}.{outcome}")
+      | none =>
       pure (message, s!"These are the values {account.operation} takes, in another order. To push them in its order, write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}")
   | none =>
       if !account.assignment.isEmpty then
