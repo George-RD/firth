@@ -666,6 +666,10 @@ private partial def sameRun (candidate operation : Nat) (items : List Item) : Bo
     | .quotation inner _ | .locals _ inner _ => sameRun candidate operation inner
     | _ => false
 
+/-- The most items written before an operation that `extraValueEdit`
+removes in turn, each removal a check of the whole source. -/
+def extraValueBudget : Nat := 256
+
 /-- For a word or primitive handed values it does not take, where no other
 edit was found: the edit that removes one value written before it, in the
 same run of items, as the extra `m` in `m e m m e 16 prim div dlt undo4`
@@ -685,23 +689,26 @@ private def extraValueEdit (config : PipelineConfig) (source : String) (word : W
     match item with
     | .word name _ => if bound.contains name then some span.start.offset else none
     | _ => none
-  -- Each removal that lets the word check.
-  let checking := (everyItem word.body).filterMap fun (item, span) =>
-    if span.stop.offset > opStart then none else
+  -- Each removal that lets the word check. Each is a check of the whole
+  -- source, so past `extraValueBudget` items before the operation the
+  -- search is not made and no removal is named.
+  let before := (everyItem word.body).filter fun (_, span) => span.stop.offset ≤ opStart
+  if before.length > extraValueBudget then none else
+  let checking := before.filterMap fun (item, span) =>
     let start := span.start.offset
     let stop := span.stop.offset
-    let edited := bytesText source 0 start ++ bytesText source stop source.utf8ByteSize
-    -- Compared as items: removing either of two `i`s with a comment or
-    -- more space between them leaves the same program.
-    let shape : Option String := match parse edited with
-      | .success file => (wordAt word.span.start.offset file.declarations).map fun definition =>
-          " ".intercalate (definition.body.map itemShape)
-      | .failure _ => none
     -- Only a removal after which the word checks: one that gets past the
     -- operation to a later error is not shown to be the fix.
-    shape.bind fun shape =>
     (checkCallEdit config source word start stop "" (opStart - stop)).bind fun edit =>
-      if edit.after.isSome then none else some (shape, item, span)
+      if edit.after.isSome then none else
+      -- Compared as items: removing either of two `i`s with a comment or
+      -- more space between them leaves the same program.
+      let edited := bytesText source 0 start ++ bytesText source stop source.utf8ByteSize
+      let shape : Option String := match parse edited with
+        | .success file => (wordAt word.span.start.offset file.declarations).map fun definition =>
+            " ".intercalate (definition.body.map itemShape)
+        | .failure _ => none
+      shape.map fun shape => (shape, item, span)
   match (checking.map (·.1)).eraseDups with
   | [_] =>
       -- Named only as a local or a literal in the same run of items as the

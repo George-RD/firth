@@ -1614,6 +1614,15 @@ private def runExtraValueTests : IO Unit := do
     ["Remove the `m` written at line 5, column 24: write `e` in place of `m e` on line 5, column 24. With that edit `u` checks."] []
   extraReport "a comment among the items" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m (* the index *) e undo4 } ;")
     ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  -- Past `extraValueBudget` items before the operation, no removal is
+  -- searched for or named; just under it, the same removal is named.
+  let filler (pairs : Nat) := " ".intercalate (List.replicate pairs "[ ] call")
+  let budgetWord (pairs : Nat) :=
+    s!": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals \{ m i } \{ m {filler pairs} i i gt } ;"
+  extraReport "past the search budget" "firth.type.word-input-mismatch"
+    (budgetWord (Firth.Elaborator.extraValueBudget / 2)) ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "within the search budget" "firth.type.word-input-mismatch"
+    (budgetWord (Firth.Elaborator.extraValueBudget / 2 - 2)) ["One value too many is pushed before it.", "Remove the `i`"] []
   -- The text from the value to the operation crosses a line, so it is not
   -- written out in place: the hint names the value alone.
   extraReport "a removal across lines" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m\n  e undo4 } ;")
