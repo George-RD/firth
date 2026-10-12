@@ -1,0 +1,8 @@
+\ `add2` has no row, so it takes the whole stack. A value pushed earlier is
+\ still on the stack under its inputs, unlike a local that is still to be
+\ used, so the call is refused.
+: add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;
+
+: value-below
+  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )
+  locals { x n } { n x 1 add2 };

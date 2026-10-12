@@ -98,41 +98,37 @@ mutual
 
 /-- Every quotation at every depth pairs each capture with exactly one
 consumed flag, which is what the VM's structural validation requires. -/
-partial def wellFormedCode : List Instruction → Bool
+def wellFormedCode : List Instruction → Bool
   | [] => true
   | .pushLiteral value :: rest => wellFormedValue value && wellFormedCode rest
   | .pushQuote code captures consumed :: rest =>
       wellFormedQuotation code captures consumed && wellFormedCode rest
   | _ :: rest => wellFormedCode rest
+termination_by code => 2 * sizeOf code
 
-partial def wellFormedValue : Value → Bool
+def wellFormedValue : Value → Bool
   | .quotation code captures consumed => wellFormedQuotation code captures consumed
   | _ => true
+termination_by value => 2 * sizeOf value
 
-partial def wellFormedQuotation (code : List Instruction) (captures : List Value)
+def wellFormedQuotation (code : List Instruction) (captures : List Value)
     (consumed : List Bool) : Bool :=
   captures.length == consumed.length && wellFormedCode code && wellFormedValues captures
+termination_by 2 * (sizeOf code + sizeOf captures) + 1
 
-partial def wellFormedValues : List Value → Bool
+def wellFormedValues : List Value → Bool
   | [] => true
   | value :: rest => wellFormedValue value && wellFormedValues rest
+termination_by values => 2 * sizeOf values
 
 end
 
 mutual
 
-/-- The first admission bound a code vector breaks, or `none`. The walk mirrors
-`resource_bounds.rs`: `depth` is the nesting level of `code` itself, every
-`PUSH_QUOTE` body and captured quotation is one level deeper, and both code and
-capture vectors are bounded at every level. -/
-partial def boundViolation (code : List Instruction) (depth : Nat := 0) : Option String :=
-  if depth > maxNesting then
-    some s!"quotation nesting depth {depth} exceeds the target bound of {maxNesting}"
-  else if code.length > maxInstructions then
-    some s!"instruction count {code.length} exceeds the target bound of {maxInstructions}"
-  else instructionViolation code depth
-
-partial def instructionViolation (code : List Instruction) (depth : Nat) : Option String :=
+/-- The first admission bound the code of a quotation body breaks: `code` is
+at nesting level `depth`, and every `PUSH_QUOTE` body and captured quotation
+is one level deeper. -/
+def instructionViolation (code : List Instruction) (depth : Nat) : Option String :=
   match code with
   | [] => none
   | .pushLiteral value :: rest =>
@@ -144,30 +140,51 @@ partial def instructionViolation (code : List Instruction) (depth : Nat) : Optio
       | some detail => some detail
       | none => instructionViolation rest depth
   | _ :: rest => instructionViolation rest depth
+termination_by 2 * sizeOf code
 
-partial def valueViolation (value : Value) (depth : Nat) : Option String :=
+def valueViolation (value : Value) (depth : Nat) : Option String :=
   match value with
   | .quotation body captures _ => quotationViolation body captures (depth + 1)
   | _ => none
+termination_by 2 * sizeOf value
 
-partial def quotationViolation (body : List Instruction) (captures : List Value) (depth : Nat) :
+/-- A quotation at level `depth`: its captures, then its body as
+`boundViolation body depth` checks it, then each captured value. -/
+def quotationViolation (body : List Instruction) (captures : List Value) (depth : Nat) :
     Option String :=
   if captures.length > maxInstructions then
     some s!"capture count {captures.length} exceeds the target bound of {maxInstructions}"
+  else if depth > maxNesting then
+    some s!"quotation nesting depth {depth} exceeds the target bound of {maxNesting}"
+  else if body.length > maxInstructions then
+    some s!"instruction count {body.length} exceeds the target bound of {maxInstructions}"
   else
-    match boundViolation body depth with
+    match instructionViolation body depth with
     | some detail => some detail
     | none => capturesViolation captures depth
+termination_by 2 * (sizeOf body + sizeOf captures) + 1
 
-partial def capturesViolation (captures : List Value) (depth : Nat) : Option String :=
+def capturesViolation (captures : List Value) (depth : Nat) : Option String :=
   match captures with
   | [] => none
   | value :: rest =>
       match valueViolation value depth with
       | some detail => some detail
       | none => capturesViolation rest depth
+termination_by 2 * sizeOf captures
 
 end
+
+/-- The first admission bound a code vector breaks, or `none`. The walk mirrors
+`resource_bounds.rs`: `depth` is the nesting level of `code` itself, every
+`PUSH_QUOTE` body and captured quotation is one level deeper, and both code and
+capture vectors are bounded at every level. -/
+def boundViolation (code : List Instruction) (depth : Nat := 0) : Option String :=
+  if depth > maxNesting then
+    some s!"quotation nesting depth {depth} exceeds the target bound of {maxNesting}"
+  else if code.length > maxInstructions then
+    some s!"instruction count {code.length} exceeds the target bound of {maxInstructions}"
+  else instructionViolation code depth
 
 /-- One published word, in the shape §6 gives a `WordEntry`. -/
 structure WordEntry where

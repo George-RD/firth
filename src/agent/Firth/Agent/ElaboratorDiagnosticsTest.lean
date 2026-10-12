@@ -480,6 +480,334 @@ private def runAssumesTests : IO Unit := do
         (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes))
         [("merge-loop", ([], ["append-rest"])), ("append-rest", ([], []))]
 
+/-- An underflow where the values missing can only have come from the word's
+caller says how many inputs the word declares and how many its body takes;
+one where a local, or a quotation, may be what is missing does not. -/
+private def runDeclaredInputsTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-declared-inputs" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let underflow := "firth.type.stack-underflow"
+  -- The report says each of `needles`, and with the inputs it says the word
+  -- takes declared, written here by hand as `fixed`, the source has no
+  -- underflow left.
+  let declaredCase (label source : String) (needles : List String) (fixed : String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) underflow with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label underflow emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        match elaboratePipeline pipelineContext fixed agentConfig with
+        | .success _ => pure ()
+        | .failure envelopes =>
+            unless (envelopes.filter fun envelope => (encode envelope).contains underflow).isEmpty do
+              fail s!"{label}: with the inputs declared, the body still runs short: {envelopes.map encode}"
+    | envelopes => fail s!"{label}: expected one {underflow} diagnostic, got {envelopes.length}"
+  let notDeclared (label source : String) (needles : List String := []) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) underflow with
+    | [envelope] =>
+        let emitted := encode envelope
+        if emitted.contains " declares " then
+          fail s!"{label}: the report blames the declared inputs: {emitted}"
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+    | envelopes => fail s!"{label}: expected one {underflow} diagnostic, got {envelopes.length}"
+  -- Copied verbatim from seq-sum in round 1 of S7 run 8, sample 2
+  -- (eval/s7/runs/2026-09-29-haiku-4c379e0/haiku-firth-2/solutions-2.json).
+  -- The report used to be "A `locals` block or an operation here needs
+  -- more values than the stack holds."
+  let seqSum := ": sum-acc\n  (forall ρ; ρ xs:Seq Int^many i:Int^many acc:Int^many -- ρ result:Int^many)\n  locals { xs i acc } {\n    i xs prim seq-int.len prim < [\n      xs\n      i 1 prim +\n      xs i prim seq-int.at acc prim +\n      sum-acc\n    ] [\n      acc\n    ] if\n  };\n\n: main\n  ( -- result:Int^many)\n  locals { xs } {\n    xs 0 0\n    sum-acc\n  };\n"
+  declaredCase "no inputs declared" seqSum
+    ["`locals { xs }` in `main` names 1 value, but no value is on the stack before it. `main` declares no inputs, but its body takes 1 input.",
+      "declare 1 more input in its stack effect. Otherwise push them before `locals { xs }`."]
+    (seqSum.replace "( -- result:Int^many)" "( xs:Seq Int^many -- result:Int^many)")
+  -- The block names the declared input and one more.
+  declaredCase "one more than declared" ": f ( a:Int^many -- r:Int^many ) locals { a b } { a b prim + } ;\n"
+    ["`locals { a b }` in `f` names 2 values, but only 1 value is on the stack before it. `f` declares 1 input, but its body takes 2 inputs."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) locals { a b } { a b prim + } ;\n"
+  -- The declared input is used up before a later block.
+  declaredCase "inputs used up" ": f ( a:Int^many -- r:Int^many ) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
+    ["`f` declares 1 input, but its body takes 3 inputs.", "declare 2 more inputs in its stack effect."]
+    ": f ( b:Int^many c:Int^many a:Int^many -- r:Int^many ) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
+  -- With one input declared the body runs short again, at the second block:
+  -- it takes two.
+  declaredCase "short twice" ": f ( -- r:Int^many ) locals { xs } { xs 1 prim + locals { y z } { y z prim + } } ;\n"
+    ["`f` declares no inputs, but its body takes 2 inputs."]
+    ": f ( p:Int^many xs:Int^many -- r:Int^many ) locals { xs } { xs 1 prim + locals { y z } { y z prim + } } ;\n"
+  -- An operation, not a block.
+  declaredCase "an operation" ": f ( -- r:Int^many ) 1 prim + ;\n"
+    ["`prim +` in `f` takes 2 values", "`f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) 1 prim + ;\n"
+  -- A call to a word whose effect has a row, short of one value, and of both.
+  let rowCallee := ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) prim + ;\n"
+  declaredCase "a call to a word with a row" (rowCallee ++ ": f ( -- r:Int^many ) 1 g ;\n")
+    ["`g` in `f` takes 2 values", "`f` declares no inputs, but its body takes 1 input."]
+    (rowCallee ++ ": f ( a:Int^many -- r:Int^many ) 1 g ;\n")
+  declaredCase "a call to a word with a row, given nothing" (rowCallee ++ ": f ( -- r:Int^many ) g ;\n")
+    ["`f` declares no inputs, but its body takes 2 inputs."]
+    (rowCallee ++ ": f ( a:Int^many b:Int^many -- r:Int^many ) g ;\n")
+  -- A call to a word whose effect has no row: the pipeline has no account of
+  -- the values it gets, so erasure says how many it needs.
+  let closedCallee := ": g ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n"
+  declaredCase "a call to a word with no row" (closedCallee ++ ": f ( -- r:Int^many ) 1 g ;\n")
+    ["`g` in `f` needs 2 values, but only 1 value is on the stack before it. `f` declares no inputs, but its body takes 1 input.",
+      "declare 1 more input in its stack effect. Otherwise push them before `g`."]
+    (closedCallee ++ ": f ( a:Int^many -- r:Int^many ) 1 g ;\n")
+  -- The call named as the source writes it, not by its canonical name.
+  let inVocab := "vocab v {\n: g ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n}\nuse v as w;\n"
+  declaredCase "a call through an alias" (inVocab ++ ": f ( -- r:Int^many ) 1 w.g ;\n")
+    ["`w.g` in `f` needs 2 values", "Otherwise push them before `w.g`."]
+    (inVocab ++ ": f ( a:Int^many -- r:Int^many ) 1 w.g ;\n")
+  -- Kernel atoms.
+  declaredCase "swap" ": f ( -- x:Int^many y:Int^many ) swap ;\n"
+    ["`swap` in `f` needs 2 values, but no value is on the stack before it. `f` declares no inputs, but its body takes 2 inputs.",
+      "declare 2 more inputs in its stack effect. Otherwise push them before `swap`."]
+    ": f ( a:Int^many b:Int^many -- x:Int^many y:Int^many ) swap ;\n"
+  declaredCase "dup" ": f ( -- r:Int^many ) dup prim + ;\n"
+    ["`dup` in `f` needs 1 value, but no value is on the stack before it. `f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) dup prim + ;\n"
+  declaredCase "drop" ": f ( a:Int^many -- r:Bool^many ) drop drop true ;\n"
+    ["`drop` in `f` needs 1 value, but no value is on the stack before it. `f` declares 1 input, but its body takes 2 inputs."]
+    ": f ( a:Int^many b:Int^many -- r:Bool^many ) drop drop true ;\n"
+  declaredCase "quote" ": f ( -- r:Int^many ) quote call ;\n"
+    ["`quote` in `f` needs 1 value, but no value is on the stack before it. `f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) quote call ;\n"
+  -- `call` and `dip` count the values the quotation they run takes, and the
+  -- values missing go below the quotation, not just before the atom:
+  -- `[ prim + ] x call` would run `x`. Each hint is followed in `fixed`
+  -- below: the value pushed before the quotation, or the condition, checks.
+  declaredCase "call" ": f ( a:Int^many -- r:Int^many ) [ prim + ] call ;\n"
+    ["`call` in `f` needs 3 values, but only 2 values are on the stack before it. `f` declares 1 input, but its body takes 2 inputs.",
+      "Otherwise push them before the quotation `call` runs."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) [ prim + ] call ;\n"
+  declaredCase "dip" ": f ( -- r:Int^many ) [ 1 ] dip prim + ;\n"
+    ["`dip` in `f` needs 2 values, but only 1 value is on the stack before it. `f` declares no inputs, but its body takes 1 input.",
+      "Otherwise push them before the quotation `dip` runs."]
+    ": f ( a:Int^many -- r:Int^many ) [ 1 ] dip prim + ;\n"
+  -- `if` counts its condition and the values its branches take.
+  declaredCase "if" ": f ( -- r:Int^many ) true [ prim + ] [ prim - ] if ;\n"
+    ["`if` in `f` needs 5 values, but only 3 values are on the stack before it. `f` declares no inputs, but its body takes 2 inputs.",
+      "Otherwise push them before the condition `if` tests."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) true [ prim + ] [ prim - ] if ;\n"
+  declaredCase "dip keeping a value" ": f ( -- r:Int^many ) 5 [ prim + ] dip prim + ;\n"
+    ["`f` declares no inputs, but its body takes 2 inputs.", "Otherwise push them before the value `dip` keeps."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) 5 [ prim + ] dip prim + ;\n"
+  declaredCase "if with no condition" ": f ( -- r:Int^many ) [ 1 ] [ 2 ] if ;\n"
+    ["`f` declares no inputs, but its body takes 1 input.",
+      "Otherwise push them before the quotations `if` chooses between. The value missing is the `Bool` that `if` tests."]
+    ": f ( c:Bool^many -- r:Int^many ) [ 1 ] [ 2 ] if ;\n"
+  -- The condition is among the values missing, and goes on top of the
+  -- others: `true 1 2 [ prim + ] [ prim - ] if` would test `2` (below).
+  declaredCase "if with no condition, short of more" ": f ( -- r:Int^many ) [ prim + ] [ prim - ] if ;\n"
+    ["`if` in `f` needs 5 values, but only 2 values are on the stack before it. `f` declares no inputs, but its body takes 3 inputs.",
+      "Otherwise push them before the quotations `if` chooses between. Either way, the `Bool` that `if` tests goes last, on top of the others."]
+    ": f ( a:Int^many b:Int^many c:Bool^many -- r:Int^many ) [ prim + ] [ prim - ] if ;\n"
+  -- With an input declared, the new inputs may not go on top of it, so only
+  -- pushing them is given an order.
+  declaredCase "if with no condition, an input declared" ": f ( a:Int^many -- r:Int^many ) drop [ prim + ] [ prim - ] if ;\n"
+    ["`f` declares 1 input, but its body takes 4 inputs.",
+      "Otherwise push them before the quotations `if` chooses between. If you push them, the `Bool` that `if` tests goes last, on top of the others."]
+    ": f ( x:Int^many y:Int^many c:Bool^many a:Int^many -- r:Int^many ) drop [ prim + ] [ prim - ] if ;\n"
+  -- The hint's other way, followed as written for each case above: the
+  -- values pushed where it says, and the word checks.
+  for (label, pushed) in [
+      ("call", ": f ( a:Int^many -- r:Int^many ) 7 [ prim + ] call ;\n"),
+      ("dip", ": f ( -- r:Int^many ) 5 [ 1 ] dip prim + ;\n"),
+      ("dip keeping a value", ": f ( -- r:Int^many ) 7 8 5 [ prim + ] dip prim + ;\n"),
+      ("if", ": f ( -- r:Int^many ) 3 4 true [ prim + ] [ prim - ] if ;\n"),
+      ("if with no condition", ": f ( -- r:Int^many ) true [ 1 ] [ 2 ] if ;\n"),
+      ("if with no condition, short of more", ": f ( -- r:Int^many ) 1 2 true [ prim + ] [ prim - ] if ;\n"),
+      ("if with no condition, an input declared",
+        ": f ( a:Int^many -- r:Int^many ) drop 1 2 true [ prim + ] [ prim - ] if ;\n")] do
+    match elaboratePipeline pipelineContext pushed agentConfig with
+    | .success _ => pure ()
+    | .failure envelopes => fail s!"{label}: pushed where the hint says, the word is refused: {envelopes.map encode}"
+  -- The order matters: with the condition pushed first, `if` tests `2` and
+  -- its branches get `true`. The refusal must be that one, not another.
+  match elaboratePipeline pipelineContext ": f ( -- r:Int^many ) true 1 2 [ prim + ] [ prim - ] if ;\n" agentConfig with
+  | .success _ => fail "the condition pushed first: the word checks, so the hint need not give an order"
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      unless emitted.contains "firth.type.primitive-input-mismatch" && emitted.contains "`true` (Bool)" do
+        fail s!"the condition pushed first: refused, but not for its branches getting `true`: {emitted}"
+  | .failure envelopes => fail s!"the condition pushed first: expected one report, got {envelopes.map encode}"
+  -- A quotation whose effect rests on a call to a word with no row is not
+  -- exact, since typing has that word take the whole stack. The count still
+  -- holds: had the call been refused with the input declared, it would be
+  -- refused inside the quotation, before the `call`, and nothing would be said.
+  let closedOne := ": w ( -- x:Int^many ) 1 ;\n"
+  declaredCase "an inexact quotation" (closedOne ++ ": f ( -- r:Int^many ) [ drop w ] call ;\n")
+    ["`f` declares no inputs, but its body takes 1 input."]
+    (closedOne ++ ": f ( a:Int^many -- r:Int^many ) [ drop w ] call ;\n")
+  -- The body takes one input and leaves nothing: the comparison with the
+  -- declared result is made at the signature, before the `drop`, but after
+  -- the body is checked, so it does not stop the count.
+  declaredCase "a result missing too" ": f ( -- r:Int^many ) drop ;\n"
+    ["`f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) drop ;\n"
+  -- With one input declared, the inner block is short while `x` is an
+  -- unused local, which is not blamed on the inputs: the body takes at
+  -- least one.
+  match reportsWithCode (elaboratePipeline pipelineContext
+      ": f ( -- r:Int^many ) locals { x } { locals { y } { x y prim + } } ;\n" agentConfig) underflow with
+  | [envelope] =>
+      let emitted := encode envelope
+      for needle in ["`f` declares no inputs, but its body takes at least 1 input.", "declare 1 more input in its stack effect, or more."] do
+        unless emitted.contains needle do
+          fail s!"short with a local unused: the report does not say {needle}: {emitted}"
+  | envelopes => fail s!"short with a local unused: expected one {underflow} diagnostic, got {envelopes.length}"
+  -- The local `a` is not used yet: the inner block was meant to name a
+  -- value, not a new input.
+  notDeclared "a local unused" ": f ( a:Int^many -- r:Int^many ) locals { a } { locals { b } { a b prim + } } ;\n"
+    ["A `locals` block or an operation here needs more values than the stack holds."]
+  -- Both inputs are locals, which are not values on the stack.
+  notDeclared "an operation under locals" ": f ( a:Int^many b:Int^many -- r:Int^many ) locals { a b } { prim + } ;\n"
+    ["The locals here, `a` and `b`, are not values on the stack"]
+  -- A word with a row takes the values below its inputs from its caller.
+  notDeclared "an effect with a row"
+    ": f (forall ρ; ρ a:Int^many -- ρ r:Int^many) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
+    ["A `locals` block or an operation here needs more values than the stack holds."]
+  -- An operation inside a `locals` block: a local may have been meant.
+  notDeclared "an atom under locals" ": f ( a:Int^many -- r:Int^many ) locals { a } { a swap prim - } ;\n"
+    ["`swap` needs more values than the stack holds here."]
+  -- A quotation is what is missing.
+  notDeclared "call with no quotation" ": f ( -- r:Int^many ) call ;\n"
+    ["`call` needs more values than the stack holds here."]
+  notDeclared "dip with no quotation" ": f ( a:Int^many -- r:Int^many ) dip ;\n"
+    ["`dip` needs more values than the stack holds here."]
+  notDeclared "if with one branch" ": f ( a:Bool^many -- r:Int^many ) [ 1 ] if ;\n"
+    ["`if` needs more values than the stack holds here."]
+  notDeclared "compose" ": f ( -- r:Int^many ) [ 1 ] compose call ;\n"
+    ["`compose` needs more values than the stack holds here."]
+  -- A word whose effect has no row takes the whole stack, so with inputs
+  -- declared the call to `g`, before the underflow, is refused: declaring
+  -- them is not the fix.
+  let closedPush := ": g ( -- x:Int^many ) 1 ;\n"
+  notDeclared "an operation after a call to a word with no row" (closedPush ++ ": f ( -- r:Int^many ) g prim + ;\n")
+  notDeclared "a block after a call to a word with no row"
+    (closedPush ++ ": main ( -- r:Int^many ) g locals { a b } { a b prim + } ;\n")
+    ["A `locals` block or an operation here needs more values than the stack holds."]
+  -- The stack is not tracked after a quotation of unknown effect ran:
+  -- erasure counts the quotations `call` ran as still there, so the third
+  -- `drop` looks short of one value where the body takes two.
+  notDeclared "an untracked stack" ": f ( -- r:Int^many ) [ 2 ] [ call ] call drop drop drop 5 ;\n"
+    ["`drop` needs more values than the stack holds here."]
+
+/-- A word whose effect has no row takes the whole stack, so a call to it
+with more on the stack is refused. The report names the word, says its effect
+has no row, and writes the effect with a row; the test writes that effect in
+place of the declared one and the program then checks. Typing names the word
+only when giving it a row, and only it, removes the refusal
+(`closedCallFor`), so a call with a row, or a closed call given values of the
+wrong types, is not told this. -/
+private def runClosedCalleeTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-closed" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let hintOf (envelope : Envelope) : String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "hint").getStr?.toOption.getD ""
+    | .error _ => ""
+  let closedText := "takes the whole stack: its effect has no row"
+  -- The report, the effect its hint writes for `word`, and the program
+  -- with that effect in place of `declared` checks.
+  let closedCase (label code source word declared : String) (needles : List String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label code emitted
+        for needle in (closedText :: needles) do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        if emitted.contains "own body is refused" then
+          fail s!"{label}: the report says the callee's body is then refused: {emitted}"
+        let marker := s!"declare it `: {(word.splitOn ".").getLastD word} "
+        let written := (((hintOf envelope).splitOn marker)[1]?.map fun rest => (rest.splitOn "`")[0]!).getD ""
+        unless written.startsWith "(forall " do
+          fail s!"{label}: the hint does not write `{word}` with a row: {hintOf envelope}"
+        unless (source.splitOn declared).length == 2 do
+          fail s!"{label}: the declared effect is not in the source once"
+        match elaboratePipeline pipelineContext (source.replace declared written) agentConfig with
+        | .success _ => pure ()
+        | .failure envelopes =>
+            fail s!"{label}: with `{word}` declared {written}, the program is refused: {envelopes.map encode}"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
+  let notClosed (label code source : String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
+        let emitted := encode envelope
+        if emitted.contains closedText || emitted.contains "declare it `:" then
+          fail s!"{label}: the report says the callee takes the whole stack: {emitted}"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
+  -- Copied verbatim from primes-up-to in
+  -- eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-1/answer-3.md.
+  -- `is-prime` is called in a branch of `prime-loop`, whose row is below
+  -- it. The report used to be "the false branch takes (empty)", with no
+  -- word named.
+  closedCase "closed callee in a branch" "firth.type.branch-mismatch"
+    ": main\n  (n:Int^many -- primes:Seq Int^many)\n  locals { n } { prim seq-int.empty 2 n prime-loop };\n\n: prime-loop\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ res:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim < prim not\n    [ result ]\n    [\n      candidate locals { num } {\n        num is-prime\n        [ result num prim seq-int.push ]\n        [ result ]\n        if\n      }\n      candidate 1 prim + n prime-loop\n    ]\n    if\n  };\n\n: is-prime\n  (num:Int^many -- result:Bool^many)\n  locals { num } {\n    num 2 prim <\n    [ false ]\n    [ 2 num check-prime ]\n    if\n  };\n\n: check-prime\n  (forall ρ; ρ divisor:Int^many num:Int^many -- ρ result:Bool^many)\n  locals { divisor num } {\n    divisor divisor prim * num prim < prim not\n    [ true ]\n    [\n      num divisor prim mod 0 prim =\n      [ false ]\n      [ divisor 1 prim + num check-prime ]\n      if\n    ]\n    if\n  };\n" "is-prime" "(num:Int^many -- result:Bool^many)"
+    ["The false branch of `if` in `prime-loop` cannot run on the stack it is given, because of its call to `is-prime`",
+      "can run only on an empty stack",
+      "declare it `: is-prime (forall ρ; ρ num:Int^many -- ρ result:Bool^many)`"]
+  -- A value the body pushed is below the call
+  -- (examples/programs/refused/closed-effect-value-below.firth).
+  closedCase "closed callee at the call" "firth.type.word-input-mismatch"
+    ": add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n\n: value-below\n  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )\n  locals { x n } { n x 1 add2 };\n"
+    "add2" "( a:Int^many b:Int^many -- r:Int^many )"
+    ["`add2` takes the whole stack: its effect has no row, but here in `value-below` the stack before it is Int Int Int, more than its inputs.",
+      "declare it `: add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)`"]
+  -- In a vocabulary, the hint declares the word by its own name, which
+  -- is how it is written there (Codex on #228).
+  closedCase "closed callee in a vocabulary" "firth.type.word-input-mismatch"
+    "vocab v {\n: add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n\n: value-below\n  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )\n  locals { x n } { n x 1 add2 };\n}\n"
+    "v.add2" "( a:Int^many b:Int^many -- r:Int^many )"
+    ["declare it `: add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)`"]
+  -- An effect that binds a row it does not use: the hint uses that row
+  -- rather than binding another (Codex on #228).
+  closedCase "closed callee with an unused row binder" "firth.type.word-input-mismatch"
+    ": add2 (forall ρ2; a:Int^many b:Int^many -- r:Int^many) prim + ;\n\n: value-below\n  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )\n  locals { x n } { n x 1 add2 };\n"
+    "add2" "(forall ρ2; a:Int^many b:Int^many -- r:Int^many)"
+    ["declare it `: add2 (forall ρ2; ρ2 a:Int^many b:Int^many -- ρ2 r:Int^many)`: ρ2 stands for the values below its inputs"]
+  -- `outer` calls `inner`, which has no row either: with only `outer`'s
+  -- effect given a row, `outer`'s own body is refused, and the hint says
+  -- so (the pipeline checks the source with that effect).
+  let nested := ": inner ( a:Int^many -- r:Int^many ) 1 prim + ;\n: outer ( a:Int^many -- r:Int^many ) inner ;\n: w ( x:Int^many n:Int^many -- r:Int^many s:Int^many ) locals { x n } { n x outer } ;\n"
+  match reportsWithCode (elaboratePipeline pipelineContext nested agentConfig) "firth.type.word-input-mismatch" with
+  | [envelope] =>
+      let emitted := encode envelope
+      for needle in [closedText, "declare it `: outer (forall ρ; ρ a:Int^many -- ρ r:Int^many)`",
+          "With only that change, `outer`'s own body is refused, so its body has to change as well."] do
+        unless emitted.contains needle do
+          fail s!"closed callee calling a closed word: the report does not say {needle}: {emitted}"
+      let edited := nested.replace "outer ( a:Int^many -- r:Int^many )" "outer (forall ρ; ρ a:Int^many -- ρ r:Int^many)"
+      match reportsIn (elaboratePipeline pipelineContext edited agentConfig) "outer" with
+      | [] => fail "closed callee calling a closed word: with the row, `outer` is not refused"
+      | _ => pure ()
+  | envelopes => fail s!"closed callee calling a closed word: expected one report, got {envelopes.length}"
+  -- A closed word that calls itself with a value below: with a row it
+  -- would leave that value behind, so its body is refused too, though this
+  -- report is already in it (Codex on #228).
+  let recursive := ": outer ( a:Int^many -- r:Int^many ) 1 swap outer ;\n"
+  match reportsWithCode (elaboratePipeline pipelineContext recursive agentConfig) "firth.type.word-input-mismatch" with
+  | [envelope] =>
+      let emitted := encode envelope
+      for needle in [closedText, "With only that change, `outer`'s own body is refused"] do
+        unless emitted.contains needle do
+          fail s!"closed word calling itself: the report does not say {needle}: {emitted}"
+  | envelopes => fail s!"closed word calling itself: expected one report, got {envelopes.length}"
+  -- The same calls with a row, given values of the wrong types.
+  notClosed "a callee with a row" "firth.type.word-input-mismatch"
+    ": add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x add2 } ;\n"
+  -- No row, but the values on top are of the wrong types: a row would not
+  -- help.
+  notClosed "a closed callee given the wrong types" "firth.type.word-input-mismatch"
+    ": add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x add2 } ;\n"
+  notClosed "a closed callee in a branch given the wrong types" "firth.type.branch-mismatch"
+    ": add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x x 0 prim < [ add2 ] [ swap drop ] if } ;\n"
+
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-call" "main.fth"
@@ -923,6 +1251,26 @@ private def runCallAccountTests : IO Unit := do
         unless emitted.contains needle do
           fail s!"external word: the report does not say {needle}: {emitted}"
   | _ => fail "external word: expected one diagnostic"
+  -- Planted: a local whose type is not known is not passed over. `seven`
+  -- is defined outside the file, so the local `m` it is bound to has no
+  -- type in the account. By types alone `5` would go to `m` and the local
+  -- `n` be written for `n`, but `m` may be the value meant for `g`'s `m`,
+  -- so no edit is stated.
+  let sevenConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := { Elaborate.gammaErasure with
+        word := fun name => if name == "seven" then some { input := [], output := [.many] } else none }
+      typingEnv := { Elaborate.gammaTyping with
+        word := fun name => if name == "seven" then
+          some { rowVariables := ["ρ"], input := .row (.rigid "ρ"), output := .snoc (.row (.rigid "ρ")) (.base "Int" .many) }
+          else none } }
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ n:Int^many m:Int^many -- ρ r:Int^many) prim - ;\n: f (forall ρ; ρ n:Int^many -- ρ r:Int^many) locals { n } { seven locals { m } { 5 g } } ;\n" sevenConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      unless emitted.contains "firth.type.stack-underflow" && emitted.contains "`g` in `f` takes 2 values" do
+        fail s!"a local of unknown type: expected the stack-underflow at `g`: {emitted}"
+      if emitted.contains "in place of" then
+        fail s!"a local of unknown type: the report states an edit: {emitted}"
+  | _ => fail "a local of unknown type: expected one diagnostic"
   -- `prim <=`, `prim >` and `prim >=` are primitives. Answers from earlier
   -- runs that wrote them, which were refused when they were not, now check
   -- as written and give the values worked out by hand; each case includes
@@ -1055,6 +1403,65 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "a place open in very many ways" "firth.type.stack-underflow"
     s!": g (forall ρ; ρ {manyEffect} -- ρ r:Int^many) {" ".intercalate (List.replicate 29 "prim +")} ;\n: f (forall ρ; ρ {manyEffect} -- ρ r:Int^many) locals \{ {" ".intercalate many} } \{ {manyValues} g } ;\n"
     ["`g` in `f` takes 30 values"] ["in place of"]
+  -- A local written just after the call, named like the input missing,
+  -- is moved into place: written again, it would be left over. 4.
+  unpushedCase "a local written after the call" ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n } ;\n"
+    ["by moving the local of that name, `n`, written after `g`, into its place before it: write `n true g` in place of `true g n` on line 2. With that edit `f` checks."] []
+    "f" [.int 4, .bool false] [.int 4]
+  -- Planted: here the `n` after `g` is for `prim +`. Moved, `prim +` would
+  -- be short of a value; written again, the word checks: 3 + 3.
+  unpushedCase "a local after the call meant for what follows" ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n prim + } ;\n"
+    ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2. With that edit `f` checks."] ["by moving"]
+    "f" [.int 3, .bool true] [.int 6]
+  -- Planted: here the `n` after `g` may be for the last `prim +`, and the
+  -- `prim +` of a Bool between is the author's own mistake. Moved or written
+  -- again, checking stops at that mistake, so nothing tells the two edits
+  -- apart and neither is stated (Codex on #208).
+  let _ ← callReport "a local after the call, the two edits stopped alike" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n b 1 prim + drop prim + } ;\n"
+    ["`g` in `f` takes 2 values"]
+    ["by moving", "in place of"]
+  -- Moved, checking stops further on than with `n` written again: there
+  -- the `n` left over is the condition of the `if`, which takes a Bool.
+  let _ ← callReport "a local after the call, moved further" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Bool^many) drop drop true ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n [ 1 ] [ 2 ] if true prim + } ;\n"
+    ["by moving the local of that name, `n`, written after `g`, into its place before it: write `n true g` in place of `true g n` on line 2. With that edit, the next error in `f` is at line 2"]
+    []
+  -- Planted: written again, checking stops further on than with `n` moved,
+  -- where the first `prim +` is short of a value.
+  let _ ← callReport "a local after the call, written again further" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n prim + b 1 prim + drop } ;\n"
+    ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2. With that edit, the next error in `f` is at line 2"]
+    ["by moving"]
+  -- Each local after the call is moved or written again on its own. Here
+  -- `a` is for the `prim not` after the call and `b` for `g`: moving both
+  -- gets further than writing both, to the second `prim not`, but the edit
+  -- that moves `b` alone checks (Codex on #208). not true is false.
+  unpushedCase "locals after the call, one moved and one written" ": g (forall ρ; ρ a:Bool^many p:Int^many b:Int^many -- ρ r:Bool^many) drop drop ;\n: f (forall ρ; ρ a:Bool^many b:Int^many -- ρ r:Bool^many) locals { a b } { 5 g a b prim not drop prim not } ;\n"
+    ["by writing the local `a` and moving the local `b`, written after `g`, into its place before it: write `a 5 b g a` in place of `5 g a b` on line 2. With that edit `f` checks."]
+    ["by moving the locals"]
+    "f" [.bool true, .int 3] [.bool false]
+  -- Planted: past four locals after the call, the choices are not all
+  -- checked, so no edit is stated, though moving all five would check.
+  -- They go below the value present, so they are not the values the call
+  -- is short of at its top, which `shortEdit` moves.
+  let _ ← callReport "five locals after the call" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many p:Bool^many -- ρ r:Int^many) drop prim + prim + prim + prim + ;\n: f (forall ρ; ρ a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many -- ρ r:Int^many) locals { a b c d e } { true g a b c d e } ;\n"
+    ["`g` in `f` takes 6 values"]
+    ["in place of"]
+  -- Planted: a comment between the call and the local is not moved over,
+  -- so it is not lost; the local is written again (cubic on #208).
+  let _ ← callReport "a local after the call, past a comment" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g (* kept *) n } ;\n"
+    ["`g` in `f` takes 2 values"]
+    ["by moving", "in place of `true g (* kept *) n`"]
+  -- Planted: only a local of the missing input's name is moved. `k` after
+  -- `g` is another local; moving it in place of `n` would get as far, to
+  -- the `prim +` of a Bool, but drop `k`.
+  let _ ← callReport "another local after the call" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many k:Int^many -- ρ r:Int^many) locals { n b k } { true g k drop true prim + } ;\n"
+    ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2."]
+    ["by moving", "in place of `true g k`"]
   -- Planted: a local of another type is not written for an input. `xs`
   -- here is an Int and `g` takes a Seq Int: no edit.
   let _ ← callReport "a local of another type" "firth.type.stack-underflow"
@@ -1084,14 +1491,163 @@ private def runCallAccountTests : IO Unit := do
     ["Write `3 g` in place of `g 3` on line 2. With that edit `f` checks."] []
     "f" [.int 9] [.int 6]
   -- Planted: sort (8ea4a1d, haiku-firth-14, answer 3), verbatim. `value`,
-  -- written after `insert-sorted`, is not its last input, `pos`, so it is
-  -- not moved before it. `value` is written in its own input's place
-  -- instead, between the new `result` and the new `pos`, and the `value`
-  -- written after the call is the next error.
-  let _ ← callReport "a value for another input" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs sort-insert-all };\n\n: sort-insert-all\n  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i xs } {\n    [ i xs prim seq-int.len prim = ] [ result ] [\n      xs i prim seq-int.at result 0 insert-sorted\n      result i 1 prim + xs sort-insert-all\n    ] if\n  };\n\n: insert-sorted\n  (forall ρ; ρ result:Seq Int^many value:Int^many pos:Int^many -- ρ result:Seq Int^many)\n  locals { result value pos } {\n    [ pos result prim seq-int.len prim = ] [ result value prim seq-int.push ] [\n      value result pos prim seq-int.at prim <\n      [ result pos value prim seq-int.set ] [ result ] if\n      pos 1 prim + insert-sorted value\n    ] if\n  };\n"
+  -- written after `insert-sorted`, is not its last input, `pos`, so the
+  -- values after the call are not moved before it as they stand. `value`
+  -- is moved into its own input's place instead, between the new `result`
+  -- and the new `pos`. Written there again, the `value` after the call
+  -- would be left over, and the `if` refused for it; moved, the `if` is
+  -- refused only for its condition, written as a quotation.
+  let insertSorted := ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs sort-insert-all };\n\n: sort-insert-all\n  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i xs } {\n    [ i xs prim seq-int.len prim = ] [ result ] [\n      xs i prim seq-int.at result 0 insert-sorted\n      result i 1 prim + xs sort-insert-all\n    ] if\n  };\n\n: insert-sorted\n  (forall ρ; ρ result:Seq Int^many value:Int^many pos:Int^many -- ρ result:Seq Int^many)\n  locals { result value pos } {\n    [ pos result prim seq-int.len prim = ] [ result value prim seq-int.push ] [\n      value result pos prim seq-int.at prim <\n      [ result pos value prim seq-int.set ] [ result ] if\n      pos 1 prim + insert-sorted value\n    ] if\n  };\n"
+  let _ ← callReport "a value for another input" "firth.type.stack-underflow" insertSorted
     ["`insert-sorted` in `insert-sorted` takes 3 values (result:Seq Int, value:Int, pos:Int), bottom to top, but only 2 values are on the stack before it",
-     "Push the missing value (value:Int) by writing the local of that name, `value`: write `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if value pos 1 prim + insert-sorted` in place of `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if pos 1 prim + insert-sorted` on line 18. With that edit, the next error in `insert-sorted` is at line 19, column 7."]
+     "Push the missing value (value:Int) by moving the local of that name, `value`, written after `insert-sorted`, into its place before it: write `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if value pos 1 prim + insert-sorted` in place of `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if pos 1 prim + insert-sorted value` on line 18. With that edit, the next error in `insert-sorted` is at line 19, column 7."]
     ["`value insert-sorted` in place of", "`value` is written after it"]
+  -- A word over an unknown type elsewhere does not change the report: it is
+  -- left out of the recheck that finds the next error, as it is out of the
+  -- word's own typing. Counted in, its refusal read as the edited word
+  -- passing.
+  let _ ← callReport "a value for another input, beside an unknown type" "firth.type.stack-underflow"
+    (insertSorted ++ "\n: odd ( x:Foo -- x:Foo ) ;\n")
+    ["With that edit, the next error in `insert-sorted` is at line 19, column 7."]
+  -- With the move made, the word's next error is the condition written as
+  -- a quotation, not a value left over.
+  let insertMoved := (s!"{insertSorted}").replace "pos 1 prim + insert-sorted value" "value pos 1 prim + insert-sorted"
+  let _ ← callReport "insert-sorted with the move made" "firth.type.expected-bool" insertMoved
+    ["`if` in `insert-sorted` needs a Bool condition"]
+  -- One value too many (sonnet-firth-6's sokoban in the scored run of
+  -- 2026-10-11, reduced): `m` is written twice before `undo4`. Removing
+  -- either of the two leaves one text, and nothing else removed lets
+  -- `undo3` check, so the report names that one removal and says it is one
+  -- value too many. [5, 6, 7] with `e` = 1: `dlt` reads m[0] = 5, written
+  -- at 1.
+  let extra := ": dlt (forall ρ; ρ m:Seq Int^many x:Int^many -- ρ r:Int^many) prim seq-int.at ;\n: undo4 (forall ρ; ρ m:Seq Int^many e:Int^many d:Int^many -- ρ r:Seq Int^many) prim seq-int.set ;\n: undo3 (forall ρ; ρ m:Seq Int^many e:Int^many -- ρ r:Seq Int^many)\n  locals { m e } { m e m m e 16 prim div dlt undo4 } ;"
+  callCase "one value too many" "firth.type.word-input-mismatch" extra
+      ["`undo4` in `undo3` takes m:Seq Int, e:Int, d:Int, bottom to top, but here it gets, bottom to top, `e` (Int), `m` (Seq Int) and the result of `dlt` (Int). One value too many is pushed before it.",
+       "Remove the `m` written at line 4, column 26: write `e 16 prim div dlt` in place of `m e 16 prim div dlt` on line 4. With that edit `undo3` checks."]
+      [] "undo3" [.intSeq [5, 6, 7], .int 1] [.intSeq [5, 5, 7]]
+  -- Planted: the report main gave (at 35c73c1) names no removal, so it
+  -- fails the case.
+  let oldExtra := "The second value from the top, `m` (Seq Int), is not what `undo4` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation."
+  if (oldExtra.splitOn "Remove the `m` written at line 4, column 26").length > 1 then
+    fail "one value too many: the old report passes the check"
+  -- Three removals let `ac` check (sonnet-firth-9's checkers, reduced: the
+  -- author meant `40 cnt 1 prim - prim +`, an operation missing): `40`,
+  -- `cnt` or `1`. None is named, and the report does not say the count is
+  -- off.
+  let _ ← callReport "several values whose removal checks" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: ac (forall ρ; ρ m:Seq Int^many cnt:Int^many -- ρ r:Int^many)\n  locals { m cnt } { m 40 cnt 1 prim - gt } ;"
+    ["is not what `gt` takes there (Seq Int)"] ["Remove the", "One value too many", "in place of"]
+  -- The extra value just before the operation: removing the last `i`
+  -- leaves a space more than removing the first, but the same items, so
+  -- it is one removal. Nothing is written in its place.
+  let _ ← callReport "the extra value just before the operation" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i i gt } ;"
+    ["One value too many is pushed before it.", "Remove the `i` written at line 3, column 24. With that edit `f` checks."] ["in place of"]
+  -- One removal gets past the first `gt`, the extra `i`, but `f` still
+  -- does not check: the second `gt` gets two Ints. A removal is named only
+  -- when the word then checks, so none is here.
+  let _ ← callReport "a removal that leaves a later error" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i i gt 1 gt } ;"
+    ["is not what `gt` takes there"] ["Remove the", "One value too many"]
+
+/-- Where removing one value before an operation would not be shown to be
+the fix, no removal is named (`extraValueEdit`). -/
+private def runExtraValueTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-call" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let extraReport (label code source : String) (needles absent : List String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label code emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        for needle in absent do
+          if emitted.contains needle then
+            fail s!"{label}: the report says {needle}: {emitted}"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
+  -- Every removal before the operation is counted, of any kind and at any
+  -- depth: in each of these, removing an `e` lets `u` check, and so does
+  -- removing something else, so no removal is named.
+  let undo4 := ": undo4 (forall ρ; ρ m:Seq Int^many e:Int^many d:Int^many -- ρ r:Seq Int^many) prim seq-int.set ;\n: zero (forall ρ; ρ -- ρ v:Int^many) 0 ;\n: mk (forall ρ; ρ -- ρ s:Seq Int^many) prim seq-int.empty ;\n: u (forall ρ; ρ m:Seq Int^many e:Int^many -- ρ r:Seq Int^many)\n  locals { m e } "
+  for (name, body) in [("an atom", "{ m e dup e undo4 } ;"), ("a word", "{ m zero e e undo4 } ;"),
+      ("an atom just before the operation", "{ m e e dup undo4 } ;"),
+      ("a value with a bracket between", "{ m e [ e ] drop e e undo4 } ;")] do
+    extraReport s!"another removal checks: {name}" "firth.type.word-input-mismatch" (undo4 ++ body)
+      ["`undo4` in `u` takes m:Seq Int, e:Int, d:Int"] ["Remove the", "One value too many"]
+  -- The only removal that checks is of `mk`, a word and not a value written
+  -- as a local or a literal, so none is named.
+  extraReport "the removal of a word" "firth.type.word-input-mismatch" (undo4 ++ "{ m e e mk undo4 } ;")
+    ["`undo4` in `u` takes m:Seq Int, e:Int, d:Int"] ["Remove the", "One value too many"]
+  -- The only removal that checks is of an `i` before `[ ]` (either `i`,
+  -- leaving one program), not in the same run of items as `gt`, so none is
+  -- named; nor where the bracket is written against the items beside it.
+  for body in ["{ m i i [ ] call gt } ;", "{ m i i [] call gt } ;",
+      -- A `locals` block between: removing `i` lets `f` check, and nothing
+      -- else does, but the block is not in the same run.
+      "{ m i m locals { s } { s prim seq-int.len } gt } ;"] do
+    extraReport s!"a bracket between: {body}" "firth.type.word-input-mismatch"
+      (": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } " ++ body)
+      ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  -- The order is open: `count-loop` takes `xs k i cnt`, and `main` pushes
+  -- `xs k xs k 0`. Removing the second `xs` lets `main` check, but gives `k`
+  -- for the start index `i` (the author meant `xs k 0 0`), so it is not
+  -- named (haiku-firth-7, check-tool run of 2026-09-30, with `count-loop`'s
+  -- body cut to `cnt`).
+  extraReport "the order is open" "firth.type.word-input-mismatch"
+    ": count-loop (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many cnt:Int^many -- ρ count:Int^many)\n  locals { xs k i cnt } { cnt } ;\n: main (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { xs k xs k 0 count-loop } ;"
+    ["`count-loop` in `main`"] ["Remove the", "One value too many"]
+  -- A sequence literal between the value and the operation is no bracket:
+  -- removing the second `m` is the one removal that checks, and it is named.
+  extraReport "a sequence literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1 } drop undo4 } ;")
+    ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24: write `e { 1 } drop` in place of `m e { 1 } drop` on line 5. With that edit `u` checks."] []
+  -- Both texts of the rewrite are as written, so wider space inside a
+  -- literal or between the items leaves the value alone.
+  extraReport "wider space inside a literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1  2 } drop undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  extraReport "wider space between the items" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m  e undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  -- A comment between two `i`s: removing either leaves the same program,
+  -- so it is one removal, and it is named.
+  extraReport "a comment between the same values" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i (* note *) i gt } ;"
+    ["One value too many is pushed before it.", "Remove the `i` written at line 3, column 35"] []
+  -- A comment just before the operation is not part of the text written
+  -- in place; a comment among the items to rewrite leaves the value alone.
+  extraReport "a comment before the operation" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e (* the index *) undo4 } ;")
+    ["Remove the `m` written at line 5, column 24: write `e` in place of `m e` on line 5, column 24. With that edit `u` checks."] []
+  extraReport "a comment among the items" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m (* the index *) e undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  -- Past `extraValueBudget` items before the operation, no removal is
+  -- searched for or named; just under it, the same removal is named.
+  let filler (pairs : Nat) := " ".intercalate (List.replicate pairs "[ ] call")
+  let budgetWord (pairs : Nat) :=
+    s!": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals \{ m i } \{ m {filler pairs} i i gt } ;"
+  extraReport "past the search budget" "firth.type.word-input-mismatch"
+    (budgetWord (Firth.Elaborator.extraValueBudget / 2)) ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "within the search budget" "firth.type.word-input-mismatch"
+    (budgetWord (Firth.Elaborator.extraValueBudget / 2 - 2)) ["One value too many is pushed before it.", "Remove the `i`"] []
+  -- A long file: the same word, after a long comment, costs more than
+  -- `extraValueCost` to search, so no removal is named.
+  let comment := "(* " ++ String.mk (List.replicate 12000 'x') ++ " *)\n"
+  extraReport "past the search cost" "firth.type.word-input-mismatch"
+    (comment ++ budgetWord 100) ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "within the search cost" "firth.type.word-input-mismatch"
+    (budgetWord 100) ["One value too many is pushed before it.", "Remove the `i`"] []
+  -- A value is named as written: a sequence literal over two lines is not
+  -- named, and one with more space inside keeps it.
+  let seqWord (literal : String) :=
+    s!": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals \{ m i } \{ m i {literal} gt } ;"
+  extraReport "a value over two lines" "firth.type.word-input-mismatch" (seqWord "{ 1\n 2 }")
+    ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "a value with more space inside" "firth.type.word-input-mismatch" (seqWord "{ 1  2 }")
+    ["Remove the `{ 1  2 }` written at line 3, column 24. With that edit `f` checks."] []
+  -- The text from the value to the operation crosses a line, so it is not
+  -- written out in place: the hint names the value alone.
+  extraReport "a removal across lines" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m\n  e undo4 } ;")
+    ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
 
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
   | .snoc rest type => stackTypes rest ++ [type]
@@ -1118,6 +1674,261 @@ private def runPrimitiveRolesTests : IO Unit := do
     | none =>
         if repeats && mixed then
           fail s!"primitive roles: `{surface}` repeats an input type beside another but has no roles"
+
+mutual
+  private partial def typeBaseNames : Firth.Elaborator.StackEffect.AType → List String
+    | .base name _ => [name]
+    | .quotation input output _ => stackBaseNamesDeep input ++ stackBaseNamesDeep output
+    | .mvar _ _ => []
+  private partial def stackBaseNamesDeep : Firth.Elaborator.StackEffect.AStack → List String
+    | .snoc rest type => stackBaseNamesDeep rest ++ typeBaseNames type
+    | _ => []
+end
+
+/-- The base types a program can make a value of: those in the scheme of
+every primitive it can write and of every literal kind it can write. -/
+private def writableTypes : List String :=
+  let fromPrimitives := languagePrimitives.flatMap fun surface =>
+    match Elaborate.gammaTyping.primitive surface with
+    | some scheme => stackBaseNamesDeep scheme.input ++ stackBaseNamesDeep scheme.output
+    | none => []
+  let fromLiterals := [Firth.Interpreter.Literal.int 0, .bool true, .intSeq [], .boolSeq []].flatMap
+    fun literal => (Elaborate.gammaTyping.literal literal).toList.flatMap typeBaseNames
+  (fromPrimitives ++ fromLiterals).eraseDups
+
+/-- What `types` leaves out of `writableTypes`, then what it has that no
+program can make. -/
+private def typeListGaps (types : List String) : List String × List String :=
+  (writableTypes.filter (!types.contains ·), types.filter (!writableTypes.contains ·))
+
+/-- A stack effect may declare exactly the types a program can make a value
+of (`dec.source-type-names`), and the three reports S7 authors got wrong
+(the harder tier's scored run, 11 October 2026) now say what the text is and
+where. -/
+private def runSourceTypeTests : IO Unit := do
+  let gaps := typeListGaps sourceTypes
+  unless gaps.1.isEmpty && gaps.2.isEmpty do
+    fail s!"source types: the checker's list leaves out {gaps.1} and has {gaps.2}, which no program can make"
+  -- The default pipeline's list, written out in the elaborator, is the
+  -- same; a planted list one short of `Bytes` is not.
+  let sameTypes (types : List String) : Bool :=
+    types.all sourceTypes.contains && sourceTypes.all types.contains
+  unless sameTypes Firth.Elaborator.StackEffect.sourceTypeNames do
+    fail s!"source types: the default pipeline's {Firth.Elaborator.StackEffect.sourceTypeNames} differs from {sourceTypes}"
+  if sameTypes (Firth.Elaborator.StackEffect.sourceTypeNames.erase "Bytes") then
+    fail "source types: a default list without `Bytes` was not caught"
+  -- Planted lists: one short of a type, one with the kernel's `Unit`.
+  unless (typeListGaps (sourceTypes.erase "Handle")).1 == ["Handle"] do
+    fail "source types: a list without `Handle` was not caught"
+  unless (typeListGaps (sourceTypes ++ ["Unit"])).2 == ["Unit"] do
+    fail "source types: a list with `Unit` was not caught"
+  let pipelineContext := contextWithSource "pipeline-types" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let report (source : String) : String × String × String × Nat × Nat :=
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure (envelope :: _) =>
+        match Lean.Json.parse (encode envelope) with
+        | .ok json =>
+            let body := json.getObjValD "body"
+            let params := body.getObjValD "message_params"
+            let start := ((body.getObjValD "location").getObjValD "range").getObjValD "start"
+            ((body.getObjValD "code").getStr?.toOption.getD "",
+              (params.getObjValD "message").getStr?.toOption.getD "",
+              (params.getObjValD "hint").getStr?.toOption.getD "",
+              (start.getObjValD "line").getNat?.toOption.getD 0,
+              (start.getObjValD "column").getNat?.toOption.getD 0)
+        | .error _ => ("", "", "", 0, 0)
+    | _ => ("accepted", "", "", 0, 0)
+  -- What is wrong with a report, if anything, against the one expected.
+  let mismatch (got : String × String × String × Nat × Nat)
+      (code message hint : String) (line column : Nat) : Option String :=
+    let (gotCode, gotMessage, gotHint, gotLine, gotColumn) := got
+    if gotCode != code then some s!"code {gotCode}, not {code}"
+    else if gotMessage != message then some s!"message {gotMessage}"
+    else if !(hint.isEmpty || (gotHint.splitOn hint).length > 1) then
+      some s!"the hint does not contain {hint}: {gotHint}"
+    else if (gotLine, gotColumn) != (line, column) then
+      some s!"place {gotLine}:{gotColumn}, not {line}:{column}"
+    else none
+  let expectReport (name source code message hint : String) (line column : Nat) : IO Unit :=
+    match mismatch (report source) code message hint line column with
+    | some problem => fail s!"{name}: {problem}"
+    | none => pure ()
+  -- Planted: the reports main gave for the three todos' programs (at
+  -- 627a0eb) each fail the check their case below makes.
+  let planted : List (String × (String × String × String × Nat × Nat) × String × String × Nat × Nat) := [
+    ("unnamed output at the end of the file",
+      ("firth.syntax.unexpected-eof", "The input ends here, expected `:`.",
+        "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`.", 4, 1),
+      "firth.syntax.unnamed-stack-item",
+      "`Int` here is a type with no name: every item in a stack effect is written `name:Type`.", 2, 16),
+    ("underscore as an unexpected token",
+      ("firth.syntax.unexpected-token", "Unexpected `_`, expected `:`.",
+        "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`.", 1, 17),
+      "firth.syntax.underscore-in-name", "`b_c` is not a name: a name cannot contain `_`.", 1, 16),
+    ("a made-up type accepted", ("accepted", "", "", 0, 0),
+      "firth.type.unknown-type", "`Foo` in the stack effect of `main` is not a type.", 2, 18)]
+  for (name, old, code, message, line, column) in planted do
+    if (mismatch old code message "" line column).isNone then
+      fail s!"source types: the old report passes the check for {name}"
+  -- `todo.unnamed-output-diagnostic`'s program: refused at `Bool` in `g`,
+  -- not at line 4, column 1, after the last line, as before.
+  let unnamed := ": f ( a:Int -- b:Int ) drop 0 ;\n: g ( a:Int -- Int ) drop 0 ;\n: h ( a:Int -- b:Int ) drop 1 ;\n"
+  expectReport "unnamed output" unnamed "firth.syntax.unnamed-stack-item"
+    "`Int` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Give it a name, as in `name:Int`." 2 16
+  expectReport "unnamed sequence input"
+    ": f ( Seq Int -- n:Int ) drop 0 ;" "firth.syntax.unnamed-stack-item"
+    "`Seq Int` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Any name will do" 1 7
+  -- A name with no type is still the missing `:`, at the `)` where it is
+  -- missing, not at the end of the input.
+  expectReport "a name with no type" ": f ( a:Int -- b ) drop 0 ;\n: g ( -- ) ;\n"
+    "firth.syntax.unexpected-token" "Unexpected `)`, expected `:`." "" 1 18
+  -- `todo.underscore-name-diagnostic`'s program, then a body name.
+  let underscoreHint (renamed : String) :=
+    s!"Rename it everywhere it appears, for example as `{renamed}`."
+  expectReport "underscore in an output name" ": f ( a:Int -- b_c:Int ) drop 0 ;"
+    "firth.syntax.underscore-in-name" "`b_c` is not a name: a name cannot contain `_`."
+    (underscoreHint "b-c") 1 16
+  let whiteTook := ": white_took ( -- n:Int ) 0 ;\n: main ( -- n:Int ) white_took ;"
+  expectReport "underscore in a word name" whiteTook
+    "firth.syntax.underscore-in-name" "`white_took` is not a name: a name cannot contain `_`."
+    (underscoreHint "white-took") 1 3
+  -- The example rename, applied everywhere, checks; it is only an example,
+  -- as `whiteTook` checks too, so the hint does not call it the fix.
+  for renamed in ["white-took", "whiteTook"] do
+    let (code, message, _, _, _) := report (whiteTook.replace "white_took" renamed)
+    unless code == "accepted" do
+      fail s!"underscore in a word name: renamed to `{renamed}`, the program is refused: {code} {message}"
+  -- A leading `_` is part of the name too (Codex on #250); the example
+  -- drops it, since a name cannot start with `-`, and applied it checks.
+  let leading := ": _helper ( -- n:Int ) 0 ;\n: main ( -- n:Int ) _helper ;"
+  expectReport "a name that starts with `_`" leading
+    "firth.syntax.underscore-in-name" "`_helper` is not a name: a name cannot contain `_`."
+    (underscoreHint "helper") 1 3
+  let (leadingCode, leadingMessage, _, _, _) := report (leading.replace "_helper" "helper")
+  unless leadingCode == "accepted" do
+    fail s!"a name that starts with `_`: renamed, the program is refused: {leadingCode} {leadingMessage}"
+  expectReport "a local that starts with `_`"
+    ": f ( a:Int -- b:Int ) locals { _value } { _value } ;"
+    "firth.syntax.underscore-in-name" "`_value` is not a name: a name cannot contain `_`."
+    (underscoreHint "value") 1 33
+  -- When the file already uses the example name, the hint offers none:
+  -- `white-took` here would define a word twice.
+  let taken := ": white-took ( -- n:Int ) 1 ;\n: white_took ( -- n:Int ) 0 ;"
+  expectReport "underscore in a name whose rename is taken" taken
+    "firth.syntax.underscore-in-name" "`white_took` is not a name: a name cannot contain `_`."
+    "Rename it everywhere it appears, to a name the file does not already use." 2 3
+  let (_, _, takenHint, _, _) := report taken
+  if (takenHint.splitOn "white-took").length > 1 then
+    fail s!"underscore in a name whose rename is taken: the hint offers the taken name: {takenHint}"
+  -- When the example would be a reserved name, the hint offers none
+  -- either: `if` and `dup` are atoms, so `_if` renamed to `if` everywhere
+  -- is refused, and so is `_dup` renamed to `dup` (reviewer on #250).
+  let noRenameHint := "Rename it everywhere it appears, to a name the file does not already use."
+  for atom in ["if", "dup"] do
+    let reservedRename := s!": _{atom} ( -- n:Int ) 0 ;\n: main ( -- n:Int ) _{atom} ;"
+    expectReport s!"underscore in a name whose rename is `{atom}`" reservedRename
+      "firth.syntax.underscore-in-name" s!"`_{atom}` is not a name: a name cannot contain `_`."
+      noRenameHint 1 3
+    let (reservedCode, _, _, _, _) := report (reservedRename.replace s!"_{atom}" atom)
+    if reservedCode == "accepted" then
+      fail s!"underscore in a name whose rename is `{atom}`: `{atom}` in place of `_{atom}` checks, so the case does not test the reserved-name guard"
+  -- Planted: the report without the reserved-name guard offers `if`; it
+  -- fails the check.
+  if (mismatch ("firth.syntax.underscore-in-name", "`_if` is not a name: a name cannot contain `_`.",
+      underscoreHint "if", 1, 3)
+      "firth.syntax.underscore-in-name" "`_if` is not a name: a name cannot contain `_`." noRenameHint 1 3).isNone then
+    fail "source types: the `_if` hint offering `if` passes the check"
+  -- Planted: the hint this PR first gave states a rule (`-` joins parts)
+  -- that is not one; it fails the check.
+  if (mismatch ("firth.syntax.underscore-in-name", "`b_c` is not a name: a name cannot contain `_`.",
+      "Names join their parts with `-`. Write `b-c` in place of `b_c`, and the same everywhere else it appears.", 1, 16)
+      "firth.syntax.underscore-in-name" "`b_c` is not a name: a name cannot contain `_`." (underscoreHint "b-c") 1 16).isNone then
+    fail "source types: the old `_` hint passes the check"
+  -- The reviewer's probe on #250: the next error after `at`'s edit is
+  -- `at`'s own, not `Foo` in `other` (line 4, column 13), which `other`'s
+  -- own report gives.
+  let atProbe := ": at\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs n } { xs n swap prim seq-int.at };\n: other ( a:Foo -- a:Foo ) ;"
+  let (atCode, _, atHint, _, _) := report atProbe
+  unless (atHint.splitOn "With that edit `at` checks.").length > 1 do
+    fail s!"the probe beside an unknown type: the {atCode} hint for `at` does not say it checks: {atHint}"
+
+  -- A bare `Seq` with no name: `name:Seq` would be refused in turn, so the
+  -- hint gives both sequence types, and each, applied, checks.
+  let bareSeq := ": f ( Seq -- n:Int ) drop 0 ;"
+  expectReport "an unnamed bare Seq" bareSeq "firth.syntax.unnamed-stack-item"
+    "`Seq` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7
+  for typed in ["name:Seq Int", "name:Seq Bool"] do
+    let (code, message, _, _, _) := report (bareSeq.replace "( Seq --" s!"( {typed} --")
+    unless code == "accepted" do
+      fail s!"an unnamed bare Seq: written `{typed}`, the program is refused: {code} {message}"
+  -- `Seq Foo` with no name: `name:Seq Foo` would be refused too (Codex on
+  -- #250), so the same two are given.
+  expectReport "an unnamed Seq of a made-up type" ": f ( Seq Foo -- n:Int ) drop 0 ;"
+    "firth.syntax.unnamed-stack-item"
+    "`Seq Foo` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7
+  -- An unknown type is reported before a refinement on it, before the
+  -- body's `locals`, and before a name in the body that does not resolve
+  -- (Codex on #250).
+  expectReport "an unknown type before an unresolved name"
+    ": f ( x:Foo -- y:Foo ) missing ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9
+  -- Planted: the report a288045 gave, at `missing`, fails the check.
+  if (mismatch (report ": f ( x:Int -- y:Int ) missing ;")
+      "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9).isNone then
+    fail "source types: the unresolved-name report ahead of `Foo` passes the check"
+  expectReport "an unknown type with a refinement" ": keep ( x:Foo{true} -- x:Foo ) ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `keep` is not a type." "The types a stack effect can declare are" 1 12
+  expectReport "an unknown type with misordered locals"
+    ": f ( a:Foo b:Int -- r:Int ) locals { b a } { b } ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9
+  if (mismatch ("firth.syntax.unnamed-stack-item",
+      "`Seq` here is a type with no name: every item in a stack effect is written `name:Type`.",
+      "Give it a name, as in `name:Seq`. Any name will do: stack-effect names only document the stack.", 1, 7)
+      "firth.syntax.unnamed-stack-item"
+      "`Seq` here is a type with no name: every item in a stack effect is written `name:Type`."
+      "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7).isNone then
+    fail "source types: the old bare `Seq` hint passes the check"
+  -- The first error in the source is reported, whether the `_` comes
+  -- after it (deepseek-firth-9's sokoban: an unnamed output on line 1, then
+  -- `new_cell` on line 58) or before it, ahead of a later lexical error.
+  expectReport "an unnamed output before a `_`"
+    ": f ( a:Int -- Bool ) drop true ;\n: g ( new_cell:Int -- n:Int ) ;" "firth.syntax.unnamed-stack-item"
+    "`Bool` here is a type with no name: every item in a stack effect is written `name:Type`." "" 1 16
+  expectReport "a `_` before an unnamed output"
+    ": g ( new_cell:Int -- n:Int ) ;\n: f ( a:Int -- Bool ) drop true ;" "firth.syntax.underscore-in-name"
+    "`new_cell` is not a name: a name cannot contain `_`." "" 1 7
+  expectReport "a `_` before a lexical error"
+    ": g ( a:Int -- n:Int ) a_b ;\n: f ( -- c:Int ) 'ab' ;" "firth.syntax.underscore-in-name"
+    "`a_b` is not a name: a name cannot contain `_`." "" 1 24
+  expectReport "a `_` in a program that otherwise parses"
+    ": g ( a:Int -- n:Int ) a_b ;" "firth.syntax.underscore-in-name"
+    "`a_b` is not a name: a name cannot contain `_`." "" 1 24
+  -- `todo.unknown-base-type`'s program and its three planted types, and
+  -- the target spelling `SeqInt`.
+  let typeHint := "The types a stack effect can declare are `Int`, `Bool`, `Seq Int` and `Seq Bool`, and `World`, `Handle` and `Bytes` for effects."
+  expectReport "a made-up type" ": main\n  (forall ρ; ρ s:Foo^many -- ρ n:Int^many)\n  drop 0 ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `main` is not a type." typeHint 2 18
+  expectReport "Seq alone" ": main\n  (forall ρ; ρ cells:Seq^many -- ρ n:Int^many)\n  drop 0 ;"
+    "firth.type.unknown-type" "`Seq` in the stack effect of `main` needs its element type."
+    s!"Write `Seq Int` or `Seq Bool`. {typeHint}" 2 22
+  expectReport "a sequence of a made-up type" ": main ( s:Seq Foo -- n:Int ) drop 0 ;"
+    "firth.type.unknown-type"
+    "`Seq Foo` in the stack effect of `main` is not a type: a sequence holds `Int` or `Bool`."
+    typeHint 1 12
+  expectReport "the target spelling" ": main ( s:SeqInt -- n:Int ) drop 0 ;"
+    "firth.type.unknown-type" "`SeqInt` in the stack effect of `main` is not a type." typeHint 1 12
+  -- Every type in the list is accepted.
+  for type in sourceTypes do
+    let source := s!": keep ( x:{type}^linear -- x:{type}^linear ) ;"
+    let (code, message, _, _, _) := report source
+    unless code == "accepted" do
+      fail s!"source types: `{type}` was refused: {code} {message}"
 
 /-- `locals` blocks bound out of order: what the report says, and the edits
 its hint gives, applied and run. -/
@@ -1583,6 +2394,76 @@ def runElaboratorDiagnosticTests : IO Unit := do
       else fail s!"pipeline stack-effect message was not explanatory: {emitted}"
   | _ => fail "pipeline stack-effect result was not singular"
 
+  -- A linear local used in an inner block and again after it: the report
+  -- says it is used twice and where first (todo.linear-local-reused-across-blocks).
+  match elaboratePipeline pipelineContext ": f (forall ρ; ρ w:World^linear -- ρ w:World^linear w2:World^linear)\n  locals { w } { 1 locals { k } { w } w } ;" with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      unless (emitted.splitOn "firth.linearity.copy").length > 1 &&
+          (emitted.splitOn "The linear local `w` is used more than once: first at line 2, column 35, and again here.").length > 1 do
+        fail s!"linear local across blocks: expected a copy report naming the first use: {emitted}"
+  | _ => fail "linear local across blocks: expected one diagnostic"
+
+  -- Where the extra values are when a body leaves more than it declares
+  -- (todo.declared-effect-extra-position). The hint says "on top" only when
+  -- the declared values are the bottom of what is left and not also the
+  -- top; "under" only the other way round; and no place when the types
+  -- allow either. A run of one type can lend its extra value from anywhere
+  -- in the run, so the second pool's elevator `main` (`tm` pushed twice,
+  -- the first case) has its extra `Seq Int` under the declared values.
+  let extraCases : List (String × String × String) := [
+    ("extra under the declared values",
+      ": main\n  (forall ρ; ρ a:Seq Int^many -- ρ r:Seq Int^many n:Int^many m:Int^many)\n  locals { a } { a a 1 2 };",
+      "The top 2 values match the top of the declared output, and under them the body leaves 1 extra value: 1 of the 2 Seq Int values, values 3 to 4 from the top. Where more values of one type are in a row than declared, the types do not tell which of them is extra. Find the value the word should not leave and consume it before the end of the word, or declare it in the signature's output."),
+    ("extra Int among two on top",
+      ": main ( -- b:Bool n:Int ) true 1 2 ;",
+      "The body leaves 1 extra value: 1 of the 2 Int values, values 1 to 2 from the top. Where more values of one type are in a row than declared, the types do not tell which of them is extra."),
+    ("extra Int among two under the top",
+      ": main ( -- n:Int b:Bool ) 1 2 true ;",
+      "The top value matches the top of the declared output, and under it the body leaves 1 extra value: 1 of the 2 Int values, values 2 to 3 from the top. Where more values of one type are in a row than declared, the types do not tell which of them is extra."),
+    ("extra under the declared value",
+      ": main ( -- n:Int ) true 1 ;",
+      "The top value matches the declared output, and under it the body leaves 1 extra value (Bool), the second value from the top. Push it only where needed, or consume it before the values the word leaves are pushed, or declare it in the signature's output, under the others."),
+    ("extra runs both whole and partial",
+      ": main ( -- n:Int ) true 1 2 ;",
+      "The body leaves 2 extra values: 1 of the 2 Int values, values 1 to 2 from the top and the third value from the top (Bool). Where more values of one type are in a row than declared, the types do not tell which of them is extra."),
+    ("extra on top",
+      ": main ( -- b:Bool n:Int ) true 1 false ;",
+      "The body leaves 1 extra value on top (Bool). Consume or `drop` it before the end of the word, or declare it in the signature's output."),
+    ("two extra on top",
+      ": main ( -- n:Int b:Bool ) 1 true 2 3 ;",
+      "The body leaves 2 extra values on top (Int Int)."),
+    ("extra of the declared type",
+      ": main ( -- n:Int m:Int ) 1 2 3 ;",
+      "The body leaves 1 value more than declared (Int), and the types do not tell which one is extra. Find the value the word should not leave and consume it before the end of the word, or declare it in the signature's output."),
+    ("extra fitting more than one way",
+      ": main ( -- b:Bool n:Int ) true 1 true 1 ;",
+      "The body leaves 2 values more than declared, and the types do not tell which ones are extra."),
+    ("extra between the declared values",
+      ": main ( -- n:Int b:Bool m:Int ) 1 true false 2 ;",
+      "The body leaves 1 extra value: 1 of the 2 Bool values, values 2 to 3 from the top. Where more values of one type are in a row than declared, the types do not tell which of them is extra."),
+    ("extra runs next to each other",
+      ": main ( -- b:Bool ) 1 [ ] true 2 3 ;",
+      "The body leaves 4 extra values among the values the signature declares: values 1 to 2 from the top (Int Int) and values 4 to 5 from the top (Int [ .. -- .. ])."),
+    ("extra values whose types also differ",
+      ": main ( -- b:Bool n:Int ) 1 2 3 ;",
+      "The body leaves 1 value more than declared, and the declared values are not among them in order, so some types differ too.")]
+  -- Every case is run before failing, so a wrong hint names each case it breaks.
+  let mut extraFailures : List String := []
+  for (label, source, hint) in extraCases do
+    match elaboratePipeline pipelineContext source with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        unless (emitted.splitOn "firth.type.declared-effect-mismatch").length > 1 && (emitted.splitOn hint).length > 1 do
+          extraFailures := extraFailures ++ [s!"{label}: expected the hint {hint}: {emitted}"]
+        -- No hint but the on-top one says "on top".
+        if !hint.startsWith "The body leaves 1 extra value on top" && !hint.startsWith "The body leaves 2 extra values on top" &&
+            (emitted.splitOn "on top").length > 1 then
+          extraFailures := extraFailures ++ [s!"{label}: the hint claims the extra values are on top: {emitted}"]
+    | _ => extraFailures := extraFailures ++ [s!"{label}: expected one diagnostic"]
+  unless extraFailures.isEmpty do
+    fail ("\n".intercalate extraFailures)
+
   match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
   | .failure [envelope] =>
       if (encode envelope).contains "`missing` is not a defined word" then pure ()
@@ -1895,15 +2776,15 @@ def runElaboratorDiagnosticTests : IO Unit := do
   unless needlesMissing "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different numbers of values: the true branch takes 2 values from the stack below the `if` and leaves 1 value, and the false branch takes 2 values from the stack below the `if` and leaves 2 values. The `if` takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake." allTrueNeedles do
     fail "all-true (answer 1): the report the eval recorded already says what the new one does"
   -- A word whose effect has no row constrains the whole stack, not only
-  -- its inputs, which the account does not model: the report keeps the
-  -- checker's own account instead of naming what `h` gets.
+  -- its inputs, which the account does not model: the report says so
+  -- instead of naming what `h` gets.
   match elaboratePipeline pipelineContext ": h ( x:Int^many -- y:Int^many ) ;\n\n: g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ h ] [ ] if prim + ;" agentConfig with
   | .failure [envelope] =>
       let emitted := encode envelope
       expectValidCode "closed word" "firth.type.branch-mismatch" emitted
-      unless emitted.contains "The true branch of `if` in `g` cannot run on the stack it is given." do
-        fail s!"closed word: the report does not keep the checker's account: {emitted}"
-      if emitted.contains "`h` takes" || emitted.contains "`h` needs" then
+      unless emitted.contains "The true branch of `if` in `g` cannot run on the stack it is given, because of its call to `h`. `h` takes the whole stack: its effect has no row" do
+        fail s!"closed word: the report does not say that `h` takes the whole stack: {emitted}"
+      if emitted.contains "`h` in `g` takes" || emitted.contains "`h` in `g` needs" then
         fail s!"closed word: the report accounts for `h` as if it kept the stack below: {emitted}"
   | _ => fail "closed word: expected one diagnostic"
   -- A branch that reaches below the `if` with `dup`, which takes a value of
@@ -2364,8 +3245,12 @@ def runElaboratorDiagnosticTests : IO Unit := do
     (encodeStackEffectDiagnostic (context "unknown-primitive") unknownPrimitive)
   if languagePrimitives.length != everyPrimitive.length then
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
+  runClosedCalleeTests
+  runDeclaredInputsTests
   runCallAccountTests
+  runExtraValueTests
   runPrimitiveRolesTests
+  runSourceTypeTests
   runEveryErrorTests
   runSyntaxMessageTests
   runAssumesTests

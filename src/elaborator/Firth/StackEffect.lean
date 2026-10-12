@@ -46,6 +46,29 @@ structure Env where
   literal : Firth.Interpreter.Literal → Option AType := fun _ => none
   word : String → Option Scheme := fun _ => none
   primitive : String → Option Scheme := fun _ => none
+  /-- The base type names a stack effect may declare, when the environment
+  restricts them; `none` accepts any name. -/
+  types : Option (List String) := none
+
+/-- A call refused because the word's effect has no row, so it takes the
+whole stack, while there is more on the stack below its inputs. Found by
+checking the definition again with that word given a row: the refusal goes
+away with that change and with no other word's. Diagnostics only. -/
+structure ClosedCall where
+  word : String
+  /-- The word's declared effect with a row added, `(forall ρ; ρ ... -- ρ
+  ...)`, when the word is defined in the source checked and its effect has no
+  row binders or refinements. -/
+  withRow : Option String := none
+  /-- The name of the row in `withRow`. -/
+  rowName : String := "ρ"
+  /-- Whether, with only the word's effect written as `withRow`, the source is
+  refused in the word's own body: its body has to change as well. -/
+  rowRefusesBody : Bool := false
+  /-- The diagnostic's `primary` when this was found. A later pass that moves
+  the report to another operation leaves it behind, so a reader compares. -/
+  reported : Span
+  deriving Repr, BEq
 
 structure Diagnostic where
   code : String
@@ -76,6 +99,9 @@ structure Diagnostic where
   that moves the condition before the first quotation, checked by the
   pipeline. Diagnostics only. -/
   conditionEdit : Option CallEdit := none
+  /-- For a word-input mismatch, or an `if` branch that cannot run on the
+  stack below it, caused by a call to a word whose effect has no row. -/
+  closedCall : Option ClosedCall := none
   deriving Repr, BEq, Nonempty
 
 structure TypedHole where
@@ -576,13 +602,89 @@ def infer (env : Env) (program : KernelProgram) : Except Diagnostic Effect :=
     let (_, output) ← inferSequence env program input
     pure { input, output }
 
-def check (env : Env) (scheme : Scheme) (program : KernelProgram)
+/-- The dictionary words a program calls, in quotations too. -/
+private partial def calledWordNames : Program → List String
+  | .empty => []
+  | .cons atom rest =>
+      let here := match atom with
+        | .word name => [name]
+        | .quotation body => calledWordNames body
+        | .push (.quotation body _) => calledWordNames body
+        | _ => []
+      here ++ calledWordNames rest
+
+private def rowBelow : AStack → Option Row
+  | .empty => none
+  | .row row => some row
+  | .snoc rest _ => rowBelow rest
+
+private def onRow (row : AStack) : AStack → AStack
+  | .empty => row
+  | .row tail => .row tail
+  | .snoc rest value => .snoc (onRow row rest) value
+
+/-- `scheme` with a row below its inputs and outputs where they have none.
+The row's name is not one a source can bind. -/
+private def openScheme (scheme : Scheme) : Scheme :=
+  let row : AStack := .row (.rigid "·closed")
+  { rowVariables := "·closed" :: scheme.rowVariables
+    input := onRow row scheme.input
+    output := onRow row scheme.output }
+
+/-- A declared effect that uses no row, with a row below its inputs and
+outputs, as the author would write it, and the row's name. The row is the
+first one the effect binds, else `ρ`, bound with `forall`. -/
+def withRowText (effect : StackEffect) : Option (String × String) := do
+  let row := (effect.rowBinders.head?.map (·.name)).getD "ρ"
+  let binders := if effect.rowBinders.isEmpty then row
+    else " ".intercalate (effect.rowBinders.map (·.name))
+  let item : StackItem → Option String
+    | .row _ _ => none
+    | .value name type _ =>
+        if !type.refinements.isEmpty then none else
+        let usage := match type.usage with | .many => "^many" | .linear => "^linear"
+        some ((if name.isEmpty then "" else name ++ ":") ++ type.name ++ usage)
+  let input ← effect.input.mapM item
+  let output ← effect.output.mapM item
+  let side (items : List String) := " ".intercalate (row :: items)
+  pure (s!"(forall {binders}; {side input} -- {side output})", row)
+
+private def checkOnce (env : Env) (scheme : Scheme) (program : KernelProgram)
     (boundary : Span) : Except Diagnostic Effect :=
   runEffect do
     let declared : Effect := { input := scheme.input, output := scheme.output }
     let (_, actual) ← inferSequence env program declared.input
     unifyWhole "firth.type.declared-effect-mismatch" boundary actual declared.output actual
     pure declared
+
+/-- The word whose effect has no row and whose call `diagnostic` refuses:
+checking `program` again with that word given a row, and only that word, no
+longer refuses it there. `none` when no word, or more than one, does. The
+effect with a row is left for the caller, which has the source, to write. -/
+private def closedCallFor (env : Env) (scheme : Scheme) (program : KernelProgram)
+    (boundary : Span) (diagnostic : Diagnostic) : Option ClosedCall :=
+  let applies := diagnostic.code == "firth.type.word-input-mismatch" ||
+    (diagnostic.code == "firth.type.branch-mismatch" && diagnostic.branchInput.isSome)
+  if !applies then none else
+  let closed := (calledWordNames (stripLocations program)).eraseDups.filter fun name =>
+    (env.word name).any fun scheme => (rowBelow scheme.input).isNone
+  let sameRefusal (again : Diagnostic) :=
+    again.code == diagnostic.code && again.primary == diagnostic.primary &&
+      again.branchInput.map (·.1) == diagnostic.branchInput.map (·.1)
+  let fixes := closed.filter fun name =>
+    let opened : Env := { env with
+      word := fun other => if other == name then (env.word name).map openScheme else env.word other }
+    match checkOnce opened scheme program boundary with
+    | .ok _ => true
+    | .error again => !sameRefusal again
+  match fixes with
+  | [name] => some { word := name, reported := diagnostic.primary }
+  | _ => none
+
+def check (env : Env) (scheme : Scheme) (program : KernelProgram)
+    (boundary : Span) : Except Diagnostic Effect :=
+  (checkOnce env scheme program boundary).mapError fun diagnostic =>
+    { diagnostic with closedCall := closedCallFor env scheme program boundary diagnostic }
 
 private def stackFromItems (bound : List String)
     (items : List StackItem) : Except Diagnostic AStack :=
@@ -617,6 +719,34 @@ def schemeOfEffect (effect : StackEffect) : Except Diagnostic Scheme := do
     let output ← stackFromItems names effect.output
     pure { rowVariables := names, input, output }
 
+/-- The base types a source stack effect may declare (`dec.source-type-names`):
+`Int`, `Bool`, `Seq Int` and `Seq Bool`, which literals and primitives give,
+and `World`, `Handle` and `Bytes`, which the world primitives thread. The
+default pipeline restricts to these; the agent's `sourceTypes` derives the
+same list from the primitives' schemes, and its tests check the two agree. -/
+def sourceTypeNames : List String :=
+  ["Int", "Bool", "Seq Int", "Seq Bool", "World", "Handle", "Bytes"]
+
+/-- The first declared type in `effect` that `env` does not know, as a
+`firth.type.unknown-type` diagnostic at that type, its name the subject. -/
+def unknownType (env : Env) (effect : StackEffect) : Option Diagnostic :=
+  match env.types with
+  | none => none
+  | some known => (effect.input ++ effect.output).findSome? fun item =>
+      match item with
+      | .value _ type _ =>
+          if known.contains type.name then none
+          else some { code := "firth.type.unknown-type", primary := type.span, state := .empty,
+                      subject := some type.name }
+      | .row _ _ => none
+
+/-- `schemeOfEffect`, once every type the effect declares is one `env`
+knows. -/
+def schemeIn (env : Env) (effect : StackEffect) : Except Diagnostic Scheme :=
+  match unknownType env effect with
+  | some diagnostic => .error diagnostic
+  | none => schemeOfEffect effect
+
 def typedHole (env : Env) (input : AStack) (programPrefix : KernelProgram)
     (span : Span) : Except Diagnostic TypedHole := do
   let (hole, state) ← (do
@@ -648,7 +778,7 @@ where
     let ceilings := stackCeilings input
     { nextRow := ceilings.1, nextType := ceilings.2.1, nextUsage := ceilings.2.2 }
 
-private def collectSchemes (definitions : List Definition) :
+private def collectSchemes (gamma : Env) (definitions : List Definition) :
     Except Diagnostic (List (String × Scheme)) :=
   let rec go (seen : List (String × Scheme)) : List Definition →
       Except Diagnostic (List (String × Scheme))
@@ -657,20 +787,21 @@ private def collectSchemes (definitions : List Definition) :
         if seen.any (fun entry => entry.1 == definition.name) then
           .error { code := "firth.name.duplicate-word", primary := definition.span, state := .empty }
         else do
-          let scheme ← schemeOfEffect definition.declared
+          let scheme ← schemeIn gamma definition.declared
           go ((definition.name, scheme) :: seen) rest
   go [] definitions
 
 def checkDictionary (gamma : Env) (definitions : List Definition) :
     Except Diagnostic (List CheckedDefinition) := do
-  let schemes ← collectSchemes definitions
+  let schemes ← collectSchemes gamma definitions
   let env : Env := {
     literal := gamma.literal
     word := fun name =>
       match schemes.find? (fun entry => entry.1 == name) with
       | some entry => some entry.2
       | none => gamma.word name
-    primitive := gamma.primitive }
+    primitive := gamma.primitive
+    types := gamma.types }
   let rec checkAll : List Definition → Except Diagnostic (List CheckedDefinition)
     | [] => .ok []
     | definition :: rest => do

@@ -1,0 +1,106 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "sokoban": {
+      "needs": [
+        "heavy",
+        "loop",
+        "rules",
+        "seq",
+        "state"
+      ],
+      "submitted": false,
+      "cases": [],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 0
+    },
+    "checkers": {
+      "needs": [
+        "heavy",
+        "nested-loop",
+        "rules",
+        "seq",
+        "state"
+      ],
+      "submitted": false,
+      "cases": [],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 0
+    },
+    "regex": {
+      "needs": [
+        "bool-seq",
+        "heavy",
+        "nested-loop",
+        "parse",
+        "rules",
+        "seq"
+      ],
+      "submitted": false,
+      "cases": [],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 0
+    },
+    "swiss": {
+      "needs": [
+        "heavy",
+        "nested-loop",
+        "rules",
+        "seq",
+        "sort",
+        "state"
+      ],
+      "submitted": false,
+      "cases": [],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 0
+    },
+    "warehouse": {
+      "needs": [
+        "heavy",
+        "loop",
+        "rules",
+        "seq",
+        "state"
+      ],
+      "submitted": false,
+      "cases": [],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 0
+    },
+    "cache-sim": {
+      "needs": [
+        "bool-seq",
+        "divmod",
+        "heavy",
+        "nested-loop",
+        "rules",
+        "seq",
+        "state"
+      ],
+      "submitted": false,
+      "cases": [],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 0
+    }
+  },
+  "firth_commit": "627a0ebf59eb18839e54b9bb20f25353108a1a09",
+  "eval_sha256": {
+    "harder/calibration.py": "bc4c40bf24e842f6a12846a986d57b555571d8e9315e62ef5ad8919608d46584",
+    "harder/calibration2.py": "8faccd03aaa87edf4bcb570eeb5a9ad2e0423e52d76c4124355ffac183ed77bd",
+    "harder/calibration3.py": "ca59b94103b92116f0e11839861166bc7810c9bd017875597ce045750b8e99f6",
+    "harder/scored.py": "5210c743b2c965303aa8038538c141d381c49147a002d57db719f7cd8cb75f90",
+    "harder/tier.py": "3d413d99f2c9e4e4e9266e375a2cc6045494a54d100f306b251ce85f48ee79a4",
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "harness.py": "b638338d59add6c631df162f35d2bff754d15e3f2012ac7239618c14e1091f84",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "fuel": 1000000,
+  "label": "haiku-firth-1-r1"
+}

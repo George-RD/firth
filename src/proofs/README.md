@@ -20,6 +20,11 @@ reference runner's registry, and `induction_on_measure` for recursion.
 
 Also in the library:
 
+- `WordContract.Holds.extend` (with `Runs.extend` and `RunsWithin.extend`),
+  which carries a contract to any dictionary that gives the same entry to
+  every word the original dictionary defines (`DictionaryExtends`), such as
+  the export of a program that imports the proved file
+  (`Inventory/Imported.lean`);
 - `RunsWithin … maxSteps maxCost`, the upper-bound form for words whose exact
   cost depends on the data, with the same rules and `run_of_runsWithin`;
 - `runs_if_of_true` and `runs_if_of_false`, which take the condition as an
@@ -150,6 +155,37 @@ of the `abs` fixtures in `src/prooftests/Helper.lean`, declared outside the
 each it rebuilds that module (the proofs still hold and the printed
 preconditions are unchanged) and fails unless `--status` stops counting that
 record written before the edit. The file is restored and rebuilt afterwards.
+
+## Target theorems
+
+A contract can also name a target theorem (`target_theorem` and
+`target_module` in `contracts.json`), which carries it from the reference
+interpreter to the target semantics the compiled image runs under. The audit
+accepts it only for a contract under `int64Gamma` and the default costs, and
+only when its statement is definitionally
+
+```lean
+TargetHolds contract <export>.dictionary (exportPrograms <export>.words) "<word>" <export>.«word».body
+```
+
+(`src/compiler/Firth/ContractTarget.lean`): for every image that publishes
+each exported word under the target name `nameMapOf` gives it, as the code
+`lowerProgram` lowers its body to, running the word from a stack that stands
+for the contract's input, with at least the step bound as fuel, halts with a
+stack that stands for its output at a kernel cost within the cost bound,
+unless the target exceeds its call-depth bound or takes the length of a
+sequence of 2^63 or more elements. `targetHolds_of_holds` proves it from the
+contract, so an export only shows that its dictionary gives each word its body.
+The record then lists that image: each word, its target name and its body
+digest, which the audit recomputes by lowering the exported program. A refused
+target theorem refuses the whole contract. `examples/inventory/run_cases.py`
+checks that the image the VM runs is that one; the VM itself is tested against
+the target semantics, not proved (`specs/tcb-boundary.toml`).
+
+The fixtures cover it too: `sumToTarget` is accepted with its expected image,
+and `targetOrTrue`, `targetFalseHypothesis` and `targetOtherWord` must each be
+refused. The planted changes add a stale digest on each word of a record's
+target image and another entry name.
 
 Adding a contract: define its `WordContract` and prove `Holds` here, add it to
 `contracts.json`, then run `lake build` and

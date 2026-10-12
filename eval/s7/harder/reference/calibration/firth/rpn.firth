@@ -1,0 +1,72 @@
+\ Stack calculator. The calculator stack is a Seq Int, top last.
+
+\ First n elements of s, appended to out from index k.
+: take-from
+  (forall ρ; ρ s:Seq Int^many out:Seq Int^many k:Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { s out k n }
+  { k n prim <
+    [ s out s k prim seq-int.at prim seq-int.push k 1 prim + n take-from ]
+    [ out ] if };
+
+\ s without its last k elements.
+: drop-last
+  (forall ρ; ρ s:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { s k }
+  { s prim seq-int.empty 0 s prim seq-int.len k prim - take-from };
+
+: abs
+  (forall ρ; ρ a:Int^many -- ρ r:Int^many)
+  locals { a }
+  { a 0 prim < [ 0 a prim - ] [ a ] if };
+
+\ Quotient rounded toward zero (b is not 0).
+: quot
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a abs b abs prim div
+    a 0 prim <
+    [ b 0 prim < [ ] [ 0 swap prim - ] if ]
+    [ b 0 prim < [ 0 swap prim - ] [ ] if ] if };
+
+\ a op b for kinds 1 to 4.
+: apply-op
+  (forall ρ; ρ kind:Int^many a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { kind a b }
+  { kind 1 prim =
+    [ a b prim + ]
+    [ kind 2 prim =
+      [ a b prim - ]
+      [ kind 3 prim =
+        [ a b prim * ]
+        [ a b quot ] if ] if ] if };
+
+\ Runs tokens i onward on stack st; yields result and status.
+: run-from
+  (forall ρ; ρ kinds:Seq Int^many vals:Seq Int^many st:Seq Int^many i:Int^many -- ρ result:Int^many status:Int^many)
+  locals { kinds vals st i }
+  { i kinds prim seq-int.len prim <
+    [ kinds i prim seq-int.at 0 prim =
+      [ kinds vals st vals i prim seq-int.at prim seq-int.push i 1 prim + run-from ]
+      [ kinds i prim seq-int.at 5 prim =
+        [ st prim seq-int.len 1 prim <
+          [ 0 1 ]
+          [ kinds vals st st st prim seq-int.len 1 prim - prim seq-int.at prim seq-int.push i 1 prim + run-from ] if ]
+        [ st prim seq-int.len 2 prim <
+          [ 0 1 ]
+          [ kinds i prim seq-int.at 4 prim =
+            st st prim seq-int.len 1 prim - prim seq-int.at 0 prim = prim and
+            [ 0 2 ]
+            [ kinds vals
+              st 2 drop-last
+              kinds i prim seq-int.at
+              st st prim seq-int.len 2 prim - prim seq-int.at
+              st st prim seq-int.len 1 prim - prim seq-int.at
+              apply-op prim seq-int.push
+              i 1 prim + run-from ] if ] if ] if ] if ]
+    [ st prim seq-int.len 1 prim =
+      [ st 0 prim seq-int.at 0 ]
+      [ 0 3 ] if ] if };
+
+: main
+  (forall ρ; ρ kinds:Seq Int^many vals:Seq Int^many -- ρ result:Int^many status:Int^many)
+  prim seq-int.empty 0 run-from;

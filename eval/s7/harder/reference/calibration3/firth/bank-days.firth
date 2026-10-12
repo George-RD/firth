@@ -1,0 +1,320 @@
+\ Bank day by day.
+\
+\ State threaded through the simulation (always first on the stack):
+\   bal    balances
+\   acc    interest accrued this month, per account (signed, in ppm units)
+\   ovr    1 when the account was overdrawn on some day this month, else 0
+\   fails  per standing order, rejected payments in a row (cancelled at 2)
+\   tot    four counters: 0 rejected, 1 interest added, 2 interest taken, 3 fees
+\ The one-off transactions are flattened into tx (4 values each: kind,
+\ account, other, amount) and the standing orders into so (4 values each:
+\ day of month, from, to, amount), because Firth has no records.
+\
+\ Speed: a day on which nothing can happen (no one-off transaction, no
+\ standing order that can be due, not a month end) is skipped in a tight loop
+\ that only counts it in pend, the number of days whose interest is not yet
+\ accrued at the current balances. Balances change only on the other days,
+\ so pend days of interest are accrued in one step ("flush") before they do.
+
+\ ---------- small helpers ----------
+
+\ out with zeros appended until it has n elements.
+: zeros-from
+  (forall ρ; ρ out:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { out n }
+  { out prim seq-int.len n prim <
+    [ out 0 prim seq-int.push n zeros-from ]
+    [ out ] if };
+
+\ A sequence of n zeros.
+: zeros
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)
+  locals { n }
+  { prim seq-int.empty n zeros-from };
+
+\ s with d added to element i.
+: add-at
+  (forall ρ; ρ s:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { s i d }
+  { s i s i prim seq-int.at d prim + prim seq-int.set };
+
+\ The smaller of two numbers.
+: min
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a b prim < [ a ] [ b ] if };
+
+\ ---------- calendar ----------
+
+\ True when y is a leap year.
+: leap?
+  (forall ρ; ρ y:Int^many -- ρ r:Bool^many)
+  locals { y }
+  { y 4 prim mod 0 prim =
+    y 100 prim mod 0 prim = prim not
+    y 400 prim mod 0 prim = prim or
+    prim and };
+
+\ Number of days in month m of year y.
+: days-in-month
+  (forall ρ; ρ y:Int^many m:Int^many -- ρ r:Int^many)
+  locals { y m }
+  { m 2 prim =
+    [ y leap? [ 29 ] [ 28 ] if ]
+    [ { 31 28 31 30 31 30 31 31 30 31 30 31 } m 1 prim - prim seq-int.at ] if };
+
+\ The date after y-m-d, where dim is the length of month m, with the length
+\ of the new date's month.
+: advance
+  (forall ρ; ρ y:Int^many m:Int^many d:Int^many dim:Int^many -- ρ y2:Int^many m2:Int^many d2:Int^many dim2:Int^many)
+  locals { y m d dim }
+  { d dim prim <
+    [ y m d 1 prim + dim ]
+    [ m 12 prim =
+      [ y 1 prim + 1 1 y 1 prim + 1 days-in-month ]
+      [ y m 1 prim + 1 y m 1 prim + days-in-month ] if ] if };
+
+\ ---------- input preparation ----------
+
+\ Appends each one-off transaction (kind, account, other, amount) of index i on.
+: flat-tx-from
+  (forall ρ; ρ out:Seq Int^many k:Seq Int^many a:Seq Int^many o:Seq Int^many m:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { out k a o m i }
+  { i k prim seq-int.len prim <
+    [ out k i prim seq-int.at prim seq-int.push
+          a i prim seq-int.at prim seq-int.push
+          o i prim seq-int.at prim seq-int.push
+          m i prim seq-int.at prim seq-int.push
+      k a o m i 1 prim + flat-tx-from ]
+    [ out ] if };
+
+\ Appends each standing order (day of month, from, to, amount) of index i on.
+: flat-so-from
+  (forall ρ; ρ out:Seq Int^many d:Seq Int^many f:Seq Int^many t:Seq Int^many m:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { out d f t m i }
+  { i d prim seq-int.len prim <
+    [ out d i prim seq-int.at prim seq-int.push
+          f i prim seq-int.at prim seq-int.push
+          t i prim seq-int.at prim seq-int.push
+          m i prim seq-int.at prim seq-int.push
+      d f t m i 1 prim + flat-so-from ]
+    [ out ] if };
+
+\ Links the transactions of each day into a list in the order of the input.
+\ head[day] is 1 plus the index of the day's first transaction (0 for none)
+\ and nxt[k] is the same for the transaction after k on its day. Built from
+\ transaction k down to 0.
+: link-from
+  (forall ρ; ρ head:Seq Int^many nxt:Seq Int^many txd:Seq Int^many k:Int^many -- ρ h:Seq Int^many n:Seq Int^many)
+  locals { head nxt txd k }
+  { k 0 prim >=
+    [ nxt k head txd k prim seq-int.at prim seq-int.at prim seq-int.set
+      locals { nx }
+      { head txd k prim seq-int.at k 1 prim + prim seq-int.set
+        nx txd k 1 prim - link-from } ]
+    [ head nxt ] if };
+
+\ Marks in flags (length 32) each day of the month on which a standing order
+\ falls, from order i on.
+: mark-doms
+  (forall ρ; ρ flags:Seq Int^many sod:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { flags sod i }
+  { i sod prim seq-int.len prim <
+    [ flags sod i prim seq-int.at 1 prim seq-int.set sod i 1 prim + mark-doms ]
+    [ flags ] if };
+
+\ ---------- payments ----------
+
+\ Tries to pay amt from account a (and to account b unless b is -1, which
+\ is a plain withdrawal). Rejected when it is a transfer to the same
+\ account or would leave a below minus its limit. Gives the new balances and
+\ whether the payment was carried out.
+: try-pay
+  (forall ρ; ρ bal:Seq Int^many limits:Seq Int^many a:Int^many b:Int^many amt:Int^many -- ρ r:Seq Int^many ok:Bool^many)
+  locals { bal limits a b amt }
+  { a b prim = b 0 prim >= prim and
+    bal a prim seq-int.at amt prim - limits a prim seq-int.at prim + 0 prim < prim or
+    [ bal false ]
+    [ bal a 0 amt prim - add-at
+      b 0 prim >= [ b amt add-at ] [ ] if
+      true ] if };
+
+\ Carries out the one-off transaction starting at index p of tx.
+: do-one
+  (forall ρ; ρ bal:Seq Int^many tot:Seq Int^many limits:Seq Int^many tx:Seq Int^many p:Int^many -- ρ nb:Seq Int^many nt:Seq Int^many)
+  locals { bal tot limits tx p }
+  { tx p prim seq-int.at
+    locals { kind }
+    { kind 1 prim =
+      [ bal tx p 1 prim + prim seq-int.at tx p 3 prim + prim seq-int.at add-at tot ]
+      [ bal limits tx p 1 prim + prim seq-int.at
+        kind 3 prim = [ tx p 2 prim + prim seq-int.at ] [ -1 ] if
+        tx p 3 prim + prim seq-int.at try-pay
+        [ tot ] [ tot 0 1 add-at ] if ] if } };
+
+\ The day's one-off transactions, in order, from the one encoded by k1 on.
+: do-txs
+  (forall ρ; ρ bal:Seq Int^many tot:Seq Int^many limits:Seq Int^many tx:Seq Int^many nxt:Seq Int^many k1:Int^many -- ρ nb:Seq Int^many nt:Seq Int^many)
+  locals { bal tot limits tx nxt k1 }
+  { k1 0 prim >
+    [ bal tot limits tx k1 1 prim - 4 prim * do-one
+      limits tx nxt nxt k1 1 prim - prim seq-int.at do-txs ]
+    [ bal tot ] if };
+
+\ Standing order k, if it is due on day d of a month of dim days.
+: one-so
+  (forall ρ; ρ bal:Seq Int^many fails:Seq Int^many tot:Seq Int^many limits:Seq Int^many so:Seq Int^many d:Int^many dim:Int^many k:Int^many -- ρ nb:Seq Int^many nf:Seq Int^many nt:Seq Int^many)
+  locals { bal fails tot limits so d dim k }
+  { fails k prim seq-int.at 2 prim <
+    so k 4 prim * prim seq-int.at dim min d prim = prim and
+    [ bal limits
+      so k 4 prim * 1 prim + prim seq-int.at
+      so k 4 prim * 2 prim + prim seq-int.at
+      so k 4 prim * 3 prim + prim seq-int.at try-pay
+      [ fails k 0 prim seq-int.set tot ]
+      [ fails k 1 add-at tot 0 1 add-at ] if ]
+    [ bal fails tot ] if };
+
+\ Standing orders from k on.
+: do-sos
+  (forall ρ; ρ bal:Seq Int^many fails:Seq Int^many tot:Seq Int^many limits:Seq Int^many so:Seq Int^many d:Int^many dim:Int^many k:Int^many -- ρ nb:Seq Int^many nf:Seq Int^many nt:Seq Int^many)
+  locals { bal fails tot limits so d dim k }
+  { k 4 prim * so prim seq-int.len prim <
+    [ bal fails tot limits so d dim k one-so
+      limits so d dim k 1 prim + do-sos ]
+    [ bal fails tot ] if };
+
+\ ---------- interest ----------
+
+\ Accrues pend days of interest at the balances bal, for accounts i on.
+: flush-from
+  (forall ρ; ρ acc:Seq Int^many ovr:Seq Int^many bal:Seq Int^many credit:Int^many debit:Int^many pend:Int^many i:Int^many -- ρ na:Seq Int^many no:Seq Int^many)
+  locals { acc ovr bal credit debit pend i }
+  { i bal prim seq-int.len prim <
+    [ bal i prim seq-int.at
+      locals { b }
+      { b 0 prim >
+        [ acc i b credit prim * pend prim * add-at ovr ]
+        [ b 0 prim <
+          [ acc i b debit prim * pend prim * add-at ovr i 1 prim seq-int.set ]
+          [ acc ovr ] if ] if }
+      bal credit debit pend i 1 prim + flush-from ]
+    [ acc ovr ] if };
+
+\ Accrues pend days of interest, if there are any.
+: flush
+  (forall ρ; ρ acc:Seq Int^many ovr:Seq Int^many bal:Seq Int^many credit:Int^many debit:Int^many pend:Int^many -- ρ na:Seq Int^many no:Seq Int^many)
+  locals { acc ovr bal credit debit pend }
+  { pend 0 prim >
+    [ acc ovr bal credit debit pend 0 flush-from ]
+    [ acc ovr ] if };
+
+\ Posts accrued sum s into account i, counting the interest added or taken.
+: post
+  (forall ρ; ρ bal:Seq Int^many tot:Seq Int^many i:Int^many s:Int^many -- ρ nb:Seq Int^many nt:Seq Int^many)
+  locals { bal tot i s }
+  { s 0 prim >=
+    [ s 1000000 prim div
+      locals { p } { bal i p add-at tot 1 p add-at } ]
+    [ 0 s prim - 1000000 prim div
+      locals { p } { bal i 0 p prim - add-at tot 2 p add-at } ] if };
+
+\ Charges the overdraft fee to account i.
+: fee
+  (forall ρ; ρ bal:Seq Int^many tot:Seq Int^many i:Int^many -- ρ nb:Seq Int^many nt:Seq Int^many)
+  locals { bal tot i }
+  { bal i 0 1000 prim - add-at tot 3 1000 add-at };
+
+\ Month end for accounts i on: post interest, then charge the fees.
+: month-end
+  (forall ρ; ρ bal:Seq Int^many tot:Seq Int^many acc:Seq Int^many ovr:Seq Int^many i:Int^many -- ρ nb:Seq Int^many nt:Seq Int^many)
+  locals { bal tot acc ovr i }
+  { i bal prim seq-int.len prim <
+    [ bal tot i acc i prim seq-int.at post
+      ovr i prim seq-int.at 0 prim >
+      [ i fee ] [ ] if
+      acc ovr i 1 prim + month-end ]
+    [ bal tot ] if };
+
+\ ---------- the simulation ----------
+
+\ Skips days with nothing to do, starting on day i of the sim (date day d of
+\ a month of dim days, with pend days pending). A day is quiet when it has no
+\ one-off transaction, no standing order has this day of month and it is not
+\ the month's last day (where an order with a later day of month falls too).
+: skip-quiet
+  (forall ρ; ρ d:Int^many dim:Int^many i:Int^many pend:Int^many days:Int^many head:Seq Int^many has:Seq Int^many -- ρ d2:Int^many i2:Int^many p2:Int^many)
+  locals { d dim i pend days head has }
+  { i days prim <
+    [ head i prim seq-int.at 0 prim =
+      has d prim seq-int.at 0 prim = prim and
+      d dim prim < prim and ]
+    [ false ] if
+    [ d 1 prim + dim i 1 prim + pend 1 prim + days head has skip-quiet ]
+    [ d i pend ] if };
+
+\ A day that is not quiet: one-off transactions, standing orders, and at the
+\ end of a month the posting and fees (which also reset acc and ovr). Gives
+\ the new state and the new pend.
+: one-event
+  (forall ρ; ρ bal:Seq Int^many acc:Seq Int^many ovr:Seq Int^many fails:Seq Int^many tot:Seq Int^many pend:Int^many d:Int^many dim:Int^many i:Int^many limits:Seq Int^many credit:Int^many debit:Int^many tx:Seq Int^many so:Seq Int^many head:Seq Int^many nxt:Seq Int^many has:Seq Int^many -- ρ nb:Seq Int^many na:Seq Int^many no:Seq Int^many nf:Seq Int^many nt:Seq Int^many np:Int^many)
+  locals { bal acc ovr fails tot pend d dim i limits credit debit tx so head nxt has }
+  { acc ovr bal credit debit pend flush
+    locals { acc1 ovr1 }
+    { bal tot limits tx nxt head i prim seq-int.at do-txs
+      locals { b1 t1 }
+      { has d prim seq-int.at 0 prim > d dim prim = prim or
+        [ b1 fails t1 limits so d dim 0 do-sos ]
+        [ b1 fails t1 ] if
+        locals { b2 f2 t2 }
+        { d dim prim =
+          [ acc1 ovr1 b2 credit debit 1 flush
+            locals { a3 o3 }
+            { b2 t2 a3 o3 0 month-end
+              locals { b4 t4 }
+              { b4 b4 prim seq-int.len zeros b4 prim seq-int.len zeros f2 t4 0 } } ]
+          [ b2 acc1 ovr1 f2 t2 1 ] if } } } };
+
+\ Simulates from day i of the sim, which is date y-m-d in a month of dim days.
+: day-loop
+  (forall ρ; ρ bal:Seq Int^many acc:Seq Int^many ovr:Seq Int^many fails:Seq Int^many tot:Seq Int^many pend:Int^many y:Int^many m:Int^many d:Int^many dim:Int^many i:Int^many days:Int^many limits:Seq Int^many credit:Int^many debit:Int^many tx:Seq Int^many so:Seq Int^many head:Seq Int^many nxt:Seq Int^many has:Seq Int^many -- ρ nb:Seq Int^many nf:Seq Int^many nt:Seq Int^many)
+  locals { bal acc ovr fails tot pend y m d dim i days limits credit debit tx so head nxt has }
+  { d dim i pend days head has skip-quiet
+    locals { d2 i2 p2 }
+    { i2 days prim <
+      [ bal acc ovr fails tot p2 d2 dim i2 limits credit debit tx so head nxt has one-event
+        y m d2 dim advance
+        i2 1 prim + days limits credit debit tx so head nxt has day-loop ]
+      [ bal fails tot ] if } };
+
+\ Flags saying which standing orders are cancelled (two rejections in a row).
+: cancelled-from
+  (forall ρ; ρ out:Seq Bool^many fails:Seq Int^many i:Int^many -- ρ r:Seq Bool^many)
+  locals { out fails i }
+  { i fails prim seq-int.len prim <
+    [ out fails i prim seq-int.at 2 prim >= prim seq-bool.push
+      fails i 1 prim + cancelled-from ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ year:Int^many month:Int^many day:Int^many days:Int^many balances:Seq Int^many limits:Seq Int^many credit:Int^many debit:Int^many txd:Seq Int^many txk:Seq Int^many txa:Seq Int^many txo:Seq Int^many txm:Seq Int^many sod:Seq Int^many sof:Seq Int^many sot:Seq Int^many som:Seq Int^many -- ρ final:Seq Int^many rejected:Int^many cancelled:Seq Bool^many added:Int^many taken:Int^many fees:Int^many)
+  locals { year month day days bal limits credit debit txd txk txa txo txm sod sof sot som }
+  { bal                                    \ balances
+    bal prim seq-int.len zeros             \ accrued sums
+    bal prim seq-int.len zeros             \ overdrawn marks
+    sod prim seq-int.len zeros             \ standing order rejection runs
+    4 zeros                                \ counters
+    0                                      \ pend
+    year month day year month days-in-month 0 days limits credit debit
+    prim seq-int.empty txk txa txo txm 0 flat-tx-from
+    prim seq-int.empty sod sof sot som 0 flat-so-from
+    days zeros txk prim seq-int.len zeros txd txd prim seq-int.len 1 prim - link-from
+    32 zeros sod 0 mark-doms
+    day-loop
+    locals { b fails tot }
+    { b
+      tot 0 prim seq-int.at
+      prim seq-bool.empty fails 0 cancelled-from
+      tot 1 prim seq-int.at
+      tot 2 prim seq-int.at
+      tot 3 prim seq-int.at } };

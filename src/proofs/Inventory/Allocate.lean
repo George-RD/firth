@@ -24,10 +24,14 @@ The words it calls are proved first: `allocate-one` (one request),
 
 Every fact is proved under `int64Gamma`, where arithmetic faults outside i64 as
 the VM's does, so no value overflows on such input; `allocate_batch_reference`
-states the result under the reference registry. The stated gaps remain: VM
-agreement with the reference interpreter rests on differential testing, the
-Python host (JSON and the ID encoding, whose injectivity the repeated-ID result
-relies on) is tested, not proved. `allocate_batch_contract` is the recorded
+states the result under the reference registry. `Target.lean` carries the
+contract to the target semantics the compiled image runs under, for the kernel
+cost only and except where the target exceeds its call-depth bound or the
+reference run takes the length of a sequence too long for an i64; the Rust VM
+is tested against that semantics, not proved, and the host's JSON handling and
+input checks are tested, not proved. The ID encoding,
+whose injectivity the repeated-ID result relies on, is proved in `Host.lean`,
+which restates this contract on ID strings. `allocate_batch_contract` is the recorded
 form: `src/proofs/records.json` binds it to the digests of `allocate-batch` and
 every word it calls, the registry and the cost table, and reports those words
 `contract_verified`.
@@ -135,11 +139,10 @@ theorem from_step {q left amount reason : Int} {s₁ c₁ s₂ c₂ : Nat} {left
     (hOne : R (.cons (.word "allocate-one") .empty) (oneIn remaining q whole (saved qs whole i taken reasons tail))
       (oneOut left amount reason (saved qs whole i taken reasons tail)) s₁ c₁)
     (hRec : R (.cons (.word "allocate-from") .empty)
-      (fromIn qs whole left (i + 1) (taken ++ [amount]) (reasons ++ [reason])
-        (saved qs whole i taken reasons tail))
-      (fromOut left' allocated codes (saved qs whole i taken reasons tail)) s₂ c₂) :
+      (fromIn qs whole left (i + 1) (taken ++ [amount]) (reasons ++ [reason]) tail)
+      (fromOut left' allocated codes tail) s₂ c₂) :
     R (.cons (.word "allocate-from") .empty) (fromIn qs whole remaining i taken reasons tail)
-      (fromOut left' allocated codes tail) (68 + s₁ + s₂) (62 + c₁ + c₂) := by
+      (fromOut left' allocated codes tail) (58 + s₁ + s₂) (52 + c₁ + c₂) := by
   have hAt : R (.cons (.prim "seq-int.at") .empty)
       (.literal (.int i) :: .literal (.intSeq qs) :: .literal (.int remaining) ::
         saved qs whole i taken reasons tail)
@@ -190,7 +193,7 @@ theorem allocate_from (qs : List Int) (whole : Bool) (hLen : qs.length ≤ 64)
     obtain ⟨s₂, c₂, hRec, hs₂, hc₂⟩ := ih (i + 1) (allocateOne whole remaining (qs.getD i 0)).1
       (taken ++ [(allocateOne whole remaining (qs.getD i 0)).2.1])
       (reasons ++ [(allocateOne whole remaining (qs.getD i 0)).2.2])
-      (saved qs whole i taken reasons tail) (by omega) (by omega) (by omega)
+      tail (by omega) (by omega) (by omega)
     have hAt : qs[((i : Int)).toNat]? = some (qs.getD i 0) := by
       rwa [show ((i : Int)).toNat = i by omega]
     have hRun := from_step (decide_eq_true (by omega)) (by omega) (by omega) hAt hOne

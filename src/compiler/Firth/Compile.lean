@@ -189,10 +189,9 @@ end
 a body for every quotation atom and for no other atom, at every depth. -/
 private partial def spansMatch : Firth.Interpreter.Program → List SpanTree → Bool
   | .empty, [] => true
-  | .cons (.quotation body) tail, .quotation _ spans :: rest
-  | .cons (.push (.quotation body _)) tail, .quotation _ spans :: rest =>
+  | .cons (.quotation body) tail, .quotation _ spans :: rest =>
       spansMatch body spans && spansMatch tail rest
-  | .cons (.quotation _) _, _ | .cons (.push (.quotation ..)) _, _ => false
+  | .cons (.quotation _) _, _ => false
   | .cons _ tail, .atom _ :: rest => spansMatch tail rest
   | _, _ => false
 
@@ -282,12 +281,13 @@ def decodeRequest (value : Json) : Except String Request := do
   let source : Option Firth.Agent.Elaborate.Request ← match field "source" values with
     | none => pure none
     | some value =>
-        let members ← object "source" value ["source_path", "source_text", "language_version"]
+        let members ← object "source" value ["source_path", "source_text", "language_version"] ["files"]
         if (← reqStr "source" "language_version" members) != Firth.Agent.Elaborate.languageVersion then
           err "source: unsupported language version"
         let sourcePath ← nonempty "source.source_path" =<< reqStr "source" "source_path" members
         let sourceText ← reqStr "source" "source_text" members
-        pure (some { requestId, sourcePath, sourceText })
+        let files ← Firth.Agent.Elaborate.decodeFiles "source" sourcePath members
+        pure (some { requestId, sourcePath, sourceText, files })
   pure { requestId, entry, words := checked, spans, source }
 
 private def quote (value : String) : String := (Json.str value).compress
@@ -400,12 +400,27 @@ private partial def debugEntries (source target : String) (sourcePath : Option S
       | none => []
     entry :: nested)
 
-private def verificationJson (source : Option Firth.Agent.Elaborate.Request) : String :=
+/-- What re-elaborating a source envelope binds besides the words: the file
+each word was defined in, and the path and digest of each imported file in
+load order. Empty without a source. -/
+private structure SourceBinding where
+  paths : List (String × String) := []
+  imported : List (String × String) := []
+
+/-- The verification metadata. A source-bound request binds the root file by
+`source_sha256` and each file it imports, in load order, by
+`imported_sha256` (`dec.multi-file-imports`). -/
+private def verificationJson (source : Option Firth.Agent.Elaborate.Request)
+    (imported : List (String × String)) : String :=
   obj [("schema", quote "firth.compiler-verification.v1"),
     ("method", quote "kernel-type-and-linearity-recheck"),
     ("source_bound", if source.isSome then "true" else "false"),
     ("source_sha256", match source with
       | some request => quote (Digest.hexOfString request.sourceText)
+      | none => "null"),
+    ("imported_sha256", match source with
+      | some _ => arr (imported.map fun (path, digest) =>
+          obj [("source_path", quote path), ("source_sha256", quote digest)])
       | none => "null"),
     ("gamma_version", quote gammaVersion), ("target_version", quote targetVersion),
     ("refinements", quote "not-checked"),
@@ -414,7 +429,7 @@ private def verificationJson (source : Option Firth.Agent.Elaborate.Request) : S
 
 private def successJson (requestId : String) (entry : Target.WordEntry)
     (sources : List (String × List SpanTree)) (words : List Target.WordEntry)
-    (source : Option Firth.Agent.Elaborate.Request) : String :=
+    (source : Option Firth.Agent.Elaborate.Request) (bound : SourceBinding) : String :=
   let program :=
     obj [("format_version", number formatVersion),
          ("entry", quote entry.name),
@@ -422,12 +437,13 @@ private def successJson (requestId : String) (entry : Target.WordEntry)
   let digests :=
     obj ((sources.zip words).map fun ((source, _), word) =>
       (source, quote (Digest.toHex (Target.bodyDigest word.code))))
-  let sourcePath := source.map (·.sourcePath)
-  let debug := arr ((sources.zip words).flatMap fun ((source, spans), word) =>
-    debugEntries source word.name sourcePath word.code spans [])
+  let debug := arr ((sources.zip words).flatMap fun ((name, spans), word) =>
+    let path := source.map fun request =>
+      ((bound.paths.find? (·.1 == name)).map (·.2)).getD request.sourcePath
+    debugEntries name word.name path word.code spans [])
   obj [("request_id", quote requestId), ("status", quote "success"),
        ("target_program", program), ("word_digests", digests),
-       ("debug_locations", debug), ("verification", verificationJson source)]
+       ("debug_locations", debug), ("verification", verificationJson source bound.imported)]
 
 private def failureJson (requestId : String) (error : Lowering.CompileError) : String :=
   obj [("request_id", quote requestId), ("status", quote "failure"),
@@ -437,16 +453,21 @@ private def failureJson (requestId : String) (error : Lowering.CompileError) : S
 /-- Re-elaborates exact source bytes without opening the diagnostic path.
 This binds all bodies and types, including unused words, to what was actually
 checked. A matching hash or public checking marker cannot substitute for it.
+The source envelope's `files`, the files the root imports, are re-elaborated
+with it, so a word from any file of the program is bound the same way.
 
 Returns the span tree of every request word in request order, taken from the
 re-elaboration. A caller-supplied span tree must agree with it exactly. Without
 a source there is nothing to attribute a span to, so every word gets none. -/
-private def verifySource (request : Request) : Except String (List (List SpanTree)) := do
+private def verifySource (request : Request) : Except String (List (List SpanTree) × SourceBinding) := do
   match request.source with
-  | none => pure (request.words.map fun _ => [])
+  | none => pure (request.words.map fun _ => [], {})
   | some source =>
+      let files := arr (source.files.map fun file =>
+        obj [("source_path", quote file.path), ("source_text", quote file.text)])
       let input := obj [("request_id", quote request.requestId),
         ("source_path", quote source.sourcePath), ("source_text", quote source.sourceText),
+        ("files", files),
         ("language_version", quote Firth.Agent.Elaborate.languageVersion),
         ("gamma_version", quote gammaVersion)]
       let response ← Firth.Agent.Elaborate.runRequest input
@@ -472,7 +493,17 @@ private def verifySource (request : Request) : Except String (List (List SpanTre
               if supplied != expectedSpans then err s!"source: span mismatch for {word.name}"
             spans := spans ++ [expectedSpans]
         | none => err s!"source: word not elaborated: {word.name}"
-      pure spans
+      -- Each file of the program in load order, the root last, with its words.
+      let mut binding : SourceBinding := {}
+      for entry in ← array "source elaboration.sources" (← required "source elaboration" "sources" values) do
+        let members ← fields "source elaboration.sources" entry
+        let path ← reqStr "source elaboration.sources" "source_path" members
+        let digest ← reqStr "source elaboration.sources" "source_sha256" members
+        for word in ← array "source elaboration.sources.words" (← required "source elaboration.sources" "words" members) do
+          binding := { binding with paths := binding.paths ++ [(← str "source elaboration.sources.words" word, path)] }
+        if path != source.sourcePath then
+          binding := { binding with imported := binding.imported ++ [(path, digest)] }
+      pure (spans, binding)
 
 /-- Checks the §3 correspondence structurally: one instruction per atom, and
 the body of a quotation atom against the body of its `PUSH_QUOTE`, at every
@@ -481,11 +512,10 @@ private partial def correspond (program : Firth.Interpreter.Program)
     (code : List Target.Instruction) (word : String) : Except String Unit :=
   match program, code with
   | .empty, [] => pure ()
-  | .cons (.quotation body) tail, .pushQuote inner _ _ :: rest
-  | .cons (.push (.quotation body _)) tail, .pushQuote inner _ _ :: rest => do
+  | .cons (.quotation body) tail, .pushQuote inner _ _ :: rest => do
       correspond body inner word
       correspond tail rest word
-  | .cons (.quotation _) _, _ | .cons (.push (.quotation ..)) _, _ =>
+  | .cons (.quotation _) _, _ =>
       err s!"internal: {word} lowered a quotation atom to something other than a quotation"
   | .cons _ _, .pushQuote .. :: _ =>
       err s!"internal: {word} lowered a plain atom to a quotation"
@@ -498,7 +528,7 @@ The entry is a source word name, not a target name or a position. Multiword
 requests must select it explicitly. A single-word request may omit it for
 backwards compatibility because its entry is unambiguous. -/
 def compileRequest (request : Request) : Except String String := do
-  let spans ← verifySource request
+  let (spans, bound) ← verifySource request
   match Lowering.compileWords request.words with
   | .error error => pure (failureJson request.requestId error)
   | .ok entries =>
@@ -511,7 +541,7 @@ def compileRequest (request : Request) : Except String String := do
         | none => err s!"request.entry: unknown word {request.entry}"
         | some (_, entry) =>
             pure (successJson request.requestId entry
-              ((request.words.map (·.name)).zip spans) entries request.source)
+              ((request.words.map (·.name)).zip spans) entries request.source bound)
 
 private def validateJsonMembers (input : String) : Except String Unit :=
   match Firth.Agent.rejectDuplicateMembers input with

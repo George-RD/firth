@@ -4,6 +4,7 @@ import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
 import elaborator.Firth.Refinement
 import elaborator.Firth.Pipeline
+import elaborator.Firth.Imports
 
 namespace Firth.Agent
 
@@ -87,6 +88,22 @@ def worldPrimitiveSchemes : List (String × Firth.Elaborator.StackEffect.Scheme)
         (.base "Handle" .linear)) (.base "Bytes" .linear)
       output := .snoc row (.base "World" .linear) })]
 
+/-- The base type names in a scheme stack, bottom to top. -/
+private def stackBaseNames : Firth.Elaborator.StackEffect.AStack → List String
+  | .snoc rest (.base name _) => stackBaseNames rest ++ [name]
+  | .snoc rest _ => stackBaseNames rest
+  | .empty | .row _ => []
+
+/-- The base types a source stack effect may declare: the four value types a
+literal or a surface primitive gives (`Int`, `Bool`, `Seq Int`, `Seq Bool`),
+then the nominal types `worldPrimitiveSchemes` threads (`World`, `Handle`,
+`Bytes`). The kernel's `Unit` is not one: no literal or primitive a program
+can write gives a `Unit` value (`dec.source-type-names`). -/
+def sourceTypes : List String :=
+  ["Int", "Bool", "Seq Int", "Seq Bool"] ++
+    (worldPrimitiveSchemes.flatMap fun entry =>
+      stackBaseNames entry.2.input ++ stackBaseNames entry.2.output).eraseDups
+
 /-- The names in `worldPrimitiveSchemes`. -/
 def worldPrimitives : List String := worldPrimitiveSchemes.map (·.1)
 
@@ -122,6 +139,17 @@ private def effectNameHint (name : String) (inputs : List String) : String :=
 /-- A plain-language sentence and a repair hint for a syntax or name error. -/
 private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
   let actual := error.actual.map (s!"`{·}`") |>.getD "the end of the input"
+  let fallback : String × String :=
+    let expected := match error.expected with
+      | some expected => s!", expected `{expected}`"
+      | none => ""
+    -- Only a report at the end of the input has no text of its own.
+    let message := match error.actual with
+      | some _ => s!"Unexpected {actual}{expected}."
+      | none =>
+          if error.code == "firth.syntax.unexpected-eof" then s!"The input ends here{expected}."
+          else s!"This is not valid here ({(lastSegment error.code).replace "-" " "}){expected}."
+    (message, definitionShape)
   let (message, hint) := match error.code with
     | "firth.name.unresolved" =>
         match error.actual, error.effectInputs ++ error.effectOutputs with
@@ -160,6 +188,45 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
             "; ".intercalate described ++ ".",
           s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix}{String.join uncheckedFix} Swapping values with `swap` would not help, because the names are what is wrong.")
+    | "firth.name.not-exported" =>
+        let file := error.files.head?.getD "the imported file"
+        (s!"{actual} is defined in `{file}`, which does not export it.",
+          s!"A file offers only the words its `export` declarations list to the files that import it. Add the word to one in `{file}`, as in `export {error.expected.getD (error.actual.getD "name")};`, or use a word it exports.")
+    | "firth.name.import-not-found" =>
+        let resolved := error.files.head?.map (s!" It names `{·}` from the source root, and") |>.getD ""
+        (s!"No file of the program is at the import path {actual}.{resolved} no such file was found.",
+          "An import path is relative to the directory of the file that imports it, with `/` between directories and `..` for the directory above. Check the path and the file's name.")
+    | "firth.name.import-path" =>
+        (s!"{actual} is not an import path.",
+          "An import path is relative to the directory of the file that imports it, as in `import \"lib/core.firth\";`. It separates directories with `/`, uses only letters, digits, `.`, `_` and `-` in each part, ends in a `.firth` file name, and stays inside the source root: `..` cannot climb above it.")
+    | "firth.name.duplicate-import" =>
+        let target := (error.files.head?.map (s!"`{·}`")).getD actual
+        (s!"This file imports {target} more than once, here as {actual}.", "Delete all but one of the imports of that file.")
+    | "firth.name.import-cycle" =>
+        let around := " imports ".intercalate (error.files.map (s!"`{·}`"))
+        (s!"This import closes a cycle: {around}.",
+          "Files cannot import each other in a cycle. Move the words both files need into a third file, and import it from both.")
+    | "firth.name.import-failed" =>
+        let file := error.files.head?.getD "the imported file"
+        (s!"`{file}` has errors of its own, reported with its path, so this file was not checked.",
+          s!"Fix the errors in `{file}` first. This file is then checked against the words it exports.")
+    | "firth.name.duplicate-export" =>
+        (s!"{actual} is exported twice.", "List each word in one `export` declaration only; delete the repeat.")
+    | "firth.name.duplicate-canonical" =>
+        match error.files with
+        | [] => fallback
+        | [other] =>
+            (s!"{actual} is also defined in `{other}`, which this file imports. A program has one word of each name, whichever file defines it.",
+              s!"Rename one of the two words, or put one file's words in a vocabulary (`vocab name \{ ... }`), which gives them the keys `name.{error.actual.getD "word"}`.")
+        | files =>
+            (s!"Two files this file imports both define {actual}: {" and ".intercalate (files.map (s!"`{·}`"))}. A program has one word of each name, whichever file defines it.",
+              s!"Rename the word in one of the files, or put one file's words in a vocabulary (`vocab name \{ ... }`), which gives them the keys `name.{error.actual.getD "word"}`.")
+    | "firth.syntax.misplaced-import" =>
+        ("`import` is only allowed at the start of a file, before any other declaration.",
+          "Move every `import \"path\";` to the top of the file, outside any vocabulary.")
+    | "firth.syntax.misplaced-export" =>
+        ("`export` is only allowed at the top level of a file, not inside a vocabulary.",
+          "Move it after the vocabulary's closing `}` and name each word by its full key, as in `export core.identity;`.")
     | "firth.syntax.parenthesis-in-body" =>
         (s!"{actual} is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
           "Pass values to an operation by pushing them in the order it takes them, with no grouping: write `n 1 prim +`, not `(n 1 prim +)`, and `xs i 1 prim + f`, not `xs (i 1 prim +) f`. To keep code to run later, quote it with `[ ... ]`. A comment is written `(* ... *)`, or `\\` to the end of the line.")
@@ -182,20 +249,27 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
     | "firth.syntax.overlong-character" =>
         ("A character literal holds exactly one character between its quotes, as in `'a'`.",
           "Write exactly one character between the quotes, and close the literal with `'`.")
+    | "firth.syntax.underscore-in-name" =>
+        let written := error.actual.getD "This name"
+        -- No rename is the fix (`whiteTook` checks as well as `white-took`),
+        -- so `-` for `_` is only an example, and none is given when the file
+        -- already uses that name.
+        (s!"`{written}` is not a name: a name cannot contain `_`.",
+          match error.expected with
+          | some renamed => s!"Rename it everywhere it appears, for example as `{renamed}`."
+          | none => "Rename it everywhere it appears, to a name the file does not already use.")
+    | "firth.syntax.unnamed-stack-item" =>
+        let type := error.actual.getD "Int"
+        -- `Seq` alone, or over anything but `Int` or `Bool`, is no type
+        -- either, so the example gives the two that are.
+        let shown := if type == "Seq" || (type.startsWith "Seq " && !sourceTypes.contains type) then "`name:Seq Int` or `name:Seq Bool`"
+          else s!"`{error.expected.getD s!"name:{type}"}`"
+        (s!"`{type}` here is a type with no name: every item in a stack effect is written `name:Type`.",
+          s!"Give it a name, as in {shown}. Any name will do: stack-effect names only document the stack.")
     | "firth.syntax.quote-in-name" =>
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
           "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
-    | _ =>
-        let expected := match error.expected with
-          | some expected => s!", expected `{expected}`"
-          | none => ""
-        -- Only a report at the end of the input has no text of its own.
-        let message := match error.actual with
-          | some _ => s!"Unexpected {actual}{expected}."
-          | none =>
-              if error.code == "firth.syntax.unexpected-eof" then s!"The input ends here{expected}."
-              else s!"This is not valid here ({(lastSegment error.code).replace "-" " "}){expected}."
-        (message, definitionShape)
+    | _ => fallback
   .mkObj [("message", .str message), ("hint", .str hint)]
 
 def parserEnvelope (context : EmissionContext)
@@ -484,6 +558,12 @@ private def operationRoles (operation : String) : Option (List String) :=
     primitiveRoles ((operation.drop 6).dropEnd 1).toString
   else none
 
+/-- "`w` declares no inputs, but its body takes 2". -/
+private def declaredInputsText (word : String) (inputs : Firth.Elaborator.DeclaredInputs) : String :=
+  let count (n : Nat) := if n == 1 then "1 input" else s!"{n} inputs"
+  let declared := if inputs.declared == 0 then "no inputs" else count inputs.declared
+  s!"`{word}` declares {declared}, but its body takes {if inputs.exact then "" else "at least "}{count inputs.takes}"
+
 /-- The message and hint for a word or primitive handed fewer values than it
 takes, as the body is written (`CallAccount.missing`): what it takes, the
 values it gets by source, and, when the pipeline found and checked one, the
@@ -506,7 +586,10 @@ private def shortExplanation (inWord : String) (word : Option String)
     | 0 => "but nothing is on the stack before it"
     | 1 => s!"but only 1 value is on the stack before it: {listing typed}"
     | n => s!"but only {n} values are on the stack before it, bottom to top: {listing typed}"
-  let message := s!"{account.operation}{inWord} takes {valueCount count} ({takes}), bottom to top, {gets}."
+  let declared := match word, account.declaredInputs with
+    | some word, some inputs => s!" {declaredInputsText word inputs}."
+    | _, _ => ""
+  let message := s!"{account.operation}{inWord} takes {valueCount count} ({takes}), bottom to top, {gets}.{declared}"
   let them := if account.missing == 1 then "the missing value" else s!"the {account.missing} missing values"
   let hint := match account.edit with
     | some edit =>
@@ -521,7 +604,15 @@ private def shortExplanation (inWord : String) (word : Option String)
           let missing := account.inputs.filter fun input =>
             edit.pushedLocals.contains (((input.splitOn ":").head?).getD "")
           let one := edit.pushedLocals.length == 1
-          s!"Push {them} ({", ".intercalate missing}) by writing the {if one then "local" else "locals"} of {if one then "that name" else "those names"}, {listing (edit.pushedLocals.map (s!"`{·}`"))}: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
+          let named := listing (edit.pushedLocals.map (s!"`{·}`"))
+          if edit.movedLocals == edit.pushedLocals then
+            s!"Push {them} ({", ".intercalate missing}) by moving the {if one then "local" else "locals"} of {if one then "that name" else "those names"}, {named}, written after {account.operation}, into {if one then "its place" else "their places"} before it: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
+          else if !edit.movedLocals.isEmpty then
+            let written := edit.pushedLocals.filter (!edit.movedLocals.contains ·)
+            let oneMoved := edit.movedLocals.length == 1
+            s!"Push {them} ({", ".intercalate missing}) by writing the {if written.length == 1 then "local" else "locals"} {listing (written.map (s!"`{·}`"))} and moving the {if oneMoved then "local" else "locals"} {listing (edit.movedLocals.map (s!"`{·}`"))}, written after {account.operation}, into {if oneMoved then "its place" else "their places"} before it: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
+          else
+          s!"Push {them} ({", ".intercalate missing}) by writing the {if one then "local" else "locals"} of {if one then "that name" else "those names"}, {named}: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
         else
         s!"The values {account.operation} takes are pushed before it, and {listing ((edit.written.splitOn " ").drop ((edit.written.splitOn " ").length - account.missing) |>.map (s!"`{·}`"))} {if account.missing == 1 then "is" else "are"} written after it. Write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
     | none =>
@@ -533,6 +624,42 @@ private def shortExplanation (inWord : String) (word : Option String)
           s!"Push {them} before {account.operation}. {theLocals} on the stack: writing a local's name pushes its value."
   (message, hint)
 
+/-- A `locals` block in `word` that names more values than are on the stack,
+or an operation handed fewer values than it takes, where they can only have
+been meant to come from the word's caller (`DeclaredInputs`). Declaring more
+inputs is one way to fix it, so the hint gives both. -/
+private def declaredInputsExplanation (word : String) (short : Firth.Elaborator.Shortfall)
+    (inputs : Firth.Elaborator.DeclaredInputs) : String × String :=
+  let (subject, wants) := if short.operation.isEmpty then
+      (s!"`locals \{ {" ".intercalate short.names} }`", s!"names {valueCount short.names.length}")
+    else (s!"`{short.operation}`", s!"needs {valueCount short.needed}")
+  let present := match short.present with
+    | 0 => "no value is on the stack before it"
+    | 1 => "only 1 value is on the stack before it"
+    | n => s!"only {n} values are on the stack before it"
+  let more := inputs.takes - inputs.declared
+  let them := if more == 1 then "1 more input" else s!"{more} more inputs"
+  let message := s!"{subject} in `{word}` {wants}, but {present}. {declaredInputsText word inputs}."
+  -- `call`, `dip` and `if` take their quotations, and the value `dip` keeps
+  -- or the condition `if` tests, from the top, so the values missing go
+  -- before those, not just before the atom.
+  let push := match short.operation, short.present with
+    | "call", _ => "push them before the quotation `call` runs"
+    | "dip", 1 => "push them before the quotation `dip` runs"
+    | "dip", _ => "push them before the value `dip` keeps"
+    | "if", 2 => "push them before the quotations `if` chooses between"
+    | "if", _ => "push them before the condition `if` tests"
+    | _, _ => s!"push them before {subject}"
+  -- With only its quotations on the stack, `if` is missing its condition
+  -- too, which goes on top of the other values missing: `true 1 2` would
+  -- have it test `2`. With no input declared, a new last input is on top.
+  let condition := if short.operation != "if" || short.present != 2 then ""
+    else if short.needed - short.present == 1 then " The value missing is the `Bool` that `if` tests."
+    else if inputs.declared == 0 then " Either way, the `Bool` that `if` tests goes last, on top of the others."
+    else " If you push them, the `Bool` that `if` tests goes last, on top of the others."
+  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise {push}.{condition}"
+  (message, hint)
+
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
       { code := "firth.name.duplicate-local", cause := "name-resolution", params := namedParams name, span }
@@ -540,22 +667,39 @@ private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError �
       { code := "firth.name.unbound-local", cause := "name-resolution", params := namedParams name, span }
   | .unsupportedCapture name span =>
       { code := "firth.elaboration.unsupported-capture", cause := "elaboration", params := namedParams name, span }
-  | .missingStackValue span =>
-      { code := "firth.type.stack-underflow", cause := "type-checking", params := .mkObj [], span }
-  | .linearCopy name span =>
-      { code := "firth.linearity.copy", cause := "linearity", params := namedParams name, span }
+  | .missingStackValue span short =>
+      let params := match short, short.bind (·.inputs) with
+        | some short, some inputs =>
+            if word.isEmpty then .mkObj [] else
+            let (message, hint) := declaredInputsExplanation word short inputs
+            .mkObj [("word", .str word), ("message", .str message), ("hint", .str hint)]
+        | _, _ => .mkObj []
+      { code := "firth.type.stack-underflow", cause := "type-checking", params, span }
+  | .linearCopy name span first =>
+      let params := match first with
+        | some first => .mkObj [("name", .str name), ("first_line", .num first.start.line),
+            ("first_column", .num first.start.column)]
+        | none => namedParams name
+      { code := "firth.linearity.copy", cause := "linearity", params, span }
   | .linearUnused name span =>
       { code := "firth.linearity.unconsumed-resource", cause := "linearity", params := namedParams name, span }
   | .unresolvedEffect name span =>
       { code := "firth.name.unresolved-effect", cause := "name-resolution", params := namedParams name, span }
-  | .effectUnderflow name span account =>
-      let params := match account.filter (·.missing > 0) with
-        | some account =>
+  | .effectUnderflow name span account short =>
+      let params := match account.filter (·.missing > 0), short.bind (·.inputs) with
+        | some account, _ =>
             let (message, hint) := shortExplanation (if word.isEmpty then "" else s!" in `{word}`")
               (if word.isEmpty then none else some word) account
             (namedParams name).mergeObj (.mkObj ((if word.isEmpty then [] else [("word", .str word)]) ++
               [("message", .str message), ("hint", .str hint)]))
-        | none => namedParams name
+        | none, some inputs => match short with
+          | some short =>
+              if word.isEmpty then namedParams name else
+              let (message, hint) := declaredInputsExplanation word short inputs
+              (namedParams name).mergeObj (.mkObj
+                [("word", .str word), ("message", .str message), ("hint", .str hint)])
+          | none => namedParams name
+        | none, none => namedParams name
       { code := "firth.type.stack-underflow", cause := "type-checking", params, span }
   | .usageMismatch name span =>
       { code := "firth.linearity.usage-mismatch", cause := "linearity", params := namedParams name, span }
@@ -613,7 +757,11 @@ private def erasureExplanation (code name : String) (params : Json) : String × 
   | "firth.name.unresolved-effect" =>
       (s!"`prim {name}` is not a primitive.", availablePrimitives)
   | "firth.linearity.copy" =>
-      (s!"The linear local `{name}` is used more than once.", "A linear value must be used exactly once.")
+      let first := match (params.getObjValAs? Nat "first_line").toOption,
+          (params.getObjValAs? Nat "first_column").toOption with
+        | some line, some column => s!": first at line {line}, column {column}, and again here"
+        | _, _ => ""
+      (s!"The linear local `{name}` is used more than once{first}.", "A linear value must be used exactly once.")
   | "firth.linearity.unconsumed-resource" =>
       (s!"The linear local `{name}` is never used.", "A linear value must be used exactly once.")
   | _ => ("", "")
@@ -695,6 +843,136 @@ private def ordinalFromTop : Nat → String
   | 1 => "the second value from the top"
   | 2 => "the third value from the top"
   | depth => s!"value {depth + 1} from the top"
+
+/-- The values from `first` to `last` counted from the top (`first ≤ last`). -/
+private def depthsFromTop (first last : Nat) : String :=
+  if first == last then ordinalFromTop first
+  else s!"values {first + 1} to {last + 1} from the top"
+
+/-- Rendered types as runs of one type, from the bottom: the type and how
+many values in a row have it. Values of one type in a row cannot be told
+apart by type. -/
+private def typeRuns (types : List String) : List (String × Nat) :=
+  types.foldr (init := []) fun type runs => match runs with
+    | (other, count) :: rest => if other == type then (type, count + 1) :: rest else (type, 1) :: runs
+    | [] => [(type, 1)]
+
+/-- How the values a signature declares sit, in order and by type, among
+the more values a body leaves, counted per run of one type: `missing` when
+they are not there in order, `unique kept` when there is one way (`kept`
+gives, per run from the bottom, how many of its values the declared output
+takes), and `several` when the types allow more than one. -/
+private inductive Placement
+  | missing
+  | unique (kept : List Nat)
+  | several
+
+/-- How many of the declared values from position `j` on have type `type`,
+at most `count`. -/
+private def declaredFit (declared : Array String) (type : String) (count j : Nat) : Nat :=
+  ((List.range count).takeWhile fun k => declared[j + k]? == some type).length
+
+private def keptPerRun (declared : Array String) (j : Nat) :
+    List (String × Nat) → List (Array Nat) → List Nat
+  | (type, count) :: runs, next :: nexts =>
+      let k := ((List.range (declaredFit declared type count j + 1)).find? fun k =>
+        next.getD (j + k) 0 > 0).getD 0
+      k :: keptPerRun declared (j + k) runs nexts
+  | _, _ => []
+
+private def placeDeclared (declared : List String) (runs : List (String × Nat)) : Placement :=
+  let m := declared.length
+  let wanted := declared.toArray
+  -- A row per suffix of the runs: at `j`, the ways the declared values from
+  -- `j` on sit in those runs, counted up to 2.
+  let last : Array Nat := (Array.range (m + 1)).map fun j => if j == m then 1 else 0
+  let step (run : String × Nat) (next : Array Nat) : Array Nat :=
+    (Array.range (m + 1)).map fun j =>
+      min 2 (((List.range (declaredFit wanted run.1 run.2 j + 1)).map fun k => next.getD (j + k) 0).sum)
+  let rows := runs.foldr (init := [last]) fun run rows => match rows with
+    | next :: _ => step run next :: rows
+    | [] => rows
+  match rows with
+  | first :: nexts =>
+      match first.getD 0 0 with
+      | 0 => .missing
+      | 1 => .unique (keptPerRun wanted 0 runs nexts)
+      | _ => .several
+  | [] => .missing
+
+open Firth.Elaborator.StackEffect in
+/-- The hint for a body that leaves more values than its signature declares:
+where the extra values are, when the types tell it. -/
+private def extraValuesHint (declared left : List AType) : String :=
+  let extra := left.length - declared.length
+  let them := if extra == 1 then "it" else "them"
+  let onTop := s!"The body leaves {plural extra "extra value"} on top ({renderValues (left.drop declared.length)}). Consume or `drop` {them} before the end of the word, or declare {them} in the signature's output."
+  let unknown := s!"The body leaves {plural extra "value"} more than declared, and the types do not tell which {if extra == 1 then "one is" else "ones are"} extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
+  if declared.isEmpty then onTop else
+  let runs := typeRuns (left.map renderType)
+  match placeDeclared (declared.map renderType) runs with
+  | .missing =>
+      s!"The body leaves {plural extra "value"} more than declared, and the declared values are not among them in order, so some types differ too. Compare the declared output with the body's result value by value."
+  | .several => unknown
+  | .unique kept =>
+      -- Each run from the bottom: its type, size, first index and extras.
+      let (_, spans) := (runs.zip kept).foldl (init := (0, ([] : List (String × Nat × Nat × Nat))))
+        fun (start, spans) ((type, count), keptHere) =>
+          (start + count, spans ++ [(type, count, start, count - keptHere)])
+      let extras := spans.filter fun (_, _, _, extraHere) => extraHere > 0
+      -- One placement fixes how many values of each run are extra, but in a
+      -- run only partly extra the types do not tell which of its values
+      -- those are, so no place is named for them.
+      let partialRun := extras.any fun (_, count, _, extraHere) => extraHere < count
+      let n := left.length
+      -- From the top, runs that are wholly extra and next to each other
+      -- are one group; a run only partly extra is a group of its own.
+      let groups := extras.reverse.foldl (init := ([] : List (Bool × List String × Nat × Nat × Nat)))
+        fun groups (type, count, start, extraHere) =>
+          let whole := extraHere == count
+          match groups with
+          | (true, types, low, high, size) :: rest =>
+              if whole && low == start + count then (true, List.replicate count type ++ types, start, high, size + count) :: rest
+              else (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
+          | _ => (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
+      let described := groups.reverse.map fun (whole, types, low, high, size) =>
+        let place := depthsFromTop (n - 1 - high) (n - 1 - low)
+        if whole then s!"{place} ({" ".intercalate types})"
+        else s!"{size} of the {types.length} {(types.head?).getD "?"} values, {place}"
+      if partialRun then
+        -- All the values are of one type: naming the run adds nothing.
+        if runs.length == 1 then
+          let extraTypes := extras.flatMap fun (type, _, _, extraHere) => List.replicate extraHere type
+          s!"The body leaves {plural extra "value"} more than declared ({" ".intercalate extraTypes}), and the types do not tell which {if extra == 1 then "one is" else "ones are"} extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
+        else
+          -- When every run with no extra value in it is above every run
+          -- with one, the values above those runs are declared ones and
+          -- the extra values are under them, wherever they are in their runs.
+          let extrasTop := (extras.getLast?.map fun (_, count, start, _) => start + count).getD n
+          let clearAbove := spans.all fun (_, _, start, extraHere) => extraHere > 0 || start >= extrasTop
+          let above := n - extrasTop
+          let intro :=
+            if clearAbove && above > 0 then
+              let top := if above == 1 then "The top value matches the top of the declared output, and under it"
+                else s!"The top {above} values match the top of the declared output, and under them"
+              s!"{top} the body leaves"
+            else "The body leaves"
+          s!"{intro} {plural extra "extra value"}: {listing described}. Where more values of one type are in a row than declared, the types do not tell which of them is extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
+      else
+        -- Every run with extra values is wholly extra, so the types fix
+        -- where each extra value is.
+        let extraAt := extras.flatMap fun (_, count, start, _) => (List.range count).map (start + ·)
+        let keptAt := spans.flatMap fun (_, count, start, extraHere) =>
+          if extraHere == 0 then (List.range count).map (start + ·) else []
+        if extraAt.all fun i => keptAt.all (· < i) then onTop
+        else if extraAt.all fun i => keptAt.all (i < ·) then
+          let depth := if extra == 1 then ordinalFromTop declared.length
+            else depthsFromTop declared.length (left.length - 1)
+          let top := if declared.length == 1 then "The top value matches the declared output, and under it"
+            else s!"The top {declared.length} values match the declared output, and under them"
+          s!"{top} the body leaves {plural extra "extra value"} ({renderValues (left.take extra)}), {depth}. Push {them} only where needed, or consume {them} before the values the word leaves are pushed, or declare {them} in the signature's output, under the others."
+        else
+          s!"The body leaves {plural extra "extra value"} among the values the signature declares: {listing described}. Push {them} only where needed, or consume {them} before the end of the word, or declare {them} in the signature's output at that place."
 
 private def capitalize (text : String) : String :=
   match text.toList with
@@ -811,6 +1089,16 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
         | none, some word => s!" With that edit `{word}` checks."
         | some (line, column), some word => s!" With that edit, the next error in `{word}` is at line {line}, column {column}."
         | _, none => ""
+      match edit.removed with
+      | some (removed, line, column) =>
+          -- Found by removing each item written before the operation in
+          -- turn: this one alone lets the word check. Written out in place
+          -- only when the text replaced is on one line.
+          let rewrite := if edit.replacement.isEmpty then ""
+            else s!": write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}"
+          pure (s!"{message} One value too many is pushed before it.",
+            s!"Remove the `{removed}` written at line {line}, column {column}{rewrite}.{outcome}")
+      | none =>
       pure (message, s!"These are the values {account.operation} takes, in another order. To push them in its order, write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}")
   | none =>
       if !account.assignment.isEmpty then
@@ -848,6 +1136,35 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
       | none => none
 
 open Firth.Elaborator.StackEffect in
+/-- A call refused because the word's effect has no row, at the call or at an
+`if` whose branch makes it (`closedCall`). Typing found that giving that word
+a row removes the refusal. Moving the call to where nothing is below its
+inputs, or giving the calling word no row either, can too, so the hint names
+both ways. -/
+private def closedCallExplanation (inWord : String) (diagnostic : Firth.Elaborator.StackEffect.Diagnostic)
+    (closed : ClosedCall) : String × String :=
+  let word := closed.word
+  let because := s!"`{word}` takes the whole stack: its effect has no row"
+  let message := match diagnostic.branchInput with
+    | some (onTrueBranch, takes) =>
+        let name := if onTrueBranch then "true" else "false"
+        let runsOn := if takes == .empty then "can run only on an empty stack"
+          else s!"takes {renderStack takes}"
+        s!"The {name} branch of `if`{inWord} cannot run on the stack it is given, because of its call to `{word}`. {capitalize because}, so the {name} branch {runsOn}, but below the condition and the two quotations the stack is {renderStack diagnostic.state}."
+    | none =>
+        s!"{capitalize because}, but here{inWord} the stack before it is {renderStack diagnostic.state}, more than its inputs."
+  -- A word in a vocabulary is declared by its own name, not the one that
+  -- qualifies it.
+  let declared := (word.splitOn ".").getLastD word
+  let declare := match closed.withRow with
+    | some effect => s!"declare it `: {declared} {effect}`: {closed.rowName} stands for the values below its inputs, which it leaves untouched"
+    | none => "give its effect a row: a row variable bound with `forall`, below its inputs and below its outputs, stands for the values below its inputs, which it leaves untouched"
+  let body := if closed.rowRefusesBody then
+      s!" With only that change, `{word}`'s own body is refused, so its body has to change as well."
+    else ""
+  (message, s!"A word whose effect has no row can be called only where its inputs are all that is on the stack. To call `{word}` with other values below its inputs, {declare}.{body} Otherwise, call it only where nothing is below its inputs.")
+
+open Firth.Elaborator.StackEffect in
 /-- A plain-language sentence and a repair hint for a checker diagnostic,
 written for an author who sees only this message and the source. -/
 private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : String × String :=
@@ -859,13 +1176,14 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   let expected := diagnostic.expected.map stackValues
   let actual := diagnostic.actual.map stackValues
   let rowNote := " Here ρ stands for the caller's values that this word must leave untouched."
+  if let some closed := diagnostic.closedCall.filter (·.reported == diagnostic.primary) then
+    closedCallExplanation inWord diagnostic closed else
   match diagnostic.code, expected, actual with
   | "firth.type.declared-effect-mismatch", some (declared, _), some (left, _) =>
       let word := diagnostic.word.getD "this word"
       let base := s!"`{word}` declares that it leaves {(diagnostic.expected.map renderStack).getD "?"} but its body leaves {(diagnostic.actual.map renderStack).getD "?"}."
       if left.length > declared.length then
-        let extra := left.length - declared.length
-        (base, s!"The body leaves {plural extra "extra value"} on top ({renderValues (left.drop declared.length)}). Consume or `drop` {if extra == 1 then "it" else "them"} before the end of the word, or declare {if extra == 1 then "it" else "them"} in the signature's output." ++ rowNote)
+        (base, extraValuesHint declared left ++ rowNote)
       else if left.length < declared.length then
         let missing := declared.length - left.length
         (base, s!"The body leaves {plural missing "value"} fewer than declared. Something consumes a value it should keep: copy it first with `dup`, or fix the signature." ++ rowNote)
@@ -897,6 +1215,16 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   | "firth.type.expected-bool", _, _ =>
       (s!"`if`{inWord} needs a Bool condition under its two quotations, but the stack before it is {before}.",
         "Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.")
+  | "firth.type.unknown-type", _, _ =>
+      let types := s!"The types a stack effect can declare are {listing ((sourceTypes.take 4).map (s!"`{·}`"))}, and {listing ((sourceTypes.drop 4).map (s!"`{·}`"))} for effects."
+      let place := match diagnostic.word with
+        | some word => s!" in the stack effect of `{word}`"
+        | none => ""
+      if at_ == "Seq" then
+        (s!"`Seq`{place} needs its element type.", s!"Write `Seq Int` or `Seq Bool`. {types}")
+      else if at_.startsWith "Seq " then
+        (s!"`{at_}`{place} is not a type: a sequence holds `Int` or `Bool`.", types)
+      else (s!"`{at_}`{place} is not a type.", types)
   | "firth.type.expected-quotation", _, _ =>
       (s!"`{at_}`{inWord} needs a quotation, but the stack before it is {before}.",
         "Put a `[ ... ]` quotation where the operation expects one.")
@@ -1255,6 +1583,183 @@ private def renumberVariables (text : String) : String :=
             (pieces ++ [s!"{seen.idxOf digits}" ++ String.ofList (part.toList.drop digits.length)], seen)
           (pre.intercalate pieces, seen)).1
 
+/-- The bytes of `source` from `start` to `stop`. -/
+private def sourceBytes (source : String) (start stop : Nat) : String :=
+  (String.fromUTF8? (source.toUTF8.extract start stop)).getD ""
+
+/-- A report of a call to a word whose effect has no row, with that word's
+effect written with a row, when the word is declared in the source, and
+whether the source with only that effect changed is refused in the word's own
+body (a word it calls with no row, say) where `reports`, the source's own
+reports other than this one, have nothing there. -/
+private partial def withClosedEffect (context : EmissionContext)
+    (config : Firth.Elaborator.PipelineConfig) (source : String)
+    (declared : List Firth.Elaborator.WordDefinition) (reports : List Firth.Elaborator.PipelineDiagnostic) :
+    Firth.Elaborator.PipelineDiagnostic → Firth.Elaborator.PipelineDiagnostic
+  | .stackEffect diagnostic => .stackEffect { diagnostic with
+      closedCall := diagnostic.closedCall.map fun closed =>
+        if closed.withRow.isSome then closed else
+        match declared.find? (·.name == closed.word) with
+        | none => closed
+        | some word =>
+        match Firth.Elaborator.StackEffect.withRowText word.effect with
+        | none => closed
+        | some (withRow, rowName) =>
+        let span := word.effect.span
+        let edited := sourceBytes source 0 span.start.offset ++ withRow ++
+          sourceBytes source span.stop.offset source.utf8ByteSize
+        let editedWord := match Firth.Elaborator.parse edited with
+          | .success file => (Firth.Elaborator.collectWords file.declarations).find? (fun (found : Firth.Elaborator.WordDefinition) => found.name == closed.word)
+          | .failure _ => none
+        let within (span : Firth.Elaborator.Span) (found : List Firth.Elaborator.PipelineDiagnostic) :=
+          found.any fun report =>
+            match (pipelineDiagnosticEnvelope context report).body with
+            | .diagnostic body => positionWithin span body.location.range.start
+            | _ => false
+        -- This report itself does not count: the callee may be the word it
+        -- is in, calling itself.
+        let refusedBefore := within word.span
+          (reports.filter (· != Firth.Elaborator.PipelineDiagnostic.stackEffect diagnostic))
+        let rowRefusesBody := !refusedBefore &&
+          match Firth.Elaborator.elaborateWith config edited, editedWord with
+          | .success _, _ => false
+          | .failure _, none => true
+          | .failure again, some editedWord => within editedWord.span again
+        { closed with withRow, rowName, rowRefusesBody } }
+  | .assumes word callees edits inner =>
+      .assumes word callees edits (withClosedEffect context config source declared reports inner)
+  | other => other
+
+/-- `source` with `count` more inputs, `taken1` to `takenN` of type `Int`,
+declared at the bottom of `word`'s stack effect, or at the top when `atTop`,
+when the effect has no row and those names are free. Only how many values
+the body takes is checked with it, not their types. A `locals` block that
+opens the body and names the declared inputs, and then more, reads the
+inputs added at the top as the ones it names (`checkInputLocals`). -/
+private def withMoreInputs (source : String) (word : Firth.Elaborator.WordDefinition)
+    (count : Nat) (atTop : Bool) : Option String := do
+  let effect := word.effect
+  if (effect.input ++ effect.output).any (· matches .row ..) then none
+  let names := (effect.input ++ effect.output).filterMap fun item => match item with
+    | .value name _ _ => some name
+    | .row .. => none
+  let added := (List.range count).map (s!"taken{· + 1}")
+  if added.any names.contains then none
+  let text := String.join (added.map (s!" {·}:Int^many")) ++ " "
+  let at_ ← match (if atTop then effect.input.getLast? else effect.input.head?) with
+    | some (.value _ _ span) => some (if atTop then span.stop.offset else span.start.offset)
+    | _ =>
+        let effectText := sourceBytes source effect.span.start.offset effect.span.stop.offset
+        match effectText.splitOn "--" with
+        | before :: _ :: _ => some (effect.span.start.offset + before.utf8ByteSize)
+        | _ => none
+  some (sourceBytes source 0 at_ ++ text ++ sourceBytes source at_ source.utf8ByteSize)
+
+/-- The erasure report of the word `name` itself, if `report` is one. -/
+private def erasureReportOf (name : String) :
+    Firth.Elaborator.PipelineDiagnostic → Option Firth.Elaborator.ErasureError
+  | .erasure word error => if word == name then some error else none
+  | .assumes _ _ _ inner => erasureReportOf name inner
+  | _ => none
+
+/-- How many more values than its stack effect declares an underflow shows
+the body of a word takes, where it can only have been meant to take them from
+its caller: a `locals` block with no unused local on the stack, or an
+operation outside every `locals` block, or with no local in scope and no edit
+that pushes its values in order where the pipeline has an account of them. -/
+private def shortOfInputs : Firth.Elaborator.ErasureError → Option Nat
+  | .missingStackValue _ (some short) =>
+      if short.hidden == 0 && short.tracked && short.present < short.needed then
+        some (short.needed - short.present) else none
+  | .effectUnderflow _ _ (some account) _ =>
+      if account.missing > 0 && account.locals.isEmpty && account.edit.isNone then
+        some account.missing else none
+  | .effectUnderflow _ _ none (some short) =>
+      if short.tracked && !short.inBlock && short.present < short.needed then
+        some (short.needed - short.present) else none
+  | _ => none
+
+/-- Whether `report` compares the body's result with the declared effect,
+which is made at the signature but after the body is checked. -/
+private def comparesDeclared : Firth.Elaborator.PipelineDiagnostic → Bool
+  | .stackEffect diagnostic => diagnostic.code == "firth.type.declared-effect-mismatch"
+  | .assumes _ _ _ inner => comparesDeclared inner
+  | _ => false
+
+/-- How many inputs `word`'s stack effect declares, and how many its body
+takes (`DeclaredInputs`): the source is checked again with `extra` more
+inputs declared, and each time the body still runs short of values from its
+caller, with as many more again. None when, with them declared, the word is
+refused before `reported`, the byte where the underflow was: the inputs added
+broke what the body does before it, as a call to a word whose effect has no
+row, which takes the whole stack, so declaring them is not the fix. -/
+private def inputsTaken (config : Firth.Elaborator.PipelineConfig) (source : String)
+    (word : Firth.Elaborator.WordDefinition) (reported declared extra : Nat) :
+    (fuel : Nat) → Option Firth.Elaborator.DeclaredInputs
+  | 0 => some { declared, takes := declared + extra, exact := false }
+  | fuel + 1 =>
+      let atLeast : Firth.Elaborator.DeclaredInputs := { declared, takes := declared + extra, exact := false }
+      -- The reports of the source with the inputs added, at the bottom or
+      -- else at the top, the first that gets the word past name resolution
+      -- and `checkInputLocals` to erasure, with how far the word's body
+      -- moved. Another word's reports from before erasure do not stop this one.
+      let attempt (atTop : Bool) : Option (List Firth.Elaborator.PipelineDiagnostic × Nat) := do
+        let edited ← withMoreInputs source word extra atTop
+        let shift := edited.utf8ByteSize - source.utf8ByteSize
+        match Firth.Elaborator.elaborateWith { config with checkEdits := false } edited with
+        | .success _ => some ([], shift)
+        | .failure reports =>
+            -- The word, where it is in the edited source.
+            let stop := word.span.stop.offset + shift
+            let inWord := reports.any fun report => match report with
+              | .parse error => word.span.start.offset ≤ error.primary.start.offset &&
+                  error.primary.start.offset ≤ stop
+              | _ => false
+            if inWord then none else some (reports, shift)
+      match (attempt false).orElse fun _ => attempt true with
+      | none => some atLeast
+      | some (reports, shift) =>
+          let early := reports.any fun report => !comparesDeclared report && match report.span? with
+            | some span => word.span.start.offset ≤ span.start.offset &&
+                span.start.offset < reported + shift
+            | none => false
+          if early then none else
+          match reports.findSome? (erasureReportOf word.name) with
+          | none => some { atLeast with exact := true }
+          | some error => match shortOfInputs error with
+            | some more => inputsTaken config source word reported declared (extra + more) fuel
+            | none => some atLeast
+
+/-- An underflow in a word whose stack effect has no row, where the values
+missing can only have been meant to come from the word's caller
+(`shortOfInputs`), with how many inputs the effect declares and how many the
+body takes. -/
+private partial def withDeclaredInputs (config : Firth.Elaborator.PipelineConfig) (source : String)
+    (declared : List Firth.Elaborator.WordDefinition) :
+    Firth.Elaborator.PipelineDiagnostic → Firth.Elaborator.PipelineDiagnostic
+  | .erasure name error =>
+      match declared.find? (·.name == name), shortOfInputs error with
+      | some word, some missing =>
+          if (word.effect.input ++ word.effect.output).any (· matches .row ..) then .erasure name error else
+          let count := (word.effect.input.filter (· matches .value ..)).length
+          let inputs := inputsTaken config source word (Firth.Elaborator.erasureSpan error).start.offset count missing 8
+          match error with
+          | .missingStackValue span (some short) => .erasure name (.missingStackValue span (some { short with inputs }))
+          | .effectUnderflow operation span (some account) short =>
+              .erasure name (.effectUnderflow operation span (some { account with declaredInputs := inputs }) short)
+          | .effectUnderflow operation span none (some short) =>
+              -- Erasure has a word call's canonical name, `v.g`; the report
+              -- names it as the source writes it, `g` or `alias.g`.
+              let written := if ["swap", "dup", "drop", "quote", "call", "dip", "if"].contains short.operation ||
+                  short.operation.startsWith "prim " then short.operation
+                else sourceBytes source span.start.offset span.stop.offset
+              .erasure name (.effectUnderflow operation span none (some { short with inputs, operation := written }))
+          | other => .erasure name other
+      | _, _ => .erasure name error
+  | .assumes word callees edits inner =>
+      .assumes word callees edits (withDeclaredInputs config source declared inner)
+  | other => other
+
 def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
   let config := { config with
@@ -1266,10 +1771,33 @@ def elaboratePipeline (context : EmissionContext) (source : String)
   match Firth.Elaborator.elaborateWith config source with
   | .success program => .success program
   | .failure diagnostics =>
-      let words := match Firth.Elaborator.parse source with
-        | .success file => (Firth.Elaborator.collectWords file.declarations).map fun word => (word.name, word.span)
+      let declared := match Firth.Elaborator.parse source with
+        | .success file => Firth.Elaborator.collectWords file.declarations
         | .failure _ => []
+      let words := declared.map fun word => (word.name, word.span)
       .failure (uniquePayloadIds (sortDiagnosticEnvelopes
-        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context))))
+        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context ∘
+          withDeclaredInputs config source declared ∘
+          withClosedEffect context config source declared diagnostics))))
+
+/-- A program of several files (`dec.multi-file-imports`): `root` and the
+files it imports, transitively, from `files`. Each file is checked by
+`elaboratePipeline` against the words its direct imports export, and its
+diagnostics carry its own path. On success, every file's checked words in
+load order, the root last. -/
+def elaborateSources (context : EmissionContext) (root : Firth.Elaborator.Source)
+    (files : List Firth.Elaborator.Source) (config : Firth.Elaborator.PipelineConfig := {}) :
+    Except (List Envelope) (List (Firth.Elaborator.Source × Firth.Elaborator.CheckedProgram)) :=
+  let contextFor (source : Firth.Elaborator.Source) : EmissionContext :=
+    if source.path == root.path then context else { context with source := .path source.path }
+  let check (source : Firth.Elaborator.Source) (imported : List Firth.Elaborator.ImportedWord) :
+      Except (List Envelope) Firth.Elaborator.CheckedProgram :=
+    match elaboratePipeline (contextFor source) source.text { config with imported } with
+    | .success program => .ok program
+    | .failure diagnostics => .error diagnostics
+  match Firth.Elaborator.elaborateProgram check (fun source error => parserEnvelope (contextFor source) error)
+      root files with
+  | .ok programs => .ok programs
+  | .error envelopes => .error (uniquePayloadIds (sortDiagnosticEnvelopes envelopes))
 
 end Firth.Agent

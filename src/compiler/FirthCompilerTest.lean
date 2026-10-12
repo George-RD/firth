@@ -206,6 +206,24 @@ private def wordTypeWitnesses : IO Unit := do
       { rowVariables := [], input := .mk none [.base "my-type" .many], output := .mk none [] } with
   | .ok rendered => fail s!"a non-canonical type name rendered: {rendered}"
   | .error _ => pure ()
+  -- The checker now refuses a source type outside `Int`, `Bool`, `Seq Int`,
+  -- `Seq Bool` and the effect types (`dec.source-type-names`), so `SeqInt`
+  -- never reaches here from source; the compiler keeps its own guard for a
+  -- word type built some other way. `SeqInt` is a canonical identifier, so
+  -- only the guard refuses it: without it, it would render as the target's
+  -- `Seq Int`.
+  expectBool "SeqInt passes every check but the guard" true
+    (WordType.isCanonicalIdentifier (WordType.targetTypeName "SeqInt"))
+  for reserved in ["SeqInt", "SeqBool"] do
+    match WordType.render
+        { rowVariables := [], input := .mk none [.base reserved .many], output := .mk none [] } with
+    | .ok rendered => fail s!"the reserved source type {reserved} rendered: {rendered}"
+    | .error message =>
+        expectEqual s!"the reserved-name guard refuses {reserved}" message
+          s!"type name {reserved} is reserved for the target spelling of a sequence type"
+  render "a source sequence type renders as the target's"
+    { rowVariables := [], input := .mk none [.base "Seq Int" .many], output := .mk none [] }
+    "(v0:SeqInt^many--)"
   match WordType.render
       { rowVariables := ["ρ", "ρ"], input := .mk none [], output := .mk none [] } with
   | .ok rendered => fail s!"duplicate binders rendered: {rendered}"

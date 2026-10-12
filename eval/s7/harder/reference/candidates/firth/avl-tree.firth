@@ -1,0 +1,211 @@
+\ AVL tree in one Seq Int: t[0] rotations, t[1] root, t[2] ignored, then
+\ nodes of four cells at pointer p: key p, left p+1, right p+2, height p+3.
+\ A null pointer is -1.
+
+: kid-l
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ c:Int^many)
+  1 prim + prim seq-int.at;
+
+: kid-r
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ c:Int^many)
+  2 prim + prim seq-int.at;
+
+: hgt
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ h:Int^many)
+  locals { t p }
+  { p 0 prim < [ 0 ] [ t p 3 prim + prim seq-int.at ] if };
+
+: max1
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ m:Int^many)
+  locals { a b }
+  { a b prim > [ a ] [ b ] if 1 prim + };
+
+: upd
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { t p }
+  { t p 3 prim +
+    t t p kid-l hgt
+    t t p kid-r hgt
+    max1 prim seq-int.set };
+
+: bal
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ b:Int^many)
+  locals { t p }
+  { t t p kid-l hgt t t p kid-r hgt prim - };
+
+: rot-inc
+  (forall ρ; ρ t:Seq Int^many -- ρ r:Seq Int^many)
+  locals { t }
+  { t 0 t 0 prim seq-int.at 1 prim + prim seq-int.set };
+
+: ign-inc
+  (forall ρ; ρ t:Seq Int^many -- ρ r:Seq Int^many)
+  locals { t }
+  { t 2 t 2 prim seq-int.at 1 prim + prim seq-int.set };
+
+: link-l
+  (forall ρ; ρ t:Seq Int^many c:Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { t c p }
+  { t p 1 prim + c prim seq-int.set };
+
+: link-r
+  (forall ρ; ρ t:Seq Int^many c:Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { t c p }
+  { t p 2 prim + c prim seq-int.set };
+
+: setroot
+  (forall ρ; ρ t:Seq Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { t v }
+  { t 1 v prim seq-int.set };
+
+: rotr2
+  (forall ρ; ρ t:Seq Int^many p:Int^many l:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p l }
+  { t t l kid-r p link-l
+    l 2 prim + p prim seq-int.set
+    p upd l upd rot-inc l };
+
+: rotr
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p }
+  { t p t p kid-l rotr2 };
+
+: rotl2
+  (forall ρ; ρ t:Seq Int^many p:Int^many c:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p c }
+  { t t c kid-l p link-r
+    c 1 prim + p prim seq-int.set
+    p upd c upd rot-inc c };
+
+: rotl
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p }
+  { t p t p kid-r rotl2 };
+
+: fixl
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p }
+  { t t p kid-l bal 0 prim <
+    [ t t p kid-l rotl p link-l ] [ t ] if
+    p rotr };
+
+: fixr
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p }
+  { t t p kid-r bal 0 prim >
+    [ t t p kid-r rotr p link-r ] [ t ] if
+    p rotl };
+
+: rebal3
+  (forall ρ; ρ t:Seq Int^many p:Int^many b:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p b }
+  { b 1 prim >
+    [ t p fixl ]
+    [ b -1 prim < [ t p fixr ] [ t p ] if ] if };
+
+: rebalance
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p }
+  { t p upd locals { t2 } { t2 p t2 p bal rebal3 } };
+
+: insert
+  (forall ρ; ρ t:Seq Int^many p:Int^many k:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p k }
+  { p 0 prim <
+    [ t k prim seq-int.push -1 prim seq-int.push -1 prim seq-int.push
+      1 prim seq-int.push t prim seq-int.len ]
+    [ k t p prim seq-int.at prim <
+      [ t t p kid-l k insert p link-l p rebalance ]
+      [ t t p kid-r k insert p link-r p rebalance ] if ] if };
+
+: minkey
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ m:Int^many)
+  locals { t p }
+  { t p kid-l 0 prim <
+    [ t p prim seq-int.at ]
+    [ t t p kid-l minkey ] if };
+
+: del2
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p }
+  { t t p kid-r t p prim seq-int.at delete p link-r p rebalance };
+
+: del-here
+  (forall ρ; ρ t:Seq Int^many p:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p }
+  { t p kid-l 0 prim <
+    [ t t p kid-r ]
+    [ t p kid-r 0 prim <
+      [ t t p kid-l ]
+      [ t p t t p kid-r minkey prim seq-int.set p del2 ] if ] if };
+
+: delete
+  (forall ρ; ρ t:Seq Int^many p:Int^many k:Int^many -- ρ r:Seq Int^many q:Int^many)
+  locals { t p k }
+  { p 0 prim <
+    [ t p ]
+    [ k t p prim seq-int.at prim <
+      [ t t p kid-l k delete p link-l p rebalance ]
+      [ k t p prim seq-int.at prim >
+        [ t t p kid-r k delete p link-r p rebalance ]
+        [ t p del-here ] if ] if ] if };
+
+: member
+  (forall ρ; ρ t:Seq Int^many p:Int^many k:Int^many -- ρ r:Bool^many)
+  locals { t p k }
+  { p 0 prim <
+    [ false ]
+    [ k t p prim seq-int.at prim =
+      [ true ]
+      [ k t p prim seq-int.at prim <
+        [ t t p kid-l k member ]
+        [ t t p kid-r k member ] if ] if ] if };
+
+: do-op2
+  (forall ρ; ρ t:Seq Int^many f:Seq Bool^many op:Int^many k:Int^many m:Bool^many -- ρ r:Seq Int^many g:Seq Bool^many)
+  locals { t f op k m }
+  { op 0 prim =
+    [ m
+      [ t ign-inc f ]
+      [ t t 1 prim seq-int.at k insert setroot f ] if ]
+    [ op 1 prim =
+      [ m
+        [ t t 1 prim seq-int.at k delete setroot f ]
+        [ t ign-inc f ] if ]
+      [ t f m prim seq-bool.push ] if ] if };
+
+: do-op
+  (forall ρ; ρ t:Seq Int^many f:Seq Bool^many op:Int^many k:Int^many -- ρ r:Seq Int^many g:Seq Bool^many)
+  locals { t f op k }
+  { t f op k t t 1 prim seq-int.at k member do-op2 };
+
+: loop
+  (forall ρ; ρ t:Seq Int^many f:Seq Bool^many ops:Seq Int^many keys:Seq Int^many i:Int^many -- ρ r:Seq Int^many g:Seq Bool^many)
+  locals { t f ops keys i }
+  { i ops prim seq-int.len prim <
+    [ t f ops i prim seq-int.at keys i prim seq-int.at do-op
+      ops keys i 1 prim + loop ]
+    [ t f ] if };
+
+: pre
+  (forall ρ; ρ acc:Seq Int^many t:Seq Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { acc t p }
+  { p 0 prim <
+    [ acc ]
+    [ acc t p prim seq-int.at prim seq-int.push
+      t t p kid-l pre
+      t t p kid-r pre ] if };
+
+: fin
+  (forall ρ; ρ t:Seq Int^many f:Seq Bool^many -- ρ pre:Seq Int^many f:Seq Bool^many rot:Int^many ign:Int^many h:Int^many)
+  locals { t f }
+  { prim seq-int.empty t t 1 prim seq-int.at pre
+    f
+    t 0 prim seq-int.at
+    t 2 prim seq-int.at
+    t t 1 prim seq-int.at hgt };
+
+: main
+  (forall ρ; ρ ops:Seq Int^many keys:Seq Int^many -- ρ pre:Seq Int^many f:Seq Bool^many rot:Int^many ign:Int^many h:Int^many)
+  locals { ops keys }
+  { { 0 -1 0 } prim seq-bool.empty ops keys 0 loop fin };

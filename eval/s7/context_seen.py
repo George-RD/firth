@@ -40,6 +40,12 @@ from pathlib import Path
 OURS = ("You are the author in a programming evaluation.",
         "The coordinator sent a message while you were working:\nFeedback round ")
 SAMPLE = re.compile(r"haiku-(?:firth|python)-([0-9]+)")
+# The harder tier's scored run names a sample by subject, language and number
+# (`sonnet-python-2`, `deepseek-firth-5`, `haiku-python-1`), so the same number
+# in another subject or language is another author: compare whole names, not
+# numbers. Haiku names are compared whole too (`todo.s7-context-seen-haiku-whole-names`);
+# SAMPLE's number rule still runs for them, so nothing it flagged goes unflagged.
+SAMPLE_NAME = re.compile(r"(?<![\w-])((?:sonnet|deepseek|haiku)-(?:firth|python)-[0-9]+)(?![\w-])")
 TASKS = re.compile(r"/tasks/([0-9a-f]{8,})")
 # How the eval session labels its authors when it starts them ("Control author
 # B10"); the harness can repeat another task's label with no path (Codex, on #181).
@@ -164,9 +170,11 @@ def kind(ev: dict, text: str) -> str:
 
 def crossing(body: str, sample: str | None, label: str | None, arm: str | None) -> dict:
     """What in `body` names a sample, author, arm or task other than this one."""
-    own_n = SAMPLE.search(sample)[1] if sample else None
+    m = SAMPLE.search(sample or "")
+    own_n = m[1] if m else None  # a scored-tier name such as `sonnet-firth-2` has no Haiku number
     found = {
         "names": sorted({n for n in SAMPLE.findall(body) if n != own_n}),
+        "sample_names": sorted({n for n in SAMPLE_NAME.findall(body) if n != sample}),
         "arm_samples": sorted({f"{c}/{n}" for c, n in ARM_SAMPLE.findall(body)
                                if (c, n) != (arm, own_n)}),
         # The other arm's commit anywhere, or any path into its worktree's
@@ -278,6 +286,21 @@ def self_test() -> None:
     assert crossing(r14, "haiku-firth-12", "s1-A11", "arm-a")["labels"] == ["s2-B7"]
     assert "labels" not in crossing(r14, "haiku-firth-7", "s2-B7", "arm-b")
     assert crossing("Run 13 author B2", "haiku-firth-1", "B1", "arm-b")["labels"] == ["B2"]
+    # The scored harder tier: another subject's or language's author with the
+    # same number crosses; the author's own name does not (planted, #209 review).
+    assert crossing("author sonnet-python-2 is running", "sonnet-firth-2", None, None)["sample_names"] \
+        == ["sonnet-python-2"]
+    assert crossing("deepseek-firth-2/answer-1.md", "sonnet-firth-2", None, None)["sample_names"] \
+        == ["deepseek-firth-2"]
+    assert "sample_names" not in crossing("wrote sonnet-firth-2/answer-1.md", "sonnet-firth-2", None, None)
+    assert "sample_names" not in crossing("xsonnet-firth-2x", "sonnet-firth-1", None, None)
+    # A Haiku name is compared whole as well: another Haiku author with the
+    # same number in the other language crosses (planted, cubic on #245);
+    # the author's own name does not, and the number rule still holds.
+    assert crossing("haiku-python-1/answer-1.md", "haiku-firth-1", None, None)["sample_names"] \
+        == ["haiku-python-1"]
+    assert "sample_names" not in crossing("wrote haiku-firth-1/answer-1.md", "haiku-firth-1", None, None)
+    assert crossing("haiku-firth-3/answer-1.md", "sonnet-firth-3", None, None)["names"] == ["3"]
     assert clean["injected"] == [] and clean["cross_sample"] == [], clean
     assert clean["compactions"] == [], clean
     squeezed = base + [{"type": "user", "timestamp": "t3",

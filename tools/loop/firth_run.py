@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -22,14 +21,17 @@ def parser() -> argparse.ArgumentParser:
     commands = cli.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="parse and check all definitions without executing")
     check.add_argument("source", type=Path)
+    check.add_argument("--root", type=Path, help="source root for imports (default: the source's directory)")
     run = commands.add_parser("run", help="check, compile and compare VM/reference execution")
     run.add_argument("source", type=Path)
+    run.add_argument("--root", type=Path, help="source root for imports (default: the source's directory)")
     run.add_argument("--entry", required=True, help="source word name, for example main or app.main")
     run.add_argument("--stack", default="[]", help="JSON array of integers/booleans, bottom to top")
     run.add_argument("--fuel", type=int, default=gate.FUEL,
                      help=f"finite step budget, 0 to {gate.MAX_FUEL}")
     test = commands.add_parser("test", help="compare saved input/output cases on both hosts")
     test.add_argument("suite", type=Path)
+    test.add_argument("--root", type=Path, help="source root for imports (default: the source's directory)")
     test.add_argument("--fuel", type=int, default=gate.FUEL,
                       help=f"finite per-case step budget, 0 to {gate.MAX_FUEL}")
     return cli
@@ -121,25 +123,34 @@ def snapshot_source(source: Path) -> bytes:
     return raw
 
 
-def test_suite(path: Path, fuel: int) -> dict:
+def test_suite(path: Path, fuel: int, root: Path | None = None) -> dict:
     if type(fuel) is not int or not 0 <= fuel <= gate.MAX_FUEL:
         gate.fail(f"fuel: expected an integer from 0 to {gate.MAX_FUEL}")
     source, cases = load_suite(path)
+    root = (root or source.parent).resolve(strict=True)
     snapshot = snapshot_source(source)
     gate.build_toolchain()
     results = []
     with tempfile.TemporaryDirectory(prefix="firth-test-") as directory:
         workspace = Path(directory)
-        frozen = workspace / "source" / source.name
-        frozen.parent.mkdir()
-        frozen.write_bytes(snapshot)
+        # The source, as read before the build, and the files it imports are
+        # read once, so every case runs the same text.
+        loaded = gate.load_sources("suite", source, root, workspace)
+        loaded["source_text"] = snapshot.decode("utf-8")
+        frozen_root = workspace / "source"
+        for file in [loaded] + loaded["files"]:
+            target = frozen_root / file["source_path"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(file["source_text"], encoding="utf-8")
+        frozen = frozen_root / loaded["source_path"]
         for index, case in enumerate(cases):
             result = {"name": case["name"], "entry": case["entry"],
                       "expected_stack": case["expected_stack"]}
             try:
                 observation = gate.rebuild(
                     {"name": f"case-{index}", "entry": case["entry"],
-                     "source": str(frozen), "source_path": source.name},
+                     "source": str(frozen), "source_path": source.name,
+                     "source_root": str(frozen_root)},
                     workspace, stack=case["stack"], fuel=fuel,
                 )
                 gate.validate_portable_stack(observation["stack"], f"case {index} result")
@@ -166,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         if args.command == "test":
-            result = test_suite(args.suite, args.fuel)
+            result = test_suite(args.suite, args.fuel, args.root)
             print(json.dumps(result, sort_keys=True))
             return 1 if result["failed"] else 0
         source = args.source.resolve(strict=True)
@@ -177,16 +188,20 @@ def main(argv: list[str] | None = None) -> int:
         gate.initial_values(stack)
         if args.command == "run" and not 0 <= args.fuel <= gate.MAX_FUEL:
             gate.fail(f"fuel: expected an integer from 0 to {gate.MAX_FUEL}")
+        root = (args.root or source.parent).resolve(strict=True)
         gate.build_toolchain()
         with tempfile.TemporaryDirectory(prefix="firth-run-") as directory:
             workspace = Path(directory)
             if args.command == "check":
-                scratch = workspace / source.name
-                shutil.copyfile(source, scratch)
+                loaded = gate.load_sources("check", source, root, workspace)
+                # The path under the root, which the source's imports resolve
+                # against, whether or not any imported file was found.
+                envelope = {"source_path": loaded["source_path"], "source_text": loaded["source_text"]}
+                if loaded["files"]:
+                    envelope["files"] = loaded["files"]
                 response = gate.adapter(
                     [str(gate.LEAN_BIN / "firthElaborate")],
-                    {"request_id": "check", "source_path": source.name,
-                     "source_text": scratch.read_text(encoding="utf-8"),
+                    {"request_id": "check", **envelope,
                      "language_version": gate.LANGUAGE_VERSION, "gamma_version": gate.GAMMA_VERSION},
                     workspace, "check",
                 )
@@ -197,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 observation = gate.rebuild(
                     {"name": "application", "entry": args.entry,
-                     "source": str(source), "source_path": source.name},
+                     "source": str(source), "source_path": source.name, "source_root": str(root)},
                     workspace, stack=stack, fuel=args.fuel,
                 )
                 gate.validate_portable_stack(observation["stack"], "result")

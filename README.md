@@ -69,14 +69,17 @@ What works, and where to check it:
   The inventory allocator (`examples/inventory/`) passes all 53 cases of
   its fixed contract. 30 run on both hosts, and 23 are invalid inputs its
   host must reject (`python3 examples/inventory/run_cases.py`).
-- **Proofs about programs.** 5 contracts are proved in Lean over the
+- **Proofs about programs.** 6 contracts are proved in Lean over the
   reference interpreter. They cover 15 distinct word bodies (16 exported
   words, because the same `abs` is in two files). One of them is the whole
   allocator: conservation, no over-allocation, the fulfilment policy, i64
   range and a cost bound. That meets goal S5 in the
-  [roadmap](docs/roadmap.md), with two gaps stated there. The compiler and
-  VM agree with the reference only by differential testing, and the
-  Python host that feeds the allocator is tested, not proved.
+  [roadmap](docs/roadmap.md). The host's ID encoding and the way it attaches
+  results to IDs are proved too and run from Lean. The compiler's lowering is
+  proved against a Lean model of the VM's target semantics, and the
+  allocator's contract is carried to that model; the Rust VM is tested
+  against it, not proved, and the host's JSON handling (the Python checks
+  and transport, and the Lean executable's JSON glue) is tested, not proved.
 
 ## How well models write it
 
@@ -117,8 +120,10 @@ eval README.
 
 ## Known gaps
 
-- No cross-file imports: a program is one file, and `stdlib/core.firth` is
-  not loaded automatically (`todo.language-12-data-and-modules`).
+- No typed records or results yet (`todo.language-12-data-and-modules`).
+  Programs of several files work through `import` and `export`
+  (`dec.multi-file-imports`), and `stdlib/core.firth` is not loaded
+  automatically.
 - No text, characters, file or network I/O, or `send` on the executable
   path. Source refinement annotations are rejected rather than checked.
 - Non-tail recursion deeper than 256 frames traps on the VM.
@@ -151,8 +156,16 @@ milestones and the tracked correctness/application work still open.
 Lean mechanises the core kernel metatheory, including determinism,
 preservation and progress. The program proofs above run over the reference
 interpreter, and `src/proofs/records.json` binds each one to the digests of
-the word bodies it covers. None of this proves the compiler or the VM: their
-agreement with the reference interpreter rests on differential testing.
+the word bodies it covers. The compiler's lowering is proved to simulate the
+reference interpreter on the target semantics, a Lean model of the VM's
+contract (`compileWords_correct` in
+`src/compiler/Firth/LoweringSimulation.lean`), and a proof record can name a
+target theorem that carries its contract to the compiled image
+(`src/compiler/Firth/ContractTarget.lean`), for the kernel cost only and
+except where the target exceeds its 256-frame call-depth bound or the run takes
+the length of a sequence of 2^63 or more elements. The Rust VM is not proved: it is
+tested against the target semantics and the reference interpreter, and
+`specs/tcb-boundary.toml` lists the parts that stay trusted.
 
 The portable runner compares successful terminal outcomes, final stacks and
 kernel-comparable cost. It validates finite trace bounds but does **not** claim

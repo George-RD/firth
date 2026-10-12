@@ -10,7 +10,7 @@ private def nameError (code name : String) (span : Span) : ParseError :=
 
 private partial def collectNamedWords (scopeName : String) : List Declaration → List WordDefinition
   | [] => []
-  | .use _ :: rest => collectNamedWords scopeName rest
+  | .import _ :: rest | .export _ _ :: rest | .use _ :: rest => collectNamedWords scopeName rest
   | .word word :: rest =>
       { word with name := qualified scopeName word.name } :: collectNamedWords scopeName rest
   | .vocabulary name body _ :: rest =>
@@ -22,7 +22,7 @@ def collectWords (declarations : List Declaration) : List WordDefinition :=
 
 private partial def collectVocabularies (scopeName : String) : List Declaration → List (String × Span)
   | [] => []
-  | .use _ :: rest => collectVocabularies scopeName rest
+  | .import _ :: rest | .export _ _ :: rest | .use _ :: rest => collectVocabularies scopeName rest
   | .word _ :: rest => collectVocabularies scopeName rest
   | .vocabulary name body span :: rest =>
       let key := qualified scopeName name
@@ -42,48 +42,72 @@ private def expandAlias (uses : List UseDecl) (name : String) : String :=
       | none => name
   | _ => name
 
+/-- A word of a directly imported file, as name resolution sees it: its
+canonical key, whether that file exports it, and that file's path. -/
+structure ImportedName where
+  name : String
+  exported : Bool
+  source : String
+  deriving Repr, BEq
+
+/-- A reference with no candidate: `firth.name.not-exported` when it would
+name a word an imported file defines but does not export, so the author
+learns where the word is and why it is not visible (`expected` is the
+word's canonical key, the name an `export` of it must give), and
+`firth.name.unresolved` otherwise. -/
+private def missingName (hidden : List ImportedName) (keys : List String) (name : String)
+    (span : Span) : ParseError :=
+  match keys.findSome? fun key => hidden.find? (·.name == key) with
+  | some word =>
+      { nameError "firth.name.not-exported" name span with files := [word.source], expected := some word.name }
+  | none => nameError "firth.name.unresolved" name span
+
 /-- Resolves one word reference to its canonical dictionary key.
 
 `external` names the words the caller's environment supplies outside this
 file, such as a configured helper. A reference is a candidate only when it
 names a dictionary key or an external word; a reference with no candidate is
 `firth.name.unresolved` here, from the resolver, and never reaches erasure as
-an unresolved effect. -/
-private def resolveWord (keys : List String) (external : String → Bool) (scopeName : String)
-    (uses : List UseDecl) (locals : List String) (name : String) (span : Span) :
+an unresolved effect. `keys` holds the file's own words and the words its
+imports export; `hidden` the words its imports define and do not export. -/
+private def resolveWord (keys : List String) (hidden : List ImportedName) (external : String → Bool)
+    (scopeName : String) (uses : List UseDecl) (locals : List String) (name : String) (span : Span) :
     Except ParseError String := do
   if locals.contains name then return name
   if (name.splitOn ".").length > 1 then
     let canonical := expandAlias uses name
     if keys.contains canonical || external canonical then return canonical
-    throw (nameError "firth.name.unresolved" name span)
+    throw (missingName hidden [canonical] name span)
   let imported : List String := uses.map (fun (declaration : UseDecl) => qualified declaration.name name)
-  let visible : List String := qualified scopeName name :: imported
+  -- A word declared outside any vocabulary has no qualified spelling, so
+  -- inside a vocabulary its key is a candidate too (`dec.top-level-words-in-vocabularies`).
+  let topLevel : List String := if scopeName.isEmpty then [] else [name]
+  let visible : List String := qualified scopeName name :: topLevel ++ imported
   let candidates := (visible.filter (fun key => keys.contains key)).eraseDups
   match candidates with
   | [candidate] => return candidate
   | [] =>
       if external name then return name
-      throw (nameError "firth.name.unresolved" name span)
+      throw (missingName hidden visible name span)
   | _ => throw (nameError "firth.name.ambiguous-use" name span)
 
-private partial def resolveItems (keys : List String) (external : String → Bool)
-    (scopeName : String) (uses : List UseDecl) (locals : List String) :
+private partial def resolveItems (keys : List String) (hidden : List ImportedName)
+    (external : String → Bool) (scopeName : String) (uses : List UseDecl) (locals : List String) :
     List Item → Except ParseError (List Item)
   | [] => pure []
   | item :: rest => do
       let resolved : Item ← match item with
         | .word name span => do
-            let canonical ← resolveWord keys external scopeName uses locals name span
+            let canonical ← resolveWord keys hidden external scopeName uses locals name span
             pure (Item.word canonical span)
         | .quotation body span => do
-            let body ← resolveItems keys external scopeName uses locals body
+            let body ← resolveItems keys hidden external scopeName uses locals body
             pure (Item.quotation body span)
         | .locals names body span => do
-            let body ← resolveItems keys external scopeName uses (names.map (·.name) ++ locals) body
+            let body ← resolveItems keys hidden external scopeName uses (names.map (·.name) ++ locals) body
             pure (Item.locals names body span)
         | other => pure other
-      let tail ← resolveItems keys external scopeName uses locals rest
+      let tail ← resolveItems keys hidden external scopeName uses locals rest
       pure (resolved :: tail)
 
 private def effectNames (items : List StackItem) : List String :=
@@ -105,8 +129,8 @@ private def withEffectNames (effect : StackEffect) (error : ParseError) : ParseE
       else error
   | _, _ => error
 
-/-- A `use` declaration names a vocabulary the file does not declare, or an
-alias already taken. -/
+/-- A `use` declaration names a vocabulary the file does not declare and no
+directly imported file exports a word of, or an alias already taken. -/
 private def badUse (vocabularies : List String) (uses : List UseDecl) (use : UseDecl) :
     Option ParseError :=
   if !vocabularies.contains use.name then some (nameError "firth.name.unresolved" use.name use.span)
@@ -122,26 +146,28 @@ private def badUse (vocabularies : List String) (uses : List UseDecl) (use : Use
 the first name in it that does not resolve. A bad `use` declaration ends the
 walk: the words before it are returned with it, since the ones after it
 cannot be resolved as their author meant. -/
-private partial def resolveScope (keys vocabularies : List String) (external : String → Bool)
-    (scopeName : String) (uses : List UseDecl) :
+private partial def resolveScope (keys vocabularies : List String) (hidden : List ImportedName)
+    (external : String → Bool) (scopeName : String) (uses : List UseDecl) :
     List Declaration → List (WordDefinition × Option ParseError) × Option ParseError
   | [] => ([], none)
+  | .import _ :: rest | .export _ _ :: rest =>
+      resolveScope keys vocabularies hidden external scopeName uses rest
   | .use use :: rest =>
       match badUse vocabularies uses use with
       | some error => ([], some error)
-      | none => resolveScope keys vocabularies external scopeName (uses ++ [use]) rest
+      | none => resolveScope keys vocabularies hidden external scopeName (uses ++ [use]) rest
   | .word word :: rest =>
       let name := qualified scopeName word.name
-      let this := match resolveItems keys external scopeName uses [] word.body with
+      let this := match resolveItems keys hidden external scopeName uses [] word.body with
         | .ok body => ({ word with name, body }, none)
         | .error error => ({ word with name }, some (withEffectNames word.effect error))
-      let (tail, stop) := resolveScope keys vocabularies external scopeName uses rest
+      let (tail, stop) := resolveScope keys vocabularies hidden external scopeName uses rest
       (this :: tail, stop)
   | .vocabulary name body _ :: rest =>
-      match resolveScope keys vocabularies external (qualified scopeName name) uses body with
+      match resolveScope keys vocabularies hidden external (qualified scopeName name) uses body with
       | (inside, some error) => (inside, some error)
       | (inside, none) =>
-          let (outside, stop) := resolveScope keys vocabularies external scopeName uses rest
+          let (outside, stop) := resolveScope keys vocabularies hidden external scopeName uses rest
           (inside ++ outside, stop)
 
 private def freshBinder (name : String) (taken : List String) : Nat → Nat → String
@@ -285,13 +311,43 @@ written together with the first name in it that does not resolve, and a bad
 Local names remain sugar; they must not be rewritten into dictionary calls.
 `external` names words the caller's environment defines outside the file; any
 other reference without a candidate is refused as `firth.name.unresolved`. -/
-def resolveEach (declarations : List Declaration) (external : String → Bool := fun _ => false) :
+def resolveEach (declarations : List Declaration) (external : String → Bool := fun _ => false)
+    (imported : List ImportedName := []) :
     Except ParseError (List (WordDefinition × Option ParseError) × Option ParseError) := do
   let words := collectWords declarations
   let vocabularies := collectVocabularies "" declarations
   checkUnique (words.map (fun word => (word.name, word.span)))
   checkUnique vocabularies
-  pure (resolveScope (words.map (·.name)) (vocabularies.map (·.1)) external "" [] declarations)
+  let (exported, hidden) := imported.partition (·.exported)
+  -- A vocabulary of an imported file is a `use` target when the file exports
+  -- a word of it.
+  let importedVocabularies := (exported.filterMap fun word =>
+    match word.name.splitOn "." with
+    | vocabulary :: _ :: _ => some vocabulary
+    | _ => none).eraseDups
+  let ownVocabularies := vocabularies.map (·.1)
+  pure (resolveScope (words.map (·.name) ++ exported.map (·.name))
+    (ownVocabularies ++ importedVocabularies.filter (!ownVocabularies.contains ·)) hidden external "" []
+    declarations)
+
+/-- The names of every `export` declaration in the file, in order. -/
+def exportedNames (declarations : List Declaration) : List LocatedName :=
+  declarations.flatMap fun
+    | .export names _ => names
+    | _ => []
+
+/-- Each `export` name that is not a word this file defines
+(`firth.name.unresolved`) or that is listed again
+(`firth.name.duplicate-export`), in source order. -/
+def checkExports (declarations : List Declaration) : List ParseError :=
+  let words := (collectWords declarations).map (·.name)
+  let (_, errors) := (exportedNames declarations).foldl (init := (([] : List String), ([] : List ParseError)))
+    fun (seen, errors) name =>
+      if !words.contains name.name then (seen, errors ++ [nameError "firth.name.unresolved" name.name name.span])
+      else if seen.contains name.name then
+        (seen, errors ++ [nameError "firth.name.duplicate-export" name.name name.span])
+      else (seen ++ [name.name], errors)
+  errors
 
 /-- Resolve lexical imports and canonical word names before erasure/checking,
 refusing at the first error in the source (`resolveEach`). -/

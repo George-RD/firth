@@ -1,0 +1,27 @@
+6959 sources, 26 reports name a value to remove
+eval/s7/harder/runs/2026-10-11-scored/rescore-pin/sonnet-firth-6/solutions-1.json sokoban: remove `m` at 128:26; checks; example passes, hidden 15/15
+eval/s7/harder/runs/2026-10-11-scored/rescore-pin/sonnet-firth-6/solutions-1.json regex: remove `m` at 116:28; checks; example fails, hidden 9/25
+eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-6/solutions-3.json count-below: remove `0` at 12:14; refused: firth.type.word-input-mismatch; example fails, hidden 0/5
+eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-6/solutions-3.json index-of: remove `0` at 12:12; refused: firth.type.word-input-mismatch; example fails, hidden 0/5
+eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-6/solutions-3.json has-pair-sum: remove `0` at 19:12; refused: The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.; example fails, hidden 0/6
+eval/s7/runs/2026-09-29-control/8ea4a1d/haiku-firth-11/solutions-1.json histogram: remove `0` at 4:28; refused: The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.; example fails, hidden 0/5
+eval/s7/runs/2026-09-29-control/8ea4a1d/haiku-firth-8/solutions-2.json histogram: remove `k` at 17:8; refused: firth.type.primitive-input-mismatch; example fails, hidden 0/5
+eval/s7/runs/2026-09-29-control/8ea4a1d/haiku-firth-8/solutions-3.json histogram: remove `k` at 16:8; refused: firth.type.branch-mismatch; example fails, hidden 0/5
+eval/s7/runs/2026-09-29-haiku-4c379e0/haiku-firth-1/solutions-3.json histogram: remove `k` at 20:31; refused: firth.type.branch-mismatch; example fails, hidden 0/5
+eval/s7/runs/2026-09-29-locals-guide/arm-a/haiku-firth-13/solutions-1.json count-distinct: remove `0` at 53:5; refused: The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.; example fails, hidden 0/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-1/solutions-2.json seq-max: remove `xs` at 3:40; checks; example passes, hidden 5/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-1/solutions-3.json seq-max: remove `xs` at 3:40; checks; example passes, hidden 5/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json seq-sum: remove `i` at 4:8; checks; example passes, hidden 5/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json seq-max: remove `i` at 4:8; checks; example passes, hidden 5/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json count-below: remove `i` at 4:8; checks; example passes, hidden 5/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json index-of: remove `i` at 4:8; checks; example passes, hidden 5/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json prefix-sums: remove `i` at 4:8; checks; example passes, hidden 4/4
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json keep-positive: remove `i` at 4:8; checks; example fails, hidden 4/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json is-sorted: remove `i` at 4:8; checks; example fails, hidden 3/6
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json dot: remove `i` at 4:8; checks; example passes, hidden 4/4
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json longest-run: remove `i` at 4:8; checks; example fails, hidden 2/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json has-pair-sum: remove `i` at 24:8; refused: firth.type.declared-effect-mismatch; example fails, hidden 0/6
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json count-distinct: remove `i` at 4:8; checks; example fails, hidden 3/5
+eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-22/solutions-3.json ledger: remove `i` at 4:9; checks; example passes, hidden 5/5
+eval/s7/runs/2026-09-30-check-forms/arm-b/haiku-firth-1/solutions-1.json histogram: remove `0` at 30:65; refused: firth.type.primitive-input-mismatch; example fails, hidden 0/5
+eval/s7/runs/2026-09-30-check-tool/arm-a/haiku-firth-7/solutions-3.json ledger: remove `txs` at 18:42; refused: firth.type.branch-mismatch; example fails, hidden 0/5

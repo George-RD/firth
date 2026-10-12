@@ -201,7 +201,8 @@ def evaluate(expected: str, rc: int, result: dict, payload: dict) -> bool:
     digest = hashlib.sha256(payload["source"]["source_text"].encode()).hexdigest() if source_bound else None
     return verification == {
         "schema": "firth.compiler-verification.v1", "method": "kernel-type-and-linearity-recheck",
-        "source_bound": source_bound, "source_sha256": digest, "gamma_version": "0.8",
+        "source_bound": source_bound, "source_sha256": digest,
+        "imported_sha256": [] if source_bound else None, "gamma_version": "0.8",
         "target_version": "0.1", "refinements": "not-checked",
         "image_evidence": "legacy-content-identifiers-not-authenticated-proofs"}
 

@@ -1,0 +1,184 @@
+: sg (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many) prim seq-int.at;
+: sp (forall ρ; ρ m:Seq Int^many i:Int^many x:Int^many -- ρ r:Seq Int^many) prim seq-int.set;
+: inc (forall ρ; ρ m:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { m i d } { m i m i sg d prim + sp };
+: zeros (forall ρ; ρ s:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { s n } { n 0 prim <= [ s ] [ s 0 prim seq-int.push n 1 prim - zeros ] if };
+
+: sub (forall ρ; ρ m:Seq Int^many off:Int^many n:Int^many k:Int^many acc:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m off n k acc } {
+    k n prim >=
+    [ acc ]
+    [ m off n k 1 prim + acc m off k prim + sg prim seq-int.push sub ]
+    if };
+
+: better (forall ρ; ρ k1:Seq Int^many k2:Seq Int^many k3:Seq Int^many a:Int^many b:Int^many -- ρ r:Bool^many)
+  locals { k1 k2 k3 a b } {
+    k1 a sg k1 b sg prim =
+    [ k2 a sg k2 b sg prim =
+      [ k3 a sg k3 b sg prim =
+        [ a b prim < ]
+        [ k3 a sg k3 b sg prim > ]
+        if ]
+      [ k2 a sg k2 b sg prim > ]
+      if ]
+    [ k1 a sg k1 b sg prim > ]
+    if };
+
+: best (forall ρ; ρ k1:Seq Int^many k2:Seq Int^many k3:Seq Int^many used:Seq Int^many i:Int^many b:Int^many -- ρ r:Int^many)
+  locals { k1 k2 k3 used i b } {
+    i k1 prim seq-int.len prim >=
+    [ b ]
+    [ used i sg 1 prim =
+      [ k1 k2 k3 used i 1 prim + b best ]
+      [ b 0 prim <
+        [ k1 k2 k3 used i 1 prim + i best ]
+        [ k1 k2 k3 i b better
+          [ k1 k2 k3 used i 1 prim + i best ]
+          [ k1 k2 k3 used i 1 prim + b best ]
+          if ]
+        if ]
+      if ]
+    if };
+
+: rankloop (forall ρ; ρ k1:Seq Int^many k2:Seq Int^many k3:Seq Int^many used:Seq Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { k1 k2 k3 used out } {
+    out prim seq-int.len k1 prim seq-int.len prim >=
+    [ out ]
+    [ k1 k2 k3 used 0 -1 best
+      locals { b } { k1 k2 k3 used b 1 sp out b prim seq-int.push rankloop } ]
+    if };
+
+: rankby (forall ρ; ρ k1:Seq Int^many k2:Seq Int^many k3:Seq Int^many -- ρ r:Seq Int^many)
+  locals { k1 k2 k3 } {
+    k1 k2 k3 prim seq-int.empty k1 prim seq-int.len zeros prim seq-int.empty rankloop };
+
+: findbye (forall ρ; ρ m:Seq Int^many ord:Seq Int^many i:Int^many -- ρ p:Int^many)
+  locals { m ord i } {
+    ord i sg
+    locals { p } {
+      m 36 p prim + sg 0 prim = [ p ] [ m ord i 1 prim - findbye ] if } };
+
+: clrpa (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m i } {
+    i m 283 sg prim >=
+    [ m ]
+    [ m 290 i prim + 0 sp i 1 prim + clrpa ]
+    if };
+
+: findp (forall ρ; ρ m:Seq Int^many ord:Seq Int^many x:Int^many j:Int^many must:Int^many -- ρ y:Int^many)
+  locals { m ord x j must } {
+    j ord prim seq-int.len prim >=
+    [ -1 ]
+    [ ord j sg
+      locals { y } {
+        m 290 y prim + sg 0 prim =
+        must 0 prim = m 48 x 12 prim * prim + y prim + sg 0 prim = prim or
+        prim and
+        [ y ]
+        [ m ord x j 1 prim + must findp ]
+        if } ]
+    if };
+
+: play (forall ρ; ρ m:Seq Int^many x:Int^many y:Int^many res:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m x y res } {
+    m 12 x prim + sg m 12 y prim + sg
+    locals { wx wy } {
+      wx wy prim <
+      [ x y ]
+      [ wy wx prim <
+        [ y x ]
+        [ m 24 y prim + sg 2 prim = m 24 x prim + sg 2 prim = prim not prim and
+          [ y x ] [ x y ] if ]
+        if ]
+      if
+      locals { w b } {
+        res m 281 sg sg
+        locals { r } {
+          m 281 1 inc
+          290 y prim + 1 sp
+          12 w prim + 1 inc
+          24 w prim + 1 sp
+          24 b prim + 2 sp
+          48 w 12 prim * prim + b prim + 1 sp
+          48 b 12 prim * prim + w prim + 1 sp
+          192 m 280 sg 2 prim * prim + w sp
+          193 m 280 sg 2 prim * prim + b sp
+          280 1 inc
+          r 0 prim =
+          [ w 2 inc ]
+          [ r 1 prim = [ w 1 inc b 1 inc ] [ b 2 inc ] if ]
+          if } } } };
+
+: pairing (forall ρ; ρ m:Seq Int^many ord:Seq Int^many res:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m ord res i } {
+    i ord prim seq-int.len prim >=
+    [ m ]
+    [ ord i sg
+      locals { x } {
+        m 290 x prim + sg 1 prim =
+        [ m ord res i 1 prim + pairing ]
+        [ m 290 x prim + 1 sp
+          locals { m1 } {
+            m1 ord x i 1 prim + 1 findp
+            locals { y0 } {
+              y0 0 prim <
+              [ m1 282 1 inc m1 ord x i 1 prim + 0 findp ]
+              [ m1 y0 ]
+              if
+              locals { m2 y } {
+                m2 x y res play
+                ord res i 1 prim + pairing } } } ]
+        if } ]
+    if };
+
+: round (forall ρ; ρ m:Seq Int^many ratings:Seq Int^many res:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m ratings res } {
+    m 283 sg
+    locals { n } {
+      m 0 n 0 prim seq-int.empty sub ratings ratings rankby
+      locals { ord } {
+        m 0 clrpa
+        locals { m1 } {
+          n 2 prim mod 1 prim =
+          [ m1 ord n 1 prim - findbye
+            locals { p } { m1 p 2 inc 36 p prim + 1 sp 290 p prim + 1 sp } ]
+          [ m1 ]
+          if
+          locals { m2 } { m2 ord res 0 pairing } } } } };
+
+: playrounds (forall ρ; ρ m:Seq Int^many ratings:Seq Int^many res:Seq Int^many r:Int^many total:Int^many -- ρ x:Seq Int^many)
+  locals { m ratings res r total } {
+    r total prim >=
+    [ m ]
+    [ m ratings res round ratings res r 1 prim + total playrounds ]
+    if };
+
+: buchloop (forall ρ; ρ m:Seq Int^many g:Int^many buch:Seq Int^many -- ρ x:Seq Int^many)
+  locals { m g buch } {
+    g m 280 sg prim >=
+    [ buch ]
+    [ m 192 g 2 prim * prim + sg m 193 g 2 prim * prim + sg
+      locals { w b } {
+        m g 1 prim +
+        buch w m b sg inc b m w sg inc
+        buchloop } ]
+    if };
+
+: main
+  (forall ρ; ρ ratings:Seq Int^many rounds:Int^many results:Seq Int^many -- ρ scores:Seq Int^many buchholz:Seq Int^many ranking:Seq Int^many whites:Seq Int^many rematches:Int^many)
+  locals { ratings rounds results } {
+    prim seq-int.empty 320 zeros
+    283 ratings prim seq-int.len sp
+    ratings results 0 rounds playrounds
+    locals { f } {
+      ratings prim seq-int.len
+      locals { n } {
+        f 0 n 0 prim seq-int.empty sub
+        locals { sc } {
+          f 0 prim seq-int.empty n zeros buchloop
+          locals { bu } {
+            sc bu
+            sc bu ratings rankby
+            f 12 n 0 prim seq-int.empty sub
+            f 282 sg } } } } };

@@ -1,0 +1,9 @@
+# Void samples of this run, one per line: name, sample number, cause (run-notes.md has the detail).
+deepseek-python-1 3 transport: HTTP 502 after ~30 s of thinking, non-streamed, before #246
+deepseek-firth-1 4 transport: HTTP 502 after ~30 s of thinking, non-streamed, before #246
+deepseek-firth-2 9 transport: HTTP 502 after ~30 s of thinking, non-streamed, before #246
+haiku-firth-2 11 audit: send_message call
+haiku-python-3 17 audit: send_message call
+haiku-firth-3 18 audit: answer file written twice with different content
+haiku-firth-5 30 unlisted injected item: handback-send-enforce reminder
+sonnet-firth-8 39 unlisted injected item: handback-send-enforce reminder

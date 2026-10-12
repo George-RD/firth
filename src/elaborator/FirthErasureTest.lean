@@ -70,14 +70,59 @@ private def expectKernelAtoms (word : WordDefinition) (expected : List Atom) : I
       else pure ()
   | .error error => fail s!"unexpected golden erasure error: {repr error}"
 
+private def programAtoms : Program → List Atom
+  | .empty => []
+  | .cons head tail => head :: programAtoms tail
+
+mutual
+  /-- Whether the program calls `name` anywhere, quotations included. -/
+  partial def callsWord (name : String) : List Atom → Bool
+    | [] => false
+    | .word called :: rest => called == name || callsWord name rest
+    | .quotation body :: rest => callsWord name (programAtoms body) || callsWord name rest
+    | _ :: rest => callsWord name rest
+
+  /-- Whether every call of `name` is a tail call: the last atom of its
+  sequence, or last inside the quotation that is the false branch of the
+  word's final `if` (`branchesThenIf`). -/
+  partial def tailCallsOnly (name : String) : List Atom → Bool
+    | [] => true
+    | [.word _] => true
+    | .word called :: rest => called != name && tailCallsOnly name rest
+    | .quotation body :: rest =>
+        let inner := programAtoms body
+        tailCallsOnly name inner &&
+          (!callsWord name inner || branchesThenIf rest) &&
+          tailCallsOnly name rest
+    | _ :: rest => tailCallsOnly name rest
+
+  /-- What follows the quotation makes it the false branch of a final `if`:
+  only `compose`, which erasure writes to close a branch over locals and
+  which keeps the quotation on top, then the `if`. A quotation that is
+  dropped, moved below the top or never reaches an `if` is not accepted, and
+  neither is a call in the true branch, which this test does not need. -/
+  partial def branchesThenIf : List Atom → Bool
+    | [.ifThenElse] => true
+    | .compose :: rest => branchesThenIf rest
+    | _ => false
+end
+
+private def loopEnv : EffectEnv :=
+  { primitive := fun name =>
+      if name == "+" || name == "-" || name == "=" then some { input := [.many, .many], output := [.many] }
+      else none
+    word := fun name =>
+      if name == "count" || name == "count-kept" then some { input := [.many, .many], output := [.many] }
+      else none }
+
 private def expectErrorAt (word : WordDefinition) (expected : ErasureError → Bool) (span : Span) : IO Unit :=
   match erase arithmetic word.effect word.body with
   | .error error =>
       if expected error then
         let actual := match error with
           | .duplicateLocal _ actual | .unboundLocal _ actual | .unsupportedCapture _ actual
-          | .missingStackValue actual | .linearCopy _ actual | .linearUnused _ actual
-          | .unresolvedEffect _ actual | .effectUnderflow _ actual _ | .unsupportedLiteral actual
+          | .missingStackValue actual _ | .linearCopy _ actual _ | .linearUnused _ actual
+          | .unresolvedEffect _ actual | .effectUnderflow _ actual _ _ | .unsupportedLiteral actual
           | .unsupportedAtom _ actual | .usageMismatch _ actual
           | .untrackedStack _ actual _ | .hiddenLocal _ actual | .branchShape actual _ _ _ _ => actual
         if actual == span then pure () else fail s!"span mismatch for {repr error}: {repr actual} != {repr span}"
@@ -131,7 +176,7 @@ def main : IO Unit := do
     | [.locals _ [.locals (first :: _) _ _, _] _] => first.span
     | _ => panic! "shadow-linear fixture changed"
   expectErrorAt shadowLinear (fun error => match error with
-    | .missingStackValue _ => true
+    | .missingStackValue _ _ => true
     | _ => false) shadowLinearSpan
 
   -- `swap` exchanges the two values below the block's unused local, so it
@@ -172,7 +217,7 @@ def main : IO Unit := do
   -- `a` from the stack, and resolution must not fall through to it either.
   let exhaustedShadow ← parsed ": exhausted-shadow ( a:Int^many -- ) locals { a } { locals { a } { a } a } ;"
   match erase arithmetic exhaustedShadow.effect exhaustedShadow.body with
-  | .error (.missingStackValue _) => pure ()
+  | .error (.missingStackValue _ _) => pure ()
   | .error error => fail s!"wrong exhausted-shadow error: {repr error}"
   | .ok result => fail s!"exhausted shadow incorrectly succeeded: {repr result}"
 
@@ -224,12 +269,72 @@ def main : IO Unit := do
     | _ => false) unboundSpan
 
   let linearCopy ← parsed ": lin ( h:Handle^linear -- ) locals { h } { h h } ;"
-  let linearCopySpan := match linearCopy.body with
-    | [.locals _ [.word _ _, .word _ span] _] => span
+  let (linearCopyFirst, linearCopySpan) := match linearCopy.body with
+    | [.locals _ [.word _ first, .word _ span] _] => (first, span)
     | _ => panic! "linear-copy fixture changed"
   expectErrorAt linearCopy (fun error => match error with
-    | .linearCopy name _ => name == "h"
+    | .linearCopy name _ (some first) => name == "h" && first == linearCopyFirst
     | _ => false) linearCopySpan
+
+  -- A linear local used in an inner block and again after it is used twice
+  -- (todo.linear-local-reused-across-blocks): the report is at the second
+  -- use and names the first. Counting only the rest of the inner block moved
+  -- `h` into it and reported the later `h` as never used.
+  let across ← parsed ": across ( h:Handle^linear -- ) locals { h } { 1 locals { k } { h } h } ;"
+  let (acrossFirst, acrossSecond) := match across.body with
+    | [.locals _ [_, .locals _ [.word _ first] _, .word _ second] _] => (first, second)
+    | _ => panic! "across fixture changed"
+  expectErrorAt across (fun error => match error with
+    | .linearCopy name _ (some first) => name == "h" && first == acrossFirst
+    | _ => false) acrossSecond
+  -- A name bound again by an enclosing block is another local: the inner
+  -- `h` is the middle block's, and the outer `h` after it is used once.
+  let rebound ← parsed ": rebound ( a:Handle^linear b:Handle^linear -- x:Handle^linear y:Handle^linear ) locals { h b } { b locals { h } { 1 locals { k } { h } } h } ;"
+  match erase arithmetic rebound.effect rebound.body with
+  | .ok _ => pure ()
+  | .error error => fail s!"rebound: expected the outer and middle `h` to be two locals: {repr error}"
+
+  -- A word whose effect has no row takes the whole stack
+  -- (todo.closed-effect-under-locals). A local still to be used lies below
+  -- its inputs, so the local is lifted above them and the call runs under
+  -- `dip`: `h` is then not a top-level atom. With a row, `h` takes only its
+  -- inputs and is called where it is written.
+  let closedEnv : EffectEnv :=
+    { word := fun name => if name == "h" then some { input := [.many, .many], output := [.many], closed := true } else none
+      primitive := arithmetic.primitive }
+  let openEnv : EffectEnv :=
+    { word := fun name => if name == "h" then some { input := [.many, .many], output := [.many] } else none
+      primitive := arithmetic.primitive }
+  let calledAtTop (program : KernelProgram) : Bool := shapes program |>.contains "word:h"
+  let calledUnderDip (program : KernelProgram) : Bool :=
+    let atoms := shapes program
+    (atoms.zip (atoms.drop 1)).any fun (quoted, next) =>
+      quoted.startsWith "[" && (quoted.splitOn "word:h").length > 1 && next == "dip"
+  for (label, source) in [
+      ("closed call with a later local", ": g ( x:Int n:Int -- r:Int s:Int ) locals { x n } { x 1 h n } ;"),
+      ("closed call in an inner block", ": g ( x:Int n:Int -- r:Int s:Int ) locals { x n } { x locals { y } { y 1 h } n } ;")] do
+    let word ← parsed source
+    match erase closedEnv word.effect word.body with
+    | .ok result =>
+        unless !calledAtTop result.program && calledUnderDip result.program do
+          fail s!"{label}: expected `h` to run under `dip` with the local above it: {repr (shapes result.program)}"
+    | .error error => fail s!"{label}: unexpected erasure error: {repr error}"
+    match erase openEnv word.effect word.body with
+    | .ok result =>
+        unless calledAtTop result.program do
+          fail s!"{label}: a call with a row should run where it is written: {repr (shapes result.program)}"
+    | .error error => fail s!"{label}: unexpected erasure error with a row: {repr error}"
+  -- With nothing left below its inputs, a closed call is not moved. The
+  -- second is the todo's third program, which `n`'s move at its last use
+  -- (#213) already made acceptable.
+  for source in [": g ( x:Int n:Int -- r:Int ) locals { x n } { x n h } ;",
+      ": g ( x:Int n:Int -- r:Int ) locals { x n } { x locals { y } { y n h } } ;"] do
+    let word ← parsed source
+    match erase closedEnv word.effect word.body with
+    | .ok result =>
+        unless calledAtTop result.program do
+          fail s!"closed call alone: expected `h` where it is written: {source}: {repr (shapes result.program)}"
+    | .error error => fail s!"closed call alone: unexpected erasure error: {source}: {repr error}"
 
   let linearUnused ← parsed ": unused-h ( h:Handle^linear -- ) locals { h } { } ;"
   let linearBindingSpan := match linearUnused.body with
@@ -268,6 +373,31 @@ def main : IO Unit := do
       if result.warnings.any (fun warning => warning.code == "LOCAL_DEPTH") then pure ()
       else fail "missing nested LOCAL_DEPTH warning"
   | .error error => fail s!"nested depth lint unexpectedly failed: {repr error}"
+
+  -- A self-call that ends a `locals` block nested in the word's own block
+  -- is the word's last action: the outer locals are moved into the inner
+  -- block, not copied and dropped after it (todo.locals-self-call-not-tail).
+  -- `count-kept` reads `n` after the inner block, so its call is not last,
+  -- and the same check refuses it: the shape the leftover copy gave `count`.
+  let count ← parsed ": count ( n:Int^many acc:Int^many -- r:Int^many ) locals { n acc } { n 0 prim = [ acc ] [ n 1 prim - locals { m } { m acc 1 prim + count } ] if } ;"
+  match erase loopEnv count.effect count.body with
+  | .ok result =>
+      let atoms := result.program.map (·.atom)
+      unless callsWord "count" atoms && tailCallsOnly "count" atoms do
+        fail s!"the self-call ending a nested locals block is not a tail call: {repr (shapes result.program)}"
+  | .error error => fail s!"nested-loop erasure failed: {repr error}"
+  let kept ← parsed ": count-kept ( n:Int^many acc:Int^many -- r:Int^many ) locals { n acc } { n 0 prim = [ acc ] [ n 1 prim - locals { m } { m acc 1 prim + count-kept } n drop ] if } ;"
+  match erase loopEnv kept.effect kept.body with
+  | .ok result =>
+      if tailCallsOnly "count-kept" (result.program.map (·.atom)) then
+        fail s!"a self-call followed by `n drop` was taken as a tail call: {repr (shapes result.program)}"
+  | .error error => fail s!"non-tail loop erasure failed: {repr error}"
+  -- The check ties the call to the branch the `if` runs (cubic on #213): a
+  -- quotation holding the call that is dropped before the `if` is not one.
+  let dropped : List Atom :=
+    [.quotation (atomProgram [.word "count"]), .drop, .quotation .empty, .quotation .empty, .ifThenElse]
+  if tailCallsOnly "count" dropped then
+    fail "a self-call in a quotation dropped before the `if` was taken as a tail call"
 
   IO.println "erasure tests passed"
 

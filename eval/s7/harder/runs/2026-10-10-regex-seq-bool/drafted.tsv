@@ -1,0 +1,4 @@
+a*x15 on a	395604	success	True
+a*x15 on abc	286716	success	True
+(a|b|c)*x3 .*x3 on a	None	fuel-exhausted	False
+(a|b|c)*x3 .*x3 on abc	None	fuel-exhausted	False

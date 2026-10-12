@@ -4,8 +4,9 @@
 in Firth: the value and count bounds, repeated IDs, and the ordered
 partial or all-or-nothing allocation with its reasons. `run_cases.py` is the
 host. It does only what the spec's host/Firth split gives the host: JSON
-shape, types, ID syntax, integers a 64-bit host cannot hold, encoding each ID
-as four Ints, and turning the result codes back into JSON.
+shape, types, ID syntax and integers a 64-bit host cannot hold. Encoding each
+ID as four Ints and turning the result codes back into an answer are proved
+Lean definitions that it runs through `lake exe inventoryHost` (see below).
 
 ```sh
 python3 examples/inventory/run_cases.py          # the 53 fixed cases
@@ -46,11 +47,14 @@ sweeps with: part 0 shared (the slow path in `same-id`) and parts 1 to 3
 ascending (the negating branch of `distance` three times). It then measures
 n = 0 to 64 on both hosts with those IDs, one run for each allocation branch.
 For n ≥ 2 each run's cost is
-exactly `75 + b·n + 163·n(n−1)/2`, where b is 172 (out-of-stock), 194
-(fulfilled) or 201 (insufficient-stock), plus 30 once for the single partial
+exactly `75 + b·n + 163·n(n−1)/2`, where b is 162 (out-of-stock), 184
+(fulfilled) or 191 (insufficient-stock), plus 30 once for the single partial
 request a batch can have. The stated bound is deliberately looser than any one
-of those: it uses the largest per-request cost and the n = 0 entry cost, so it
-also covers mixed batches and the one partial request. An invalid input stops
+of those: it uses 202 per request and the n = 0 entry cost, so it also covers
+mixed batches and the one partial request. 202 was the costliest request
+(the partial one) when the bound was proved; since `allocate-from` became a
+tail call (#213) a request costs 10 less, and the proved bound was left as it
+is, with that much more slack. An invalid input stops
 earlier and costs less. `run_cases.py` fails any corpus run over the bound, and
 CI also runs `measure_cost.py`, because the corpus's IDs never reach the
 costliest pairs. An earlier version swept IDs sharing their first 24
@@ -66,16 +70,44 @@ kernel cost of at most this bound, with every value in i64. The proof is
 recorded as toolchain evidence (`src/proofs/records.json`) bound to the body
 digests of `allocate-batch` and every word it calls, so all ten words are
 reported `contract_verified`, and a change to any of them withdraws it.
-Agreement of the VM with the reference interpreter rests on differential
-testing, and the Python host is tested, not proved.
+
+The record also names a target theorem (`src/proofs/Inventory/Target.lean`):
+on the target semantics, a Lean model of the VM's contract, the compiled image
+run from the same input with at least the proved step bound as fuel halts with
+the same output at a kernel cost within the same bound, unless it exceeds the
+256-frame call-depth bound or takes the length of a sequence of 2^63 or more
+elements. The contract does not cap the number of requests (the host enforces
+the spec's 64); up to 64 the step bound is at most 361,269, so the 1,000,000
+fuel the cases run with is enough on the target semantics outside those two
+exceptions
+(that the length overflow cannot happen on admitted input is inferred, not
+proved). `run_cases.py` requires the
+image the VM runs to be the one the record names, word by word, by target name
+and body digest (`check_image`). The Rust VM is tested against the target
+semantics on every run, not proved against it; `specs/tcb-boundary.toml` lists
+the parts between the theorem and a VM run that stay trusted.
+
+The host's ID encoding and its answer are proved as well
+(`src/proofs/Inventory/Host.lean`): the encoding is injective on the spec's ID
+syntax, so the duplicate-ID result means two equal ID strings, and every
+allocation and reason is attached to its own request's ID in request order.
+`run_cases.py` runs those Lean definitions through `lake exe inventoryHost`;
+`check_host.py` checks that executable against values written by hand. Python
+keeps the JSON shape, type, ID-syntax and i64 checks the spec gives the host,
+which are tested by the corpus and by planted bugs
+(`tools/loop/test_inventory_host.py`), not proved. JSON parsing and printing
+(Python's on the way in, Lean's inside `inventoryHost`) and the transport
+between them are tested, not proved, too.
 
 ## Changing the policy
 
 The spec's maintenance task changes a partial-fulfilment client to
 all-or-nothing while preserving conservation, order, input validation and
 later fulfilment. `policy-change/partial.firth` is that client before the
-change and `policy-change/all-or-nothing.firth` after it. Each defines one word,
-`reserve`, which supplies the policy and calls `allocate-batch`. The change is
+change and `policy-change/all-or-nothing.firth` after it. Each imports
+`allocator.firth` (`import "../allocator.firth";`), whose one export is
+`allocate-batch`, and defines one word, `reserve`, which supplies the policy and
+calls it. The change is
 one token, `false` to `true`, because the spec makes the policy an input to the
 component; nothing in `allocator.firth` changes.
 
@@ -92,6 +124,17 @@ toolchain produces:
   is not vacuous, the script also compiles a mutant whose `allocate-one` gains
   a no-op, and fails unless it reports `allocate-one` changed with
   `allocate-from` and `allocate-batch` as dependents.
+- **The allocator alone.** It compiles `allocator.firth` on its own and fails
+  unless every allocator word has the same body digest and type in both
+  clients' images, so the clients run the words `run_cases.py`, the cost
+  bound and the Lean proofs are about. The mutant must fail this too, with
+  `allocate-one` the one word that differs. The proofs themselves carry over
+  by a theorem, not by this check: `src/proofs/Inventory/Imported.lean`
+  restates both allocator contracts for the all-or-nothing client's export,
+  whose dictionary extends the allocator's (`WordContract.Holds.extend`), so
+  its 10 allocator words are `contract_verified` in `records.json` too. The
+  partial client is not in `src/exports/manifest.json`, so nothing is
+  recorded for it.
 - **Regression.** Each of the 30 cases that reach Firth runs through both
   clients on the VM and the reference interpreter, 60 runs in all. Where the
   case's policy is the client's, the result must equal the corpus's fixed
@@ -111,12 +154,10 @@ toolchain produces:
   hand with stack-shuffling words (264 steps per pair). The IDs also arrive as
   one sequence (four Ints per request) instead of four. Since `pick` and `roll`
   (#125) a local costs one step per use. The per-request cost fell from 689 to
-  766 steps to 172 to 201, and the scan is back to plain locals, now cheaper
+  766 steps to 172 to 201, then to 162 to 191 once a self-call ending a nested
+  `locals` block became a tail call (#213), and the scan is back to plain locals, now cheaper
   than the hand-written version: 163 steps per pair at most.
 - **There is no Boolean `and` or absolute difference.** Both are written with
   nested `if`.
-- **There are no imports.** `vocab` groups words inside one file, but a
-  client cannot name `allocator.firth` from another file, so `policy_change.py` builds each program by putting the allocator's
-  source before the client's.
 - **Integers were naturals** when this was first written. Since signed `Int`
   landed, the stock's lower bound is an ordinary `-1 available prim <` check.

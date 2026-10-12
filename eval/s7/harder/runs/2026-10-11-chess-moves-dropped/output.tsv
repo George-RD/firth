@@ -1,0 +1,22 @@
+chess-moves-first.firth	a known 218-move position, nine white queens	564839	True
+chess-moves-first.firth	a second 218-move position, nine white queens	546662	True
+chess-moves-first.firth	random position, seed 111	256546	True
+chess-moves-first.firth	searched, starting material, 12 pieces 1	253003	True
+chess-moves-first.firth	searched, starting material, 12 pieces 2	256653	True
+chess-moves-first.firth	searched, starting material, 16 pieces 1	257741	True
+chess-moves-first.firth	searched, starting material, 16 pieces 2	249683	True
+chess-moves-first.firth	searched, starting material 1	259189	True
+chess-moves-first.firth	searched, starting material 2	253011	True
+chess-moves-first.firth	searched, any material 1	455152	True
+chess-moves-first.firth	searched, any material 2	469432	True
+chess-moves.firth	a known 218-move position, nine white queens	246739	True
+chess-moves.firth	a second 218-move position, nine white queens	266812	True
+chess-moves.firth	random position, seed 111	168597	True
+chess-moves.firth	searched, starting material, 12 pieces 1	261223	True
+chess-moves.firth	searched, starting material, 12 pieces 2	264653	True
+chess-moves.firth	searched, starting material, 16 pieces 1	263838	True
+chess-moves.firth	searched, starting material, 16 pieces 2	258033	True
+chess-moves.firth	searched, starting material 1	263249	True
+chess-moves.firth	searched, starting material 2	256941	True
+chess-moves.firth	searched, any material 1	472396	True
+chess-moves.firth	searched, any material 2	486642	True

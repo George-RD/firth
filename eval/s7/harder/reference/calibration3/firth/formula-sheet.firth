@@ -1,0 +1,331 @@
+\ Formula sheet: n cells, each holding an RPN formula, re-evaluated after
+\ each of up to ten edits.
+\
+\ Representation.
+\  * All tokens (the sheet's, then the edits') are packed into one sequence pk,
+\    four ints (kind x y z) per token.
+\  * One sequence m of 4n ints holds the cell state:
+\      m[i]        value of cell i (the sentinel err for an error)
+\      m[n+i]      status of cell i
+\      m[2n+i]     index of the first token of cell i's formula in pk
+\      m[3n+i]     number of tokens of cell i's formula
+\    An edit only repoints cell i at its new tokens; nothing is copied.
+\  * err is 10^15. Valid numbers never exceed 10^9 in size and no running
+\    sum of up to 30 of them reaches 10^15, so the sentinel cannot clash.
+\  * Cells are evaluated depth first, once each, by demand: a formula is
+\    run token by token, and a token that reads cell x first evaluates x.
+\    Status: 0 not reached, 4 being evaluated, 5 being evaluated and found
+\    to lead to a cycle, 1 done, 3 done and in or leading to a cycle (value
+\    err). After visiting a cell, a status other than 1 marks the referring
+\    cell 5. A reference to a cell being evaluated is a cycle through it, and
+\    every cell on the path up to it sees a marked child as the recursion
+\    unwinds. A formula keeps visiting its references after it has failed.
+\  * A formula runs on a 12-slot stack seq with a depth sp; sp = -1 means
+\    the formula already failed (too few arguments).
+
+: err
+  (forall ρ; ρ -- ρ r:Int^many)
+  1000000000000000;
+
+\ True when 0 <= t < n.
+: inr
+  (forall ρ; ρ t:Int^many n:Int^many -- ρ r:Bool^many)
+  locals { t n } { t 0 prim >= t n prim < prim and };
+
+\ A result of size above 10^9 is an error (err itself stays err).
+: lim
+  (forall ρ; ρ v:Int^many -- ρ r:Int^many)
+  locals { v }
+  { v 1000000000 prim > v -1000000000 prim < prim or [ err ] [ v ] if };
+
+\ Quotient rounded toward zero (b is not 0).
+: tdiv
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a 0 prim < [ 0 a prim - ] [ a ] if
+    b 0 prim < [ 0 b prim - ] [ b ] if prim div
+    locals { q }
+    { a 0 prim < b 0 prim < prim not prim and
+      a 0 prim < prim not b 0 prim < prim and prim or
+      [ 0 q prim - ] [ q ] if } };
+
+\ n zeros appended to out.
+: zeros
+  (forall ρ; ρ n:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { n out }
+  { out prim seq-int.len n prim <
+    [ n out 0 prim seq-int.push zeros ]
+    [ out ] if };
+
+\ Packed field f (0 kind, 1 x, 2 y, 3 z) of token t.
+: tok
+  (forall ρ; ρ pk:Seq Int^many t:Int^many f:Int^many -- ρ r:Int^many)
+  locals { pk t f } { pk t 4 prim * f prim + prim seq-int.at };
+
+\ Packs four equally long sequences into one, four ints per token.
+: pack
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many c:Seq Int^many d:Seq Int^many i:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { a b c d i out }
+  { i a prim seq-int.len prim <
+    [ a b c d i 1 prim +
+      out a i prim seq-int.at prim seq-int.push b i prim seq-int.at prim seq-int.push
+          c i prim seq-int.at prim seq-int.push d i prim seq-int.at prim seq-int.push
+      pack ]
+    [ out ] if };
+
+\ Prefix sums of lens: appends st[i+1..n] to out (acc = st[i] = last of out).
+: starts
+  (forall ρ; ρ lens:Seq Int^many i:Int^many acc:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { lens i acc out }
+  { i lens prim seq-int.len prim <
+    [ acc lens i prim seq-int.at prim +
+      locals { na }
+      { lens i 1 prim + na out na prim seq-int.push starts } ]
+    [ out ] if };
+
+\ ---- running one formula ----
+
+\ Pushes v on the stack seq (nothing happens once the formula has failed).
+: push-val
+  (forall ρ; ρ stk:Seq Int^many sp:Int^many v:Int^many -- ρ r:Seq Int^many s:Int^many)
+  locals { stk sp v }
+  { sp 0 prim < [ stk sp ] [ stk sp v prim seq-int.set sp 1 prim + ] if };
+
+\ Result of the two-argument operator x on a and b.
+: binop
+  (forall ρ; ρ x:Int^many a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { x a b }
+  { a err prim = b err prim = prim or
+    [ err ]
+    [ x 1 prim = [ a b prim + lim ]
+      [ x 2 prim = [ a b prim - lim ]
+        [ x 3 prim = [ a b prim * lim ]
+          [ x 4 prim = [ b 0 prim = [ err ] [ a b tdiv ] if ]
+            [ x 5 prim = [ a b prim < [ 1 ] [ 0 ] if ]
+              [ a b prim = [ 1 ] [ 0 ] if ] if ] if ] if ] if ] if ] if };
+
+\ Operator x applied to the top of the stack; sp -1 when it lacks arguments.
+: apply-op
+  (forall ρ; ρ stk:Seq Int^many sp:Int^many x:Int^many -- ρ r:Seq Int^many s:Int^many)
+  locals { stk sp x }
+  { x 7 prim = [ 3 ] [ x 8 prim = [ 1 ] [ 2 ] if ] if
+    locals { ar }
+    { sp ar prim <
+      [ stk -1 ]
+      [ ar 2 prim =
+        [ stk sp 2 prim - x stk sp 2 prim - prim seq-int.at stk sp 1 prim - prim seq-int.at binop
+          prim seq-int.set sp 1 prim - ]
+        [ ar 3 prim =
+          [ \ if: c a b gives a when c is not 0, b when it is 0; only c may be an error
+            stk sp 3 prim -
+            stk sp 3 prim - prim seq-int.at
+            locals { c }
+            { c err prim =
+              [ err ]
+              [ c 0 prim = [ stk sp 1 prim - prim seq-int.at ] [ stk sp 2 prim - prim seq-int.at ] if ] if }
+            prim seq-int.set sp 2 prim - ]
+          [ \ negate
+            stk sp 1 prim -
+            stk sp 1 prim - prim seq-int.at
+            locals { a } { a err prim = [ err ] [ 0 a prim - lim ] if }
+            prim seq-int.set sp ] if ] if ] if } };
+
+\ Combines the running value acc with cell value v for function f (1 sum, 2 min, 3 max).
+: comb
+  (forall ρ; ρ f:Int^many acc:Int^many v:Int^many -- ρ r:Int^many)
+  locals { f acc v }
+  { acc err prim = v err prim = prim or
+    [ err ]
+    [ f 1 prim = [ acc v prim + ]
+      [ f 2 prim = [ acc v prim < [ acc ] [ v ] if ] [ acc v prim > [ acc ] [ v ] if ] if ] if ] if };
+
+\ Folds vals[lo..hi] into acc with comb.
+: fold
+  (forall ρ; ρ vals:Seq Int^many lo:Int^many hi:Int^many f:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { vals lo hi f acc }
+  { lo hi prim >
+    [ acc ]
+    [ vals lo 1 prim + hi f f acc vals lo prim seq-int.at comb fold ] if };
+
+\ Adds to cnt the cells of vals[lo..hi] that are not errors.
+: count
+  (forall ρ; ρ vals:Seq Int^many lo:Int^many hi:Int^many cnt:Int^many -- ρ r:Int^many)
+  locals { vals lo hi cnt }
+  { lo hi prim >
+    [ cnt ]
+    [ vals lo 1 prim + hi cnt vals lo prim seq-int.at err prim = [ ] [ 1 prim + ] if count ] if };
+
+\ Function f (1 sum, 2 min, 3 max, 4 count without errors) of cells y to z
+\ (a valid range) of the values at the start of m.
+: fun
+  (forall ρ; ρ m:Seq Int^many y:Int^many z:Int^many f:Int^many -- ρ r:Int^many)
+  locals { m y z f }
+  { f 4 prim =
+    [ m y z 0 count ]
+    [ m y 1 prim + z f m y prim seq-int.at fold lim ] if };
+
+\ Executes token t of cell i, pushing on the formula's stack and visiting
+\ the cells it refers to.
+: tstep
+  (forall ρ; ρ pk:Seq Int^many n:Int^many m:Seq Int^many stk:Seq Int^many sp:Int^many t:Int^many i:Int^many -- ρ rm:Seq Int^many rs:Seq Int^many rp:Int^many)
+  locals { pk n m stk sp t i }
+  { t 4 prim * locals { b }
+    { pk b prim seq-int.at
+      locals { k }
+      { pk b 1 prim + prim seq-int.at
+        locals { x }
+        { k 0 prim = [ m stk sp x push-val ]
+          [ k 1 prim =
+            [ x n inr
+              [ pk n m i x visit
+                locals { m2 } { m2 stk sp m2 x prim seq-int.at push-val } ]
+              [ m stk sp err push-val ] if ]
+            [ k 2 prim = [ m stk sp x apply-op ]
+              [ pk b 2 prim + prim seq-int.at pk b 3 prim + prim seq-int.at
+                locals { y z }
+                { y 0 prim >= y z prim <= prim and z n prim < prim and
+                  [ pk n m i y z visit-range
+                    locals { m2 } { m2 stk sp m2 y z x fun push-val } ]
+                  [ m stk sp err push-val ] if } ] if ] if ] if } } } };
+
+\ Executes tokens t..e-1 of cell i.
+: run-loop
+  (forall ρ; ρ pk:Seq Int^many n:Int^many m:Seq Int^many stk:Seq Int^many sp:Int^many t:Int^many e:Int^many i:Int^many -- ρ rm:Seq Int^many rs:Seq Int^many rp:Int^many)
+  locals { pk n m stk sp t e i }
+  { t e prim >=
+    [ m stk sp ]
+    [ pk n pk n m stk sp t i tstep t 1 prim + e i run-loop ] if };
+
+\ Visits cell x from cell i: evaluates x unless reached; i is marked 5 when
+\ x is not (yet) an acyclic finished cell.
+: visit
+  (forall ρ; ρ pk:Seq Int^many n:Int^many m:Seq Int^many i:Int^many x:Int^many -- ρ rm:Seq Int^many)
+  locals { pk n m i x }
+  { m n x prim + prim seq-int.at 0 prim =
+    [ pk n m x eval ]
+    [ m ] if
+    locals { m2 }
+    { m2 n x prim + prim seq-int.at 1 prim =
+      [ m2 ]
+      [ m2 n i prim + 5 prim seq-int.set ] if } };
+
+\ Visits cells lo..hi from cell i.
+: visit-range
+  (forall ρ; ρ pk:Seq Int^many n:Int^many m:Seq Int^many i:Int^many lo:Int^many hi:Int^many -- ρ rm:Seq Int^many)
+  locals { pk n m i lo hi }
+  { lo hi prim >
+    [ m ]
+    [ pk n pk n m i lo visit i lo 1 prim + hi visit-range ] if };
+
+\ Evaluates cell i (not reached yet): runs its formula, evaluating the cells
+\ it reads first.
+: eval
+  (forall ρ; ρ pk:Seq Int^many n:Int^many m:Seq Int^many i:Int^many -- ρ rm:Seq Int^many)
+  locals { pk n m i }
+  { pk n m n i prim + 4 prim seq-int.set
+    { 0 0 0 0 0 0 0 0 0 0 0 0 } 0
+    m n 2 prim * i prim + prim seq-int.at
+    m n 2 prim * i prim + prim seq-int.at m n 3 prim * i prim + prim seq-int.at prim +
+    i run-loop
+    locals { m2 stk sp }
+    { m2 n i prim + prim seq-int.at 5 prim =
+      [ m2 i err prim seq-int.set n i prim + 3 prim seq-int.set ]
+      [ m2 i sp 1 prim = [ stk 0 prim seq-int.at ] [ err ] if prim seq-int.set
+        n i prim + 1 prim seq-int.set ] if } };
+
+\ Evaluates every cell from i on that is not reached yet.
+: eval-all
+  (forall ρ; ρ pk:Seq Int^many n:Int^many m:Seq Int^many i:Int^many -- ρ rm:Seq Int^many)
+  locals { pk n m i }
+  { i n prim >=
+    [ m ]
+    [ pk n m n i prim + prim seq-int.at 0 prim =
+      [ pk n m i eval ] [ m ] if
+      i 1 prim + eval-all ] if };
+
+\ ---- edits ----
+
+\ Appends src[lo..hi-1] to out.
+: copy-range
+  (forall ρ; ρ src:Seq Int^many lo:Int^many hi:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { src lo hi out }
+  { lo hi prim >=
+    [ out ]
+    [ src lo 1 prim + hi out src lo prim seq-int.at prim seq-int.push copy-range ] if };
+
+\ Sets every status in m (positions n+i for i from i to n-1) to 0.
+: reset
+  (forall ρ; ρ m:Seq Int^many n:Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m n i }
+  { i n prim >=
+    [ m ]
+    [ m n i prim + 0 prim seq-int.set n i 1 prim + reset ] if };
+
+\ Number of cells below n whose value differs between a and b.
+: count-diff
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many n:Int^many i:Int^many cnt:Int^many -- ρ r:Int^many)
+  locals { a b n i cnt }
+  { i n prim >=
+    [ cnt ]
+    [ a b n i 1 prim + cnt a i prim seq-int.at b i prim seq-int.at prim = [ ] [ 1 prim + ] if count-diff ] if };
+
+\ Applies edits e.. ; the edit's tokens start at token tb + eo of pk.
+: edit-loop
+  (forall ρ; ρ pk:Seq Int^many n:Int^many tb:Int^many ec:Seq Int^many el:Seq Int^many m:Seq Int^many out:Seq Int^many e:Int^many eo:Int^many -- ρ rm:Seq Int^many ro:Seq Int^many)
+  locals { pk n tb ec el m out e eo }
+  { e ec prim seq-int.len prim >=
+    [ m out ]
+    [ ec e prim seq-int.at el e prim seq-int.at
+      locals { c len }
+      { pk n tb ec el
+        m n 2 prim * c prim + tb eo prim + prim seq-int.set
+          n 3 prim * c prim + len prim seq-int.set
+        n 0 reset
+        locals { m1 }
+        { pk n m1 0 eval-all
+          locals { m2 }
+          { m2 out m2 m n 0 0 count-diff prim seq-int.push
+            e 1 prim + eo len prim + edit-loop } } } ] if };
+
+\ The first n entries of m with errors shown as 0, and as error flags.
+: shown
+  (forall ρ; ρ m:Seq Int^many n:Int^many i:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m n i out }
+  { i n prim <
+    [ m n i 1 prim + out m i prim seq-int.at locals { v } { v err prim = [ 0 ] [ v ] if } prim seq-int.push shown ]
+    [ out ] if };
+
+: flags
+  (forall ρ; ρ m:Seq Int^many n:Int^many i:Int^many out:Seq Bool^many -- ρ r:Seq Bool^many)
+  locals { m n i out }
+  { i n prim <
+    [ m n i 1 prim + out m i prim seq-int.at err prim = prim seq-bool.push flags ]
+    [ out ] if };
+
+\ Entry: the inputs bottom to top are the ones named in the task.
+: main
+  (forall ρ; ρ lens:Seq Int^many kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many zs:Seq Int^many ecells:Seq Int^many elens:Seq Int^many ekinds:Seq Int^many exs:Seq Int^many eys:Seq Int^many ezs:Seq Int^many -- ρ values:Seq Int^many errors:Seq Bool^many changed:Seq Int^many)
+  locals { lens kinds xs ys zs ecells elens ekinds exs eys ezs }
+  { kinds xs ys zs 0 prim seq-int.empty pack
+    locals { p0 }
+    { ekinds exs eys ezs 0 p0 pack
+    locals { pk }
+    { lens prim seq-int.len
+      locals { n }
+      { lens 0 0 { 0 } starts
+        locals { st }
+        { n prim seq-int.empty zeros
+          locals { z }
+          { z 0 n z copy-range
+            locals { m1 }
+            { st 0 n m1 copy-range
+              locals { m2 }
+              { lens 0 n m2 copy-range
+                locals { m3 }
+                { pk n m3 0 eval-all
+                  locals { m4 }
+                  { pk n st n prim seq-int.at ecells elens m4 prim seq-int.empty 0 0 edit-loop
+                    locals { m out }
+                    { m n 0 prim seq-int.empty shown
+                      m n 0 prim seq-bool.empty flags
+                      out } } } } } } } } } } };

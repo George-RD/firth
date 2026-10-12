@@ -1,6 +1,8 @@
-\ `SeqInt` and `SeqBool` are how the target spells `Seq Int` and `Seq Bool`,
-\ so a source type with either name is refused: otherwise a word over an
-\ opaque `SeqInt` and one over `Seq Int` would compile to the same type.
+\ `SeqInt` and `SeqBool` are how the target spells `Seq Int` and `Seq Bool`.
+\ Neither is a source type, so the checker refuses `SeqInt` here as it would
+\ any other name that is not a type (`dec.source-type-names`). The compiler
+\ keeps its own guard: a word over an opaque `SeqInt` and one over `Seq Int`
+\ would otherwise compile to the same type.
 : keep
   (forall ρ; ρ x:SeqInt^many -- ρ x:SeqInt^many)
   ;

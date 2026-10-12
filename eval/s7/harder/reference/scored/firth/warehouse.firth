@@ -1,0 +1,454 @@
+\ Warehouse simulation: lots with expiry, backorder queues, reorder points.
+\
+\ Firth has no records or maps, so the state is three flat integer sequences,
+\ with "pointers" being indices into them:
+\
+\   z  counters, parameters and one block of numbers per product (below)
+\   l  every lot ever stored, three numbers each: units, expiry day, next.
+\      The lots of one product form a linked list from the product's head
+\      pointer, ordered by expiry and, within an expiry, by arrival. So the
+\      lot to take from next is always the head, and an empty lot is
+\      simply unlinked. -1 ends a list.
+\   b  every backorder ever placed, four numbers each: product, units owed,
+\      day placed, next. The backorders of one product form a queue (head and
+\      tail pointers in z), oldest first. A pointer is the index of the
+\      first number of a record.
+\
+\ Layout of z, with P the number of products:
+\   0 earned, 1 shipped, 2 discarded, 3 cancelled, 4 supplies, 5 P,
+\   6 the earliest day a supply is due (1000 when none is on the way),
+\   7 a flag set when some product may have become low since step 5 last
+\     looked (stock fell or a supply arrived), so that days on which
+\     nothing happened can skip the scan over products,
+\   8 a lower bound on the earliest expiry of a stored lot, likewise,
+\   9 where the cancelling of old backorders has got to in b;
+\ then ten numbers for each product in turn, starting at index 10:
+\   field 0 price, 1 rp, 2 rq, 3 lead, 4 shelf, 5 stock, 6 day the supply on
+\   the way is due (-1 when none), 7 head of the lot list, 8 head and
+\   9 tail of the backorder queue (-1 when empty).
+\ Loops over products walk base indices 10, 20, 30, ... (10 + 10 p).
+\
+\ The events are packed in one sequence, five numbers each: day, kind,
+\ product, units, expiry.
+
+\ ---------- small helpers ----------
+
+: imin
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim < [ a ] [ b ] if };
+
+\ out with n copies of v pushed on.
+: rep
+  (forall ρ; ρ out:Seq Int^many n:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { out n v }
+  { n 0 prim >
+    [ out v prim seq-int.push n 1 prim - v rep ]
+    [ out ] if };
+
+\ out with s[i] pushed on.
+: pushat
+  (forall ρ; ρ out:Seq Int^many s:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { out s i } { out s i prim seq-int.at prim seq-int.push };
+
+\ ---------- the array z ----------
+
+: zget
+  (forall ρ; ρ z:Seq Int^many i:Int^many -- ρ v:Int^many)
+  locals { z i } { z i prim seq-int.at };
+
+: zset
+  (forall ρ; ρ z:Seq Int^many i:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { z i v } { z i v prim seq-int.set };
+
+: zadd
+  (forall ρ; ρ z:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { z i d } { z i z i prim seq-int.at d prim + prim seq-int.set };
+
+: nprod
+  (forall ρ; ρ z:Seq Int^many -- ρ n:Int^many)
+  locals { z } { z 5 prim seq-int.at };
+
+\ Index of field f of product p.
+: fidx
+  (forall ρ; ρ f:Int^many p:Int^many -- ρ i:Int^many)
+  locals { f p } { p 10 prim * f prim + 10 prim + };
+
+: fget
+  (forall ρ; ρ z:Seq Int^many f:Int^many p:Int^many -- ρ v:Int^many)
+  locals { z f p } { z f p fidx prim seq-int.at };
+
+: fset
+  (forall ρ; ρ z:Seq Int^many f:Int^many p:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { z f p v } { z f p fidx v prim seq-int.set };
+
+: fadd
+  (forall ρ; ρ z:Seq Int^many f:Int^many p:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { z f p d } { z f p z f p fget d prim + fset };
+
+\ ---------- lots ----------
+
+\ Walks the lot list from lot cur (prev is the lot before it, -1 for none)
+\ to the first lot expiring after day e. Returns that lot and the one
+\ before it.
+: lot-walk
+  (forall ρ; ρ l:Seq Int^many e:Int^many prev:Int^many cur:Int^many -- ρ prev2:Int^many cur2:Int^many)
+  locals { l e prev cur }
+  { cur 0 prim >=
+    [ l cur 1 prim + prim seq-int.at e prim <=
+      [ l e cur l cur 2 prim + prim seq-int.at lot-walk ]
+      [ prev cur ] if ]
+    [ prev cur ] if };
+
+\ A lot of qty units of product p, expiring on day e, is stored: it goes
+\ after the lots expiring on or before e.
+: insert-lot
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many p:Int^many qty:Int^many e:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many)
+  locals { z l p qty e }
+  { z 5 p qty fadd 8 z 8 zget e imin zset
+    locals { z1 } {
+      l e -1 z1 7 p fget lot-walk
+      locals { prev cur } {
+        l prim seq-int.len
+        locals { idx } {
+          prev 0 prim <
+          [ z1 7 p idx fset l ]
+          [ z1 l prev 2 prim + idx prim seq-int.set ] if
+          qty prim seq-int.push e prim seq-int.push cur prim seq-int.push } } } };
+
+\ Takes q units of product p (q at most the stock) from its lots, the head
+\ of the list first.
+: take-lots
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many p:Int^many q:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many)
+  locals { z l p q }
+  { q 0 prim >
+    [ z 7 p fget
+      locals { h } {
+        l h prim seq-int.at q prim <=
+        [ z 7 p l h 2 prim + prim seq-int.at fset
+          l p q l h prim seq-int.at prim - take-lots ]
+        [ z l h l h prim seq-int.at q prim - prim seq-int.set ] if } ]
+    [ z l ] if };
+
+\ Ships q units of product p: counts them, earns their price and takes them
+\ from the lots.
+: ship
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many p:Int^many q:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many)
+  locals { z l p q }
+  { z 1 q zadd 7 1 zset
+    0 q z 0 p fget prim * zadd
+    5 p 0 q prim - fadd
+    l p q take-lots };
+
+\ ---------- backorders ----------
+
+\ Adds the record (p, r owed, placed on day d, no next) to b and links it
+\ to the end of p's queue.
+: enq0
+  (forall ρ; ρ z:Seq Int^many b:Seq Int^many p:Int^many r:Int^many d:Int^many -- ρ z2:Seq Int^many b2:Seq Int^many)
+  locals { z b p r d }
+  { b prim seq-int.len
+    locals { idx } {
+      z 9 p fget 0 prim <
+      [ z 8 p idx fset b ]
+      [ z b z 9 p fget 3 prim + idx prim seq-int.set ] if
+      locals { z1 b1 } {
+        z1 9 p idx fset
+        b1 p prim seq-int.push r prim seq-int.push d prim seq-int.push -1 prim seq-int.push } } };
+
+\ The same, passing the lots through.
+: enq
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many p:Int^many r:Int^many d:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b p r d }
+  { z b p r d enq0 locals { z1 b1 } { z1 l b1 } };
+
+\ The same, only when r is above 0.
+: enq-if
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many p:Int^many r:Int^many d:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b p r d }
+  { r 0 prim > [ z l b p r d enq ] [ z l b ] if };
+
+\ Removes the oldest backorder of p from its queue.
+: pop-bk
+  (forall ρ; ρ z:Seq Int^many b:Seq Int^many p:Int^many -- ρ z2:Seq Int^many)
+  locals { z b p }
+  { b z 8 p fget 3 prim + prim seq-int.at
+    locals { nx } {
+      z 8 p nx fset
+      nx 0 prim < [ 9 p -1 fset ] [ ] if } };
+
+\ Fills the oldest backorder of p as far as the stock allows, and goes on
+\ while there is stock and a backorder.
+: fill
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many p:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b p }
+  { z 5 p fget 0 prim > z 8 p fget 0 prim >= prim and
+    [ z 8 p fget
+      locals { h } {
+        b h 1 prim + prim seq-int.at z 5 p fget imin
+        locals { amt } {
+          z l p amt ship
+          locals { z1 l1 } {
+            b h 1 prim + b h 1 prim + prim seq-int.at amt prim - prim seq-int.set
+            locals { b1 } {
+              b1 h 1 prim + prim seq-int.at 0 prim =
+              [ z1 b1 p pop-bk l1 b1 ]
+              [ z1 l1 b1 ] if
+              p fill } } } } ]
+    [ z l b ] if };
+
+\ A lot of qty units of product p expiring on day e arrives.
+: arrive
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many p:Int^many qty:Int^many e:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b p qty e }
+  { z l p qty e insert-lot b p fill };
+
+\ A customer order for q units of product p on day d.
+: order
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many p:Int^many q:Int^many d:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b p q d }
+  { z 8 p fget 0 prim >=
+    [ z l b p q d enq ]
+    [ z 5 p fget q imin
+      locals { t } { z l p t ship b p q t prim - d enq-if } ] if };
+
+\ ---------- the five steps of a day ----------
+
+\ Removes the expired lots (expiry before d) from the head of p's list,
+\ counting them as discarded.
+: expire
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many d:Int^many p:Int^many -- ρ z2:Seq Int^many)
+  locals { z l d p }
+  { z 7 p fget
+    locals { h } {
+      h 0 prim >=
+      [ l h 1 prim + prim seq-int.at d prim <
+        [ z 2 l h prim seq-int.at zadd
+          5 p 0 l h prim seq-int.at prim - fadd
+          7 p l h 2 prim + prim seq-int.at fset
+          7 1 zset
+          l d p expire ]
+        [ z ] if ]
+      [ z ] if } };
+
+\ expire for the products from p on.
+: expire-all
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many d:Int^many p:Int^many -- ρ z2:Seq Int^many)
+  locals { z l d p }
+  { p z nprod prim <
+    [ z l d p expire l d p 1 prim + expire-all ]
+    [ z ] if };
+
+\ The earliest expiry among the heads of the lists of products from p on
+\ (every list is ordered, so its head is its earliest); acc if there is none.
+: min-expiry
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many p:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { z l p acc }
+  { p z nprod prim <
+    [ z 7 p fget
+      locals { h } {
+        z l p 1 prim +
+        h 0 prim >= [ acc l h 1 prim + prim seq-int.at imin ] [ acc ] if
+        min-expiry } ]
+    [ acc ] if };
+
+\ Step 1: throw away the lots that expired before day d. Nothing to do
+\ unless the earliest expiry bound is before d.
+: discard
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many d:Int^many -- ρ z2:Seq Int^many)
+  locals { z l d }
+  { z 8 zget d prim <
+    [ z l d 0 expire-all
+      locals { z1 } { z1 8 z1 l 0 1000 min-expiry zset } ]
+    [ z ] if };
+
+\ Base index of the first product from base index i on whose supply is due
+\ on day d; the length of z when there is none.
+: next-due
+  (forall ρ; ρ z:Seq Int^many d:Int^many i:Int^many -- ρ r:Int^many)
+  locals { z d i }
+  { i z prim seq-int.len prim <
+    [ z i 6 prim + prim seq-int.at d prim = [ i ] [ z d i 10 prim + next-due ] if ]
+    [ i ] if };
+
+\ Arrivals on day d for the products from base index i on.
+: supply-scan
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many d:Int^many i:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b d i }
+  { z d i next-due
+    locals { j } {
+      j z prim seq-int.len prim <
+      [ j 10 prim - 10 prim div
+        locals { p } {
+          z 6 p -1 fset l b p z 2 p fget d z 4 p fget prim + arrive
+          d j 10 prim + supply-scan } ]
+      [ z l b ] if } };
+
+\ Smallest due day among the supplies on the way, from base index i on;
+\ acc when there is none.
+: min-due
+  (forall ρ; ρ z:Seq Int^many i:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { z i acc }
+  { i z prim seq-int.len prim <
+    [ z i 6 prim + prim seq-int.at
+      locals { v } {
+        z i 10 prim + v 0 prim >= [ acc v imin ] [ acc ] if min-due } ]
+    [ acc ] if };
+
+\ Step 2: supplies due on day d arrive. Only the earliest due day needs the
+\ scan over products.
+: supplies-in
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many d:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b d }
+  { z 6 zget d prim =
+    [ z l b d 10 supply-scan
+      locals { z2 l2 b2 } { z2 6 z2 10 1000 min-due zset 7 1 zset l2 b2 } ]
+    [ z l b ] if };
+
+\ Is the event at offset e there, and on day d?
+: today?
+  (forall ρ; ρ ev:Seq Int^many e:Int^many d:Int^many -- ρ r:Bool^many)
+  locals { ev e d }
+  { e ev prim seq-int.len prim <
+    [ ev e prim seq-int.at d prim = ]
+    [ false ] if };
+
+\ Step 3: the events of day d from offset e on; returns the next offset.
+: events
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many ev:Seq Int^many d:Int^many e:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many e2:Int^many)
+  locals { z l b ev d e }
+  { ev e d today?
+    [ ev e 1 prim + prim seq-int.at 1 prim =
+      [ z l b ev e 2 prim + prim seq-int.at ev e 3 prim + prim seq-int.at ev e 4 prim + prim seq-int.at arrive ]
+      [ z l b ev e 2 prim + prim seq-int.at ev e 3 prim + prim seq-int.at d order ] if
+      ev d e 5 prim + events ]
+    [ z l b e ] if };
+
+\ Step 4: cancels the backorders placed on day d-7 or earlier. They are the
+\ oldest records of b, so they are a prefix, which z[9] has got through as
+\ far as c. Each one still owing something is the head of its product's
+\ queue (the older ones of its product are already gone).
+: cancel-scan
+  (forall ρ; ρ z:Seq Int^many b:Seq Int^many d:Int^many c:Int^many -- ρ z2:Seq Int^many b2:Seq Int^many)
+  locals { z b d c }
+  { c b prim seq-int.len prim <
+    [ b c 2 prim + prim seq-int.at d 6 prim - prim <
+      [ b c 1 prim + prim seq-int.at
+        locals { owed } {
+          owed 0 prim >
+          [ z 3 owed zadd b c 1 prim + 0 prim seq-int.set
+            locals { z1 b1 } { z1 b1 b c prim seq-int.at pop-bk b1 } ]
+          [ z b ] if
+          d c 4 prim + cancel-scan } ]
+      [ z 9 c zset b ] if ]
+    [ z 9 c zset b ] if };
+
+\ Base index of the first product from base index i on that has no supply on
+\ the way and stock at most rp; the length of z when there is none.
+: next-low
+  (forall ρ; ρ z:Seq Int^many i:Int^many -- ρ r:Int^many)
+  locals { z i }
+  { i z prim seq-int.len prim <
+    [ z i 6 prim + prim seq-int.at -1 prim =
+      z i 5 prim + prim seq-int.at z i 1 prim + prim seq-int.at prim <= prim and
+      [ i ] [ z i 10 prim + next-low ] if ]
+    [ i ] if };
+
+\ Orders a supply, due on day d + lead, for every product from base index i
+\ on that is low and has none coming.
+: reorder-scan
+  (forall ρ; ρ z:Seq Int^many d:Int^many i:Int^many -- ρ z2:Seq Int^many)
+  locals { z d i }
+  { z i next-low
+    locals { j } {
+      j z prim seq-int.len prim <
+      [ j 10 prim - 10 prim div
+        locals { p } {
+          z 6 p d z 3 p fget prim + fset 4 1 zadd
+          6 z 6 zget d z 3 p fget prim + imin zset
+          d j 10 prim + reorder-scan } ]
+      [ z ] if } };
+
+\ Step 5, skipped when nothing can have become low.
+: reorder
+  (forall ρ; ρ z:Seq Int^many d:Int^many -- ρ z2:Seq Int^many)
+  locals { z d }
+  { z 7 zget 0 prim >
+    [ z 7 0 zset d 10 reorder-scan ]
+    [ z ] if };
+
+\ One whole day; e is the offset of the first event not yet handled.
+: day
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many ev:Seq Int^many d:Int^many e:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many e2:Int^many)
+  locals { z l b ev d e }
+  { z l d discard
+    locals { z1 } {
+      z1 l b d supplies-in
+      locals { z2 l2 b2 } {
+        z2 l2 b2 ev d e events
+        locals { z3 l3 b3 e3 } {
+          z3 b3 d z3 9 zget cancel-scan
+          locals { z4 b4 } {
+            z4 d reorder l3 b4 e3 } } } } };
+
+: run-days
+  (forall ρ; ρ z:Seq Int^many l:Seq Int^many b:Seq Int^many ev:Seq Int^many days:Int^many d:Int^many e:Int^many -- ρ z2:Seq Int^many l2:Seq Int^many b2:Seq Int^many)
+  locals { z l b ev days d e }
+  { d days prim <
+    [ z l b ev d e day
+      locals { z2 l2 b2 e2 } { z2 l2 b2 ev days d 1 prim + e2 run-days } ]
+    [ z l b ] if };
+
+\ ---------- set-up and report ----------
+
+\ Packs the five event sequences into one, five numbers per event.
+: pack
+  (forall ρ; ρ ed:Seq Int^many ek:Seq Int^many ep:Seq Int^many eq:Seq Int^many ex:Seq Int^many i:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { ed ek ep eq ex i out }
+  { i ed prim seq-int.len prim <
+    [ ed ek ep eq ex i 1 prim +
+      out ed i pushat ek i pushat ep i pushat eq i pushat ex i pushat
+      pack ]
+    [ out ] if };
+
+\ z with the ten fields of products i on appended.
+: add-products
+  (forall ρ; ρ z:Seq Int^many price:Seq Int^many rp:Seq Int^many rq:Seq Int^many lead:Seq Int^many shelf:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { z price rp rq lead shelf i }
+  { i price prim seq-int.len prim <
+    [ z price i pushat rp i pushat rq i pushat lead i pushat shelf i pushat
+      0 prim seq-int.push -1 prim seq-int.push -1 prim seq-int.push
+      -1 prim seq-int.push -1 prim seq-int.push
+      price rp rq lead shelf i 1 prim + add-products ]
+    [ z ] if };
+
+\ The stock of every product, from product p on.
+: stocks
+  (forall ρ; ρ z:Seq Int^many p:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { z p out }
+  { p z nprod prim <
+    [ z p 1 prim + out z 5 p fget prim seq-int.push stocks ]
+    [ out ] if };
+
+\ Total units owed, from record i on.
+: owed-sum
+  (forall ρ; ρ b:Seq Int^many i:Int^many -- ρ r:Int^many)
+  locals { b i }
+  { i b prim seq-int.len prim <
+    [ b i 1 prim + prim seq-int.at b i 4 prim + owed-sum prim + ]
+    [ 0 ] if };
+
+: main
+  (forall ρ; ρ days:Int^many price:Seq Int^many rp:Seq Int^many rq:Seq Int^many lead:Seq Int^many shelf:Seq Int^many ed:Seq Int^many ek:Seq Int^many ep:Seq Int^many eq:Seq Int^many ex:Seq Int^many -- ρ stock:Seq Int^many earned:Int^many shipped:Int^many discarded:Int^many cancelled:Int^many supplies:Int^many owed:Int^many)
+  locals { days price rp rq lead shelf ed ek ep eq ex }
+  { price prim seq-int.len
+    locals { n } {
+      prim seq-int.empty 5 0 rep n prim seq-int.push
+      1000 prim seq-int.push 1 prim seq-int.push 1000 prim seq-int.push 0 prim seq-int.push
+      price rp rq lead shelf 0 add-products
+      prim seq-int.empty prim seq-int.empty
+      ed ek ep eq ex 0 prim seq-int.empty pack
+      days 0 0 run-days
+      locals { z l b } {
+        z 0 prim seq-int.empty stocks
+        z 0 zget z 1 zget z 2 zget z 3 zget z 4 zget
+        b 0 owed-sum } } };

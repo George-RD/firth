@@ -1,0 +1,84 @@
+sonnet-python-1 (ae558afd413328220)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-firth-1 (aa3e80bf9d59ef1b6)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+haiku-python-1 (a27b0002d5d298cf6)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 1}
+haiku-firth-1 (a240cd24227534291)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-firth-2 (a3090bfc9c25b49b7)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-python-2 (a829da11bdf8ea410)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+haiku-firth-2 (a04508dc5bacaf3b4)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 3}
+haiku-python-2 (a577fec4499d70a93)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 1}
+sonnet-python-3 (abadde0a312ec8aaf)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-firth-3 (a358633a5e9d259c1)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+haiku-python-3 (ab215b10f70bcba01)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 3}
+haiku-firth-3 (ac3c5e958ef62def3)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 3, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 3}
+sonnet-firth-4 (a06785b14b8e8ca52)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-python-4 (a1cb257db1e9a1011)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+haiku-firth-4 (abb119fa7b0bc0d56)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+haiku-python-4 (a7e379a218a63377f)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-python-5 (a926375dbc42cc9c2)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-firth-5 (a5192b3cdee8bef58)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+haiku-python-5 (a7b743ece91b74f62)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 1}
+haiku-firth-5 (af9ba7dd6cbaad50e)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-firth-6 (a7fca83c9219c1d52)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-python-6 (ade2dd0157aa8ba21)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 3}
+sonnet-python-7 (af8efeb8212ec47f8)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-firth-7 (a448073eedb68feb9)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-firth-8 (abc6dc0a68971869e)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-python-8 (a35fa1062cc49821e)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+haiku-python-6 (ad9f3fd886df7c40f)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 1}
+sonnet-firth-9 (a5e101170c8f81b4f)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}

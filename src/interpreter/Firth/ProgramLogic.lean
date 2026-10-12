@@ -391,8 +391,9 @@ instance (primitive : Prim) : Decidable (Int64Checked primitive) := by
 
 /-- The reference registry with `+`, `-`, `*` and `div` checked for i64 overflow.
 The checked primitives are declared `faults := true`, since an overflow is a
-primitive fault on a well-typed stack, as the VM's trap is. The kernel's
-progress theorem is not yet proved for this registry. -/
+primitive fault on a well-typed stack, as the VM's trap is. Progress and
+preservation hold for this registry (`int64Gamma_primitivesWellFormed` and
+`int64Gamma_progress` in `Firth/RegistryProgress.lean`). -/
 def int64Gamma : Gamma :=
   { adapterGamma with
     primitive := fun primitive => (adapterGamma.primitive primitive).map fun specification =>
@@ -1020,6 +1021,67 @@ def WordContract.Holds (contract : WordContract) (gamma : Gamma) (dictionary : D
   ∀ (args : contract.Args) (tail : Stack), contract.pre args →
     RunsWithin gamma dictionary costs program (contract.input args ++ tail)
       (contract.output args ++ tail) (contract.steps args) (contract.cost args)
+
+/-!
+## Dictionary extension
+
+A run only consults the dictionary to unfold a word it defines, so a run under
+one dictionary is the same run, step for step and at the same cost, under any
+dictionary that gives each of those words the same entry. This is what lets a
+contract proved of a word in its own file's export hold of the same word in a
+program that imports that file (`dec.multi-file-imports`): the importing
+program's dictionary extends the imported file's.
+-/
+
+/-- `larger` gives every word `smaller` defines the same entry. -/
+def DictionaryExtends (larger smaller : Dictionary) : Prop :=
+  ∀ name entry, smaller name = some entry → larger name = some entry
+
+section Extension
+variable {gamma : Gamma} {larger smaller : Dictionary} {costs : CostTable}
+
+theorem step_of_extends (hExt : DictionaryExtends larger smaller) {start next : Config}
+    {cost : Nat} (h : step gamma smaller costs start = .stepped next cost) :
+    step gamma larger costs start = .stepped next cost := by
+  rcases start with ⟨stack, _ | ⟨atom, rest⟩⟩
+  · simp [step] at h
+  · cases atom with
+    | word name =>
+        cases hName : smaller name with
+        | none => simp [step, hName] at h
+        | some entry => simpa [step, hName, hExt name entry hName] using h
+    | _ => exact h
+
+theorem Reaches.extend (hExt : DictionaryExtends larger smaller) {start finish : Config}
+    {steps cost : Nat} (h : Reaches gamma smaller costs start finish steps cost) :
+    Reaches gamma larger costs start finish steps cost := by
+  rcases h with ⟨trace, rfl, rfl⟩
+  induction trace with
+  | nil config => exact Reaches.refl config
+  | cons stepCost stepProof _ ih =>
+      simpa [traceLength, traceCost] using Reaches.head (step_of_extends hExt stepProof) ih
+
+theorem Runs.extend (hExt : DictionaryExtends larger smaller) {program : Program}
+    {before after : Stack} {steps cost : Nat}
+    (h : Runs gamma smaller costs program before after steps cost) :
+    Runs gamma larger costs program before after steps cost :=
+  fun rest => (h rest).extend hExt
+
+theorem RunsWithin.extend (hExt : DictionaryExtends larger smaller) {program : Program}
+    {before after : Stack} {maxSteps maxCost : Nat}
+    (h : RunsWithin gamma smaller costs program before after maxSteps maxCost) :
+    RunsWithin gamma larger costs program before after maxSteps maxCost := by
+  rcases h with ⟨steps, cost, h, hs, hc⟩
+  exact ⟨steps, cost, h.extend hExt, hs, hc⟩
+
+/-- A contract that holds of a program under one dictionary holds of it under
+any dictionary that extends that one. -/
+theorem WordContract.Holds.extend {contract : WordContract} {program : Program}
+    (hExt : DictionaryExtends larger smaller) (h : contract.Holds gamma smaller costs program) :
+    contract.Holds gamma larger costs program :=
+  fun args tail hpre => (h args tail hpre).extend hExt
+
+end Extension
 
 /-!
 ## Straight-line chains

@@ -1,0 +1,14 @@
+{"type": "user", "timestamp": "2026-10-11T13:40:27.833Z", "cwd": "/home/user"}
+{"type": "user", "timestamp": "2026-10-11T13:40:27.848Z", "cwd": "/home/user"}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.850Z", "cwd": "/home/user", "attachment": {"type": "environment"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.850Z", "cwd": "/home/user", "attachment": {"type": "model"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.857Z", "cwd": "/home/user", "attachment": {"type": "instructions"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.857Z", "cwd": "/home/user", "attachment": {"type": "session_context"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.857Z", "cwd": "/home/user", "attachment": {"type": "date"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.859Z", "cwd": "/home/user", "attachment": {"type": "credential_org"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.860Z", "cwd": "/home/user", "attachment": {"type": "remote_session_change"}}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:27.861Z", "cwd": "/home/user", "attachment": {"type": "prompt_snapshot"}}
+{"type": "assistant", "timestamp": "2026-10-11T13:40:29.707Z", "cwd": "/home/user"}
+{"type": "assistant", "timestamp": "2026-10-11T13:40:30.126Z", "cwd": "/home/user"}
+{"type": "user", "timestamp": "2026-10-11T13:40:32.158Z", "cwd": "/home/user"}
+{"type": "attachment", "timestamp": "2026-10-11T13:40:32.162Z", "cwd": "/home/user", "attachment": {"type": "prompt_snapshot", "tools": [{"name": "Read"}, {"name": "Edit"}, {"name": "SubagentHandback"}]}}

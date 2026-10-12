@@ -1,0 +1,188 @@
+: add
+  (forall ρ; ρ s:Seq Int i:Int v:Int -- ρ r:Seq Int)
+  locals { s i v } { s i s i prim seq-int.at v prim + prim seq-int.set };
+
+: zs
+  (forall ρ; ρ xs:Seq Int n:Int -- ρ r:Seq Int)
+  locals { xs n } { n 0 prim > [ xs 0 prim seq-int.push n 1 prim - zs ] [ xs ] if };
+
+: ord
+  (forall ρ; ρ x:Int y:Int rest:Bool -- ρ r:Bool)
+  locals { x y rest } { x y prim = [ rest ] [ x y prim > ] if };
+
+: bef
+  (forall ρ; ρ s:Seq Int a:Int b:Int -- ρ r:Bool)
+  locals { s a b } {
+    s a prim seq-int.at s b prim seq-int.at
+    s 232 a prim + prim seq-int.at s 232 b prim + prim seq-int.at
+    s 220 a prim + prim seq-int.at s 220 b prim + prim seq-int.at
+    a b prim <
+    ord ord ord };
+
+: bub
+  (forall ρ; ρ s:Seq Int j:Int -- ρ r:Seq Int)
+  locals { s j } {
+    j 0 prim >
+    [ s 192 j prim + prim seq-int.at  s 192 j prim + 1 prim - prim seq-int.at
+      locals { a b } {
+        s a b bef
+        [ s 192 j prim + b prim seq-int.set 192 j prim + 1 prim - a prim seq-int.set j 1 prim - bub ]
+        [ s ] if } ]
+    [ s ] if };
+
+: isort
+  (forall ρ; ρ s:Seq Int i:Int -- ρ r:Seq Int)
+  locals { s i } {
+    i s 218 prim seq-int.at prim <
+    [ s i bub i 1 prim + isort ]
+    [ s ] if };
+
+: fnb
+  (forall ρ; ρ s:Seq Int k:Int -- ρ r:Seq Int)
+  locals { s k } {
+    k 0 prim >=
+    [ s 192 k prim + prim seq-int.at
+      locals { p } {
+        s 36 p prim + prim seq-int.at 0 prim =
+        [ s p 2 add 36 p prim + 1 prim seq-int.set 204 p prim + 1 prim seq-int.set ]
+        [ s k 1 prim - fnb ] if } ]
+    [ s ] if };
+
+: bye
+  (forall ρ; ρ s:Seq Int -- ρ r:Seq Int)
+  locals { s } {
+    s 218 prim seq-int.at 2 prim mod 1 prim =
+    [ s s 218 prim seq-int.at 1 prim - fnb ]
+    [ s ] if };
+
+: fy
+  (forall ρ; ρ s:Seq Int x:Int j:Int mode:Int -- ρ y:Int)
+  locals { s x j mode } {
+    j s 218 prim seq-int.at prim <
+    [ s 192 j prim + prim seq-int.at
+      locals { q } {
+        s 204 q prim + prim seq-int.at 0 prim =
+        mode 1 prim = s 48 x 12 prim * prim + q prim + prim seq-int.at 0 prim = prim or
+        prim and
+        [ q ] [ s x j 1 prim + mode fy ] if } ]
+    [ -1 ] if };
+
+: apply
+  (forall ρ; ρ s:Seq Int res:Seq Int w:Int b:Int -- ρ r:Seq Int)
+  locals { s res w b } {
+    res s 216 prim seq-int.at prim seq-int.at
+    locals { r } {
+      s 216 1 add
+      w 2 r prim - add
+      b r add
+      12 w prim + 1 add
+      24 w prim + 1 prim seq-int.set
+      24 b prim + 2 prim seq-int.set
+      48 w 12 prim * prim + b prim + 1 add
+      48 b 12 prim * prim + w prim + 1 add
+      204 w prim + 1 prim seq-int.set
+      204 b prim + 1 prim seq-int.set } };
+
+: game
+  (forall ρ; ρ s:Seq Int res:Seq Int x:Int y:Int -- ρ r:Seq Int)
+  locals { s res x y } {
+    s 12 x prim + prim seq-int.at s 12 y prim + prim seq-int.at
+    locals { wx wy } {
+      wx wy prim < [ x y ]
+      [ wy wx prim < [ y x ]
+        [ s 24 x prim + prim seq-int.at 2 prim = s 24 y prim + prim seq-int.at 2 prim = prim not prim and
+          [ x y ]
+          [ s 24 y prim + prim seq-int.at 2 prim = s 24 x prim + prim seq-int.at 2 prim = prim not prim and
+            [ y x ] [ x y ] if ] if ] if ] if
+      locals { w b } { s res w b apply } } };
+
+: dopair
+  (forall ρ; ρ s:Seq Int res:Seq Int i:Int x:Int -- ρ r:Seq Int)
+  locals { s res i x } {
+    s x i 1 prim + 0 fy
+    locals { y0 } {
+      y0 0 prim >=
+      [ s res x y0 game ]
+      [ s 217 1 add
+        locals { s1 } {
+          s1 x i 1 prim + 1 fy
+          locals { y1 } { s1 res x y1 game } } ] if } };
+
+: pairs
+  (forall ρ; ρ s:Seq Int res:Seq Int i:Int -- ρ r:Seq Int)
+  locals { s res i } {
+    i s 218 prim seq-int.at prim <
+    [ s 192 i prim + prim seq-int.at
+      locals { x } {
+        s 204 x prim + prim seq-int.at 0 prim =
+        [ s res i x dopair
+          locals { s2 } { s2 res i 1 prim + pairs } ]
+        [ s res i 1 prim + pairs ] if } ]
+    [ s ] if };
+
+: clr
+  (forall ρ; ρ s:Seq Int k:Int -- ρ r:Seq Int)
+  locals { s k } {
+    k s 218 prim seq-int.at prim <
+    [ s 204 k prim + 0 prim seq-int.set k 1 prim + clr ]
+    [ s ] if };
+
+: round
+  (forall ρ; ρ s:Seq Int res:Seq Int -- ρ r:Seq Int)
+  locals { s res } { s 0 clr 1 isort bye res 0 pairs };
+
+: rl
+  (forall ρ; ρ s:Seq Int res:Seq Int k:Int -- ρ r:Seq Int)
+  locals { s res k } {
+    k 0 prim >
+    [ s res round res k 1 prim - rl ]
+    [ s ] if };
+
+: bq
+  (forall ρ; ρ s:Seq Int p:Int q:Int acc:Int -- ρ r:Int)
+  locals { s p q acc } {
+    q s 218 prim seq-int.at prim <
+    [ s p q 1 prim + acc
+      s 48 p 12 prim * prim + q prim + prim seq-int.at s q prim seq-int.at prim * prim +
+      bq ]
+    [ acc ] if };
+
+: bu
+  (forall ρ; ρ s:Seq Int p:Int -- ρ r:Seq Int)
+  locals { s p } {
+    p s 218 prim seq-int.at prim <
+    [ s 232 p prim + s p 0 0 bq prim seq-int.set p 1 prim + bu ]
+    [ s ] if };
+
+: init
+  (forall ρ; ρ s:Seq Int rt:Seq Int k:Int -- ρ r:Seq Int)
+  locals { s rt k } {
+    k rt prim seq-int.len prim <
+    [ s 220 k prim + rt k prim seq-int.at prim seq-int.set
+      192 k prim + k prim seq-int.set
+      rt k 1 prim + init ]
+    [ s ] if };
+
+: ex
+  (forall ρ; ρ s:Seq Int base:Int k:Int out:Seq Int -- ρ r:Seq Int)
+  locals { s base k out } {
+    k s 218 prim seq-int.at prim <
+    [ s base k 1 prim + out s base k prim + prim seq-int.at prim seq-int.push ex ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ ratings:Seq Int rounds:Int results:Seq Int
+   -- ρ scores:Seq Int buch:Seq Int ranking:Seq Int whites:Seq Int rematches:Int)
+  locals { ratings rounds results } {
+    prim seq-int.empty 260 zs
+    218 ratings prim seq-int.len prim seq-int.set
+    ratings 0 init
+    results rounds rl
+    0 bu
+    1 isort
+    locals { s } {
+      s 0 0 prim seq-int.empty ex
+      s 232 0 prim seq-int.empty ex
+      s 192 0 prim seq-int.empty ex
+      s 12 0 prim seq-int.empty ex
+      s 217 prim seq-int.at } };

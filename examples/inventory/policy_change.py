@@ -4,11 +4,10 @@
 specs/inventory-allocation.md's maintenance task: change a client from partial
 to all-or-nothing while preserving conservation, order, input validation and
 later fulfilment. `policy-change/partial.firth` is the client before the change
-and `policy-change/all-or-nothing.firth` the client after it. Each defines one
-word, `reserve`, on top of `allocator.firth`. Firth has no imports, so each
-program is the allocator's source followed by the client's.
+and `policy-change/all-or-nothing.firth` the client after it. Each imports
+`allocator.firth` and defines one word, `reserve`, on top of it.
 
-Two checks, both against what the toolchain itself produces:
+Three checks, all against what the toolchain itself produces:
 
 1. Changed words and their dependents. Both programs are elaborated and
    compiled. A word changed when the compiler's body digest or the erased word
@@ -18,7 +17,11 @@ Two checks, both against what the toolchain itself produces:
    digest and type. Both programs share `allocator.firth`, so the script also
    compiles a mutant with one allocator word edited and fails unless that
    word and its callers are reported: the check can see an allocator change.
-2. Regression evidence. Every corpus case that reaches Firth runs through both
+2. The imported allocator is the allocator. Every allocator word must have,
+   in each client's image, the digest and type it has when `allocator.firth`
+   is compiled alone, which the inventory runs and proofs use. The mutant
+   must fail this check too.
+3. Regression evidence. Every corpus case that reaches Firth runs through both
    clients on the VM and the reference interpreter, which must agree
    (`mvp_agent_gate.rebuild`). When a case's policy is the client's, the result
    must equal the corpus's fixed expected output. When it is not, the result
@@ -56,32 +59,29 @@ CLIENT_COST = 6
 MUTANT_EDIT = ("[ remaining requested prim - requested 0 ]",
                "[ remaining requested prim - requested 0 prim + 0 ]")
 MUTANT_IMPACT = ({"allocate-one", "reserve"}, {"allocate-from", "allocate-batch"})
+# Callers name `allocate-one`, so only its own digest moves.
+MUTANT_EDITED = {"allocate-one"}
 
 
-def program_text(policy: str) -> str:
-    return host.SOURCE.read_text(encoding="utf-8") + "\n" + CLIENTS[policy].read_text(encoding="utf-8")
-
-
-def compile_program(name: str, text: str, workspace: Path) -> dict[str, Any]:
+def compile_program(name: str, source: Path, root: Path, workspace: Path,
+                    entry: str = ENTRY) -> dict[str, Any]:
     """The toolchain's own view of one program: digests, types and calls."""
     scratch = workspace / name
     scratch.mkdir()
-    source_name = "inventory-client.firth"
-    (scratch / source_name).write_text(text, encoding="utf-8")
+    envelope = gate.load_sources(name, source, root, scratch)
     elaboration = gate.adapter(
         [str(gate.LEAN_BIN / "firthElaborate")],
-        {"request_id": name, "source_path": source_name, "source_text": text,
+        {"request_id": name, **envelope,
          "language_version": gate.LANGUAGE_VERSION, "gamma_version": gate.GAMMA_VERSION},
         scratch, f"{name} elaborate")
     gate.expect_status(elaboration, "success", f"{name} elaborate")
     compiled = gate.adapter(
         [str(gate.LEAN_BIN / "firthCompile")],
-        {"request_id": name, "entry": ENTRY,
+        {"request_id": name, "entry": entry,
          "checked_words": elaboration["checked_words"],
          "erased_word_types": elaboration["erased_word_types"],
          "gamma_version": gate.GAMMA_VERSION, "target_version": gate.TARGET_VERSION,
-         "source": {"source_path": source_name, "source_text": text,
-                    "language_version": gate.LANGUAGE_VERSION}},
+         "source": {**envelope, "language_version": gate.LANGUAGE_VERSION}},
         scratch, f"{name} compile")
     gate.expect_status(compiled, "success", f"{name} compile")
     words = [word["name"] for word in elaboration["checked_words"]]
@@ -96,19 +96,33 @@ def compile_program(name: str, text: str, workspace: Path) -> dict[str, Any]:
     return {"digests": compiled["word_digests"], "types": types, "calls": calls}
 
 
-def mutant_text() -> str:
-    """The after program with an allocator word edited as well.
+def mutant_program(workspace: Path) -> tuple[Path, Path]:
+    """The after program with an allocator word edited as well, as a source
+    root holding the edited allocator and the after client.
 
     Both programs share `allocator.firth`, so on its own the comparison above
     cannot see an allocator edit: this change touches only the client, and
     any allocator change is reviewed and gated as its own change. The mutant
-    shows the check is not vacuous: it adds a no-op to `allocate-one`'s
-    fulfilled branch, and the check must report that word and its callers.
+    shows the checks are not vacuous: it adds a no-op to `allocate-one`'s
+    fulfilled branch, and they must report that word and its callers.
     """
-    text = program_text("all-or-nothing")
+    root = workspace / "mutant-root"
+    (root / "policy-change").mkdir(parents=True)
+    text = host.SOURCE.read_text(encoding="utf-8")
     if MUTANT_EDIT[0] not in text:
         raise SystemExit(f"mutant: {MUTANT_EDIT[0]!r} is no longer in allocate-one; update MUTANT_EDIT")
-    return text.replace(*MUTANT_EDIT, 1)
+    (root / host.SOURCE.name).write_text(text.replace(*MUTANT_EDIT, 1), encoding="utf-8")
+    client = root / "policy-change" / CLIENTS["all-or-nothing"].name
+    client.write_text(CLIENTS["all-or-nothing"].read_text(encoding="utf-8"), encoding="utf-8")
+    return client, root
+
+
+def standalone_differences(alone: dict[str, Any], program: dict[str, Any]) -> list[str]:
+    """The allocator words whose digest or type in `program` is not the one
+    they have when `allocator.firth` is compiled alone."""
+    return sorted(name for name in alone["digests"]
+                  if program["digests"].get(name) != alone["digests"][name]
+                  or program["types"].get(name) != alone["types"][name])
 
 
 def calls_in(code: list[dict[str, Any]]) -> set[str]:
@@ -163,7 +177,7 @@ def run_client(policy: str, program: Path, index: int, case: dict[str, Any]) -> 
     with tempfile.TemporaryDirectory(prefix="firth-policy-change-") as directory:
         observation = gate.rebuild(
             {"name": f"{policy}-{index}", "entry": ENTRY, "source": str(program),
-             "source_path": program.name},
+             "source_path": program.name, "source_root": str(host.HERE)},
             Path(directory), stack=[available, ids, quantities], fuel=host.FUEL)
     stack = [value["literal"]["value"] for value in observation["stack"]]
     actual = host.host_encode(case["input"]["requests"], stack)
@@ -191,12 +205,12 @@ def main() -> int:
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--json", type=Path, help="write the full report here")
     args = parser.parse_args()
-    gate.build_toolchain()
+    host.build_toolchain()
     cases = json.loads((host.ROOT / "specs/inventory-allocation-cases.json").read_text(encoding="utf-8"))["cases"]
     failed = False
     with tempfile.TemporaryDirectory(prefix="firth-policy-change-") as directory:
         workspace = Path(directory)
-        before, after = (compile_program(f"compile-{policy}", program_text(policy), workspace)
+        before, after = (compile_program(f"compile-{policy}", CLIENTS[policy], host.HERE, workspace)
                          for policy in CLIENTS)
         impact = change_impact(before, after)
         print(f"changed words: {impact['changed']}; dependents: {impact['dependents']}; "
@@ -204,16 +218,27 @@ def main() -> int:
         if set(impact["changed"]) != CHANGED or impact["dependents"]:
             print("fail: the change reaches beyond the client word")
             failed = True
-        detected = change_impact(before, compile_program(
-            "compile-mutant", mutant_text(), workspace))
+        mutant = compile_program("compile-mutant", *mutant_program(workspace), workspace)
+        detected = change_impact(before, mutant)
         print(f"mutant: changed {detected['changed']}; dependents {detected['dependents']}")
         if (set(detected["changed"]), set(detected["dependents"])) != MUTANT_IMPACT:
             print("fail: the impact check missed an allocator edit")
             failed = True
-        programs = {}
-        for policy in CLIENTS:
-            programs[policy] = workspace / f"{policy}.firth"
-            programs[policy].write_text(program_text(policy), encoding="utf-8")
+        alone = compile_program("compile-allocator", host.SOURCE, host.HERE, workspace,
+                                entry="allocate-batch")
+        for policy, program in zip(CLIENTS, (before, after), strict=True):
+            differing = standalone_differences(alone, program)
+            print(f"{policy}: {len(alone['digests']) - len(differing)} of {len(alone['digests'])} "
+                  "allocator words as compiled alone")
+            if differing:
+                print(f"fail: {policy} does not run the allocator's own words: {differing}")
+                failed = True
+        mutated = standalone_differences(alone, mutant)
+        print(f"mutant: allocator words differing from the allocator alone: {mutated}")
+        if set(mutated) != MUTANT_EDITED:
+            print("fail: the standalone check missed an allocator edit")
+            failed = True
+        programs = CLIENTS
         runs = [(policy, index, case) for index, case in enumerate(cases)
                 if isinstance(host.host_decode(case["input"]), list) for policy in CLIENTS]
         with ThreadPoolExecutor(max_workers=args.jobs) as pool:

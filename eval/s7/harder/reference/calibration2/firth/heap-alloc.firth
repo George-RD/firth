@@ -1,0 +1,166 @@
+\ Best-fit allocator. The free blocks are two sequences fs (first cell) and
+\ fl (length), sorted by first cell and never touching. Per operation the
+\ allocation table keeps os (first cell, -1 when not a live allocation) and
+\ ol (length); res holds the results so far.
+
+: max2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim > [ a ] [ b ] if };
+
+\ s without the element at index i (k and out as in a copy loop).
+: copy-skip
+  (forall ρ; ρ s:Seq Int^many out:Seq Int^many k:Int^many skip:Int^many -- ρ r:Seq Int^many)
+  locals { s out k skip }
+  { k s prim seq-int.len prim <
+    [ s
+      out k skip prim = [ ] [ s k prim seq-int.at prim seq-int.push ] if
+      k 1 prim + skip copy-skip ]
+    [ out ] if };
+
+: remove-at
+  (forall ρ; ρ s:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { s i }
+  { s prim seq-int.empty 0 i copy-skip };
+
+\ Index of the smallest block of at least n cells (first one on ties), or -1.
+: best-from
+  (forall ρ; ρ fl:Seq Int^many n:Int^many k:Int^many bi:Int^many bl:Int^many -- ρ r:Int^many)
+  locals { fl n k bi bl }
+  { k fl prim seq-int.len prim <
+    [ fl n k 1 prim +
+      fl k prim seq-int.at n prim >=
+      bi 0 prim < fl k prim seq-int.at bl prim < prim or prim and
+      [ k fl k prim seq-int.at ] [ bi bl ] if
+      best-from ]
+    [ bi ] if };
+
+\ The free blocks after taking n cells from the start of block bi.
+: take
+  (forall ρ; ρ fs:Seq Int^many fl:Seq Int^many bi:Int^many n:Int^many -- ρ rfs:Seq Int^many rfl:Seq Int^many)
+  locals { fs fl bi n }
+  { fl bi prim seq-int.at n prim =
+    [ fs bi remove-at fl bi remove-at ]
+    [ fs bi fs bi prim seq-int.at n prim + prim seq-int.set
+      fl bi fl bi prim seq-int.at n prim - prim seq-int.set ] if };
+
+\ Number of blocks from k on that start before s.
+: count-lt
+  (forall ρ; ρ fs:Seq Int^many s:Int^many k:Int^many -- ρ r:Int^many)
+  locals { fs s k }
+  { k fs prim seq-int.len prim <
+    [ fs k prim seq-int.at s prim <
+      [ fs s k 1 prim + count-lt ]
+      [ k ] if ]
+    [ k ] if };
+
+: push-pair
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many s:Int^many l:Int^many -- ρ ra:Seq Int^many rb:Seq Int^many)
+  locals { a b s l }
+  { a s prim seq-int.push b l prim seq-int.push };
+
+\ The pair (s, l) appended when k = p.
+: maybe-new
+  (forall ρ; ρ ns:Seq Int^many nl:Seq Int^many s:Int^many l:Int^many k:Int^many p:Int^many -- ρ rs:Seq Int^many rl:Seq Int^many)
+  locals { ns nl s l k p }
+  { k p prim =
+    [ ns nl s l push-pair ]
+    [ ns nl ] if };
+
+\ Copies blocks from k on into ns, nl, putting (s, l) in at index p.
+: ins-from
+  (forall ρ; ρ fs:Seq Int^many fl:Seq Int^many s:Int^many l:Int^many ns:Seq Int^many nl:Seq Int^many k:Int^many p:Int^many -- ρ rs:Seq Int^many rl:Seq Int^many)
+  locals { fs fl s l ns nl k p }
+  { k fs prim seq-int.len prim <
+    [ fs fl s l
+      ns nl s l k p maybe-new
+      fs k prim seq-int.at fl k prim seq-int.at push-pair
+      k 1 prim + p ins-from ]
+    [ ns nl s l k p maybe-new ] if };
+
+\ True when the last block of (ns, nl) ends exactly at s.
+: adjacent?
+  (forall ρ; ρ ns:Seq Int^many nl:Seq Int^many s:Int^many -- ρ r:Bool^many)
+  locals { ns nl s }
+  { nl prim seq-int.len 0 prim =
+    [ false ]
+    [ ns nl prim seq-int.len 1 prim - prim seq-int.at
+      nl nl prim seq-int.len 1 prim - prim seq-int.at prim + s prim = ] if };
+
+\ Merges touching neighbours of (fs, fl) from k on into ns, nl.
+: coalesce-from
+  (forall ρ; ρ fs:Seq Int^many fl:Seq Int^many ns:Seq Int^many nl:Seq Int^many k:Int^many -- ρ rs:Seq Int^many rl:Seq Int^many)
+  locals { fs fl ns nl k }
+  { k fs prim seq-int.len prim <
+    [ fs fl
+      ns nl fs k prim seq-int.at adjacent?
+      [ ns
+        nl nl prim seq-int.len 1 prim -
+        nl nl prim seq-int.len 1 prim - prim seq-int.at fl k prim seq-int.at prim +
+        prim seq-int.set ]
+      [ ns fs k prim seq-int.at prim seq-int.push
+        nl fl k prim seq-int.at prim seq-int.push ] if
+      k 1 prim + coalesce-from ]
+    [ ns nl ] if };
+
+\ Gives the block (s, l) back to the free blocks.
+: release
+  (forall ρ; ρ fs:Seq Int^many fl:Seq Int^many s:Int^many l:Int^many -- ρ rs:Seq Int^many rl:Seq Int^many)
+  locals { fs fl s l }
+  { fs fl s l prim seq-int.empty prim seq-int.empty 0 fs s 0 count-lt ins-from
+    locals { ms ml }
+    { ms ml prim seq-int.empty prim seq-int.empty 0 coalesce-from } };
+
+\ True when v names an earlier operation that is a live allocation.
+: live?
+  (forall ρ; ρ os:Seq Int^many v:Int^many -- ρ r:Bool^many)
+  locals { os v }
+  { v 0 prim >=
+    [ v os prim seq-int.len prim <
+      [ os v prim seq-int.at 0 prim >= ]
+      [ false ] if ]
+    [ false ] if };
+
+\ One operation: allocate v cells (kind 0) or free operation v (kind 1).
+: op
+  (forall ρ; ρ fs:Seq Int^many fl:Seq Int^many os:Seq Int^many ol:Seq Int^many res:Seq Int^many kind:Int^many v:Int^many -- ρ rfs:Seq Int^many rfl:Seq Int^many ros:Seq Int^many rol:Seq Int^many rres:Seq Int^many)
+  locals { fs fl os ol res kind v }
+  { kind 0 prim =
+    [ fl v 0 -1 0 best-from
+      locals { bi }
+      { bi 0 prim <
+        [ fs fl os -1 prim seq-int.push ol 0 prim seq-int.push res -1 prim seq-int.push ]
+        [ fs fl bi v take
+          os fs bi prim seq-int.at prim seq-int.push
+          ol v prim seq-int.push
+          res fs bi prim seq-int.at prim seq-int.push ] if } ]
+    [ os v live?
+      [ fs fl os v prim seq-int.at ol v prim seq-int.at release
+        os v -1 prim seq-int.set -1 prim seq-int.push
+        ol 0 prim seq-int.push
+        res 0 prim seq-int.push ]
+      [ fs fl os -1 prim seq-int.push ol 0 prim seq-int.push res -1 prim seq-int.push ] if ] if };
+
+\ Largest of fl.
+: largest-from
+  (forall ρ; ρ fl:Seq Int^many k:Int^many cur:Int^many -- ρ r:Int^many)
+  locals { fl k cur }
+  { k fl prim seq-int.len prim <
+    [ fl k 1 prim + cur fl k prim seq-int.at max2 largest-from ]
+    [ cur ] if };
+
+: run
+  (forall ρ; ρ kinds:Seq Int^many vals:Seq Int^many fs:Seq Int^many fl:Seq Int^many os:Seq Int^many ol:Seq Int^many res:Seq Int^many i:Int^many -- ρ results:Seq Int^many blocks:Int^many largest:Int^many)
+  locals { kinds vals fs fl os ol res i }
+  { i kinds prim seq-int.len prim <
+    [ kinds vals
+      fs fl os ol res kinds i prim seq-int.at vals i prim seq-int.at op
+      i 1 prim + run ]
+    [ res fs prim seq-int.len fl 0 0 largest-from ] if };
+
+: main
+  (forall ρ; ρ size:Int^many kinds:Seq Int^many vals:Seq Int^many -- ρ results:Seq Int^many blocks:Int^many largest:Int^many)
+  locals { size kinds vals }
+  { kinds vals
+    prim seq-int.empty 0 prim seq-int.push
+    prim seq-int.empty size prim seq-int.push
+    prim seq-int.empty prim seq-int.empty prim seq-int.empty 0 run };

@@ -21,9 +21,11 @@ itself a code model. What this half proves is byte-level drift detection, not
 authorship.
 
 Contract. The manifest's declared contract (language and Gamma versions, the
-four adapters with their transports and schemas, and the `[comparison]` table)
+four declared adapters with their transports and schemas, and the `[comparison]` table)
 must equal the contract this gate implements, so a manifest cannot describe a
-comparison the code does not perform.
+comparison the code does not perform. A fifth adapter, `firthTargetRun` (the
+Lean target semantics), is not part of the declared contract: it is run on
+every request the VM runs and must agree exactly (`compare_target_semantics`).
 
 Rebuild. Each manifest-listed application is then rebuilt in a scratch
 workspace that holds only that application's source. The four pinned adapters
@@ -33,8 +35,10 @@ are compared, and the two traces are compared event by event after projecting
 both onto kernel-charged steps (`compare_traces`). A trace whose intermediate
 stacks hold quotations is labelled `unsupported-quotation-values` rather than
 compared or accepted; the residual programs, words and instruction pointers
-of trace events are not compared. The portable profile refuses effectful world
-observations.
+of trace events are not compared. The VM's response is also compared with the
+Lean target semantics on the same request: status, stack, cost, word-entry
+charge, trap and subcode, with no tolerance. The portable profile refuses
+effectful world observations.
 
 The gate is deterministic: no clock, no randomness, no network, and a fixed
 fuel budget. CI runs it directly, and every failure path returns a non-zero
@@ -115,7 +119,7 @@ TRACE_PREFIX_AGREED = "agreed-prefix"
 BUILD_TIMEOUT_SECONDS = 900
 ADAPTER_TIMEOUT_SECONDS = 60
 
-LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun")
+LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun", "firthTargetRun", "firthSources")
 # The primitives the portable elaborator, compiler and VM all execute
 # (`surfacePrimitives` in src/interpreter/Firth/Interpreter.lean).
 PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=", "<=", ">", ">=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set")
@@ -354,12 +358,23 @@ def verify_provenance(data: dict[str, Any]) -> list[dict[str, str]]:
                 f"that is not the checked-in {entry['source_path']}"
             )
         verify_transcript(transcript, entry, inputs)
+        # The directory the source's imports resolve under, when not its own.
+        source_root: dict[str, str] = {}
+        if "source_root" in entry:
+            value = entry["source_root"]
+            if not isinstance(value, str) or not value or Path(value).is_absolute():
+                fail(f"{field}.source_root: expected a non-empty relative path")
+            root = (ROOT / value).resolve()
+            if not root.is_relative_to(ROOT) or not root.is_dir() or not source.is_relative_to(root):
+                fail(f"{field}.source_root: expected a repository directory holding the source")
+            source_root["source_root"] = str(root)
         verified.append(
             {
                 "name": name,
                 "entry": entry.get("entry", name),
                 "source_path": entry["source_path"],
                 "source": str(source),
+                **source_root,
             }
         )
     return verified
@@ -388,7 +403,7 @@ def run(command: list[str], *, cwd: Path, stdin: str | None, timeout: int) -> st
 
 
 def build_toolchain() -> None:
-    """Builds the four pinned adapters.
+    """Builds the pinned adapters and the Lean target runner.
 
     The gate refuses to run against a stale binary, so this is not optional.
     Both builds are incremental; a warm tree costs seconds.
@@ -785,6 +800,14 @@ def checked_dictionary(elaboration: dict[str, Any]) -> dict[str, dict[str, Any]]
     return dictionary
 
 
+def firth_type(item: dict[str, Any]) -> str:
+    """An erased boundary item as a stack effect writes its type."""
+    if item.get("kind") == "base" and isinstance(item.get("name"), str):
+        usage = item.get("usage")
+        return item["name"] + ("" if usage == "many" else f"^{usage}")
+    return "a quotation" if item.get("kind") == "quotation" else json.dumps(item, sort_keys=True)
+
+
 def validate_initial_stack(elaboration: dict[str, Any], entry: str,
                            stack: list[dict[str, Any]]) -> None:
     """Check external inputs against the selected word's erased boundary."""
@@ -804,15 +827,109 @@ def validate_initial_stack(elaboration: dict[str, Any], entry: str,
             literal["type"] = "seq-bool"
         actual = {"int": "Int", "bool": "Bool", **SEQUENCE_TYPES}[literal["type"]]
         if expected != {"kind": "base", "name": actual, "usage": "many"}:
-            fail(f"entry {entry}: initial stack type mismatch; expected {expected}, got {actual}")
+            fail(f"entry {entry}: initial stack type mismatch; the input is declared as "
+                 f"`{firth_type(expected)}`, but the case gives `{actual}`")
+
+
+def _canonical(value: Any) -> str:
+    """Type-exact text of a JSON value, so `False` never equals `0`."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def compare_target_semantics(vm: dict[str, Any], semantics: dict[str, Any], name: str) -> None:
+    """Require the VM and the Lean target semantics to agree exactly.
+
+    `semantics` is the `firthTargetRun` response to the request the VM ran.
+    Compared, in this order, with the first difference named: the status, the
+    stack (bottom to top, value by value), the cost the VM reports (`steps`,
+    `total`, `kernel`), the word-entry charge the VM's report implies
+    (`total - steps`, since every charge is one unit) and the trap code and
+    subcode. The VM's response has no primitive count, so that field of the
+    semantics' split is checked only against its own total. A semantics run
+    that ended `unsupported` never agrees: the semantics gave the program no
+    meaning, which is a gap to report rather than a pass.
+    """
+    label = f"{name} target semantics"
+    if semantics.get("status") == "unsupported":
+        fail(f"{label}: unsupported by the Lean semantics (trap {semantics.get('trap')!r}); "
+             f"the VM reported status {vm.get('status')!r}, so there is no agreement to check")
+    if semantics.get("status") not in ("success", "trap"):
+        fail(f"{label}: status {semantics.get('status')!r} is neither success nor trap")
+    if vm.get("trap") == "fuel-exhausted" or semantics.get("trap") == "fuel-exhausted":
+        # `[comparison] fuel_exhaustion = "bounded-fuel-inconclusive"`, as in
+        # `compare`: an exhausted run says nothing, so it never agrees.
+        fail(f"{label}: a run exhausted its fuel (VM trap {vm.get('trap')!r}, "
+             f"Lean trap {semantics.get('trap')!r}), so the comparison is inconclusive")
+    if vm.get("status") != semantics.get("status"):
+        fail(f"{label}: status differs: VM {vm.get('status')!r}, Lean {semantics.get('status')!r}")
+    vm_stack, lean_stack = vm.get("stack"), semantics.get("stack")
+    if not isinstance(vm_stack, list) or not isinstance(lean_stack, list):
+        fail(f"{label}: stack is not an array on both sides")
+    for index in range(max(len(vm_stack), len(lean_stack))):
+        left = _canonical(vm_stack[index]) if index < len(vm_stack) else "<absent>"
+        right = _canonical(lean_stack[index]) if index < len(lean_stack) else "<absent>"
+        if left != right:
+            fail(f"{label}: stack[{index}] (bottom is 0) differs: VM {left}, Lean {right}")
+    vm_cost, lean_cost = vm.get("cost"), semantics.get("cost")
+    if not isinstance(vm_cost, dict) or not isinstance(lean_cost, dict):
+        fail(f"{label}: cost is not an object on both sides")
+    for key in ("steps", "total", "kernel"):
+        left, right = vm_cost.get(key), lean_cost.get(key)
+        if type(left) is not int or type(right) is not int:
+            fail(f"{label}: cost.{key} is not an integer on both sides: VM {left!r}, Lean {right!r}")
+        if left != right:
+            fail(f"{label}: cost.{key} differs: VM {left}, Lean {right}")
+    if lean_cost.get("instructions") != lean_cost["steps"]:
+        fail(f"{label}: Lean cost.instructions {lean_cost.get('instructions')!r} "
+             f"is not its cost.steps {lean_cost['steps']}")
+    if vm_cost["total"] - vm_cost["steps"] != lean_cost.get("word_entries"):
+        fail(f"{label}: cost.word_entries differs: VM implies "
+             f"{vm_cost['total'] - vm_cost['steps']}, Lean {lean_cost.get('word_entries')!r}")
+    primitives = lean_cost.get("primitives")
+    if type(primitives) is not int or not 0 <= primitives <= lean_cost["steps"]:
+        fail(f"{label}: Lean cost.primitives {lean_cost.get('primitives')!r} is not within its steps")
+    for key in ("trap", "trap_subcode"):
+        if key not in vm or key not in semantics:
+            fail(f"{label}: {key} is missing: VM {'has' if key in vm else 'lacks'} it, "
+                 f"Lean {'has' if key in semantics else 'lacks'} it")
+        if vm.get(key) != semantics.get(key) or type(vm.get(key)) is not type(semantics.get(key)):
+            fail(f"{label}: {key} differs: VM {vm.get(key)!r}, Lean {semantics.get(key)!r}")
+
+
+def load_sources(name: str, source: Path, root: Path, workspace: Path) -> dict[str, Any]:
+    """The program's root file and every file it imports, read by `firthSources`.
+
+    `root` is the source root: imports are resolved relative to each file and
+    may not leave it (dec.multi-file-imports). Returns the source part of an
+    elaborate request: `source_path` (relative to `root`), `source_text` and
+    `files`, the imported files in load order.
+    """
+    root, source = root.resolve(), source.resolve()
+    try:
+        relative = source.relative_to(root).as_posix()
+    except ValueError:
+        fail(f"{name}: {source} is not inside the source root {root}")
+    response = adapter([str(LEAN_BIN / "firthSources")],
+                       {"request_id": name, "source_root": str(root), "source_path": relative},
+                       workspace, f"{name} sources")
+    expect_status(response, "success", f"{name} sources")
+    files = response.get("files")
+    if response.get("source_path") != relative or not isinstance(response.get("source_text"), str) \
+            or not isinstance(files, list) or not all(
+                isinstance(file, dict) and set(file) == {"source_path", "source_text"}
+                and all(isinstance(value, str) for value in file.values()) for file in files):
+        fail(f"{name} sources: malformed response")
+    return {"source_path": relative, "source_text": response["source_text"], "files": files}
 
 
 def rebuild(entry: dict[str, Any], workspace: Path, *,
             stack: list[Any] | None = None, fuel: int = FUEL,
             expected_trap: str | None = None) -> dict[str, Any]:
-    """Rebuilds one application in a workspace holding only its source.
+    """Rebuilds one application in a workspace holding only its source files.
 
-    With `expected_trap`, both hosts must stop with that trap (see `compare`).
+    The source is `entry["source"]`; the files it imports are read from
+    `entry["source_root"]`, by default the source's directory. With
+    `expected_trap`, both hosts must stop with that trap (see `compare`).
     """
     name = entry["name"]
     if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
@@ -823,19 +940,31 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     entry_word = entry.get("entry", name)
     scratch = workspace / name
     scratch.mkdir()
-    source_name = Path(entry["source_path"]).name
-    scratch_source = scratch / source_name
-    shutil.copyfile(entry["source"], scratch_source)
-    if sorted(item.name for item in scratch.iterdir()) != [source_name]:
-        fail(f"{name}: the scratch workspace holds more than the application source")
+    source = Path(entry["source"])
+    loaded = load_sources(name, source, Path(entry.get("source_root") or source.parent), workspace)
+    files = loaded["files"]
+    # A source directly in its root keeps the name its entry gives it; one
+    # below it is named by its path under the root, which its imports resolve
+    # against, whether or not any imported file was found.
+    nested = files or "/" in loaded["source_path"]
+    source_name = loaded["source_path"] if nested else Path(entry["source_path"]).name
+    source_text = loaded["source_text"]
+    written = [source_name] + [file["source_path"] for file in files]
+    for path, text in zip(written, [source_text] + [file["source_text"] for file in files], strict=True):
+        (scratch / path).parent.mkdir(parents=True, exist_ok=True)
+        (scratch / path).write_text(text, encoding="utf-8")
+    held = sorted(item.relative_to(scratch).as_posix() for item in scratch.rglob("*") if item.is_file())
+    if held != sorted(written):
+        fail(f"{name}: the scratch workspace holds more than the application's source files")
 
-    source_text = scratch_source.read_text(encoding="utf-8")
+    source_envelope = {"source_path": source_name, "source_text": source_text}
+    if files:
+        source_envelope["files"] = files
     elaboration = adapter(
         [str(LEAN_BIN / "firthElaborate")],
         {
             "request_id": name,
-            "source_path": source_name,
-            "source_text": source_text,
+            **source_envelope,
             "language_version": LANGUAGE_VERSION,
             "gamma_version": GAMMA_VERSION,
         },
@@ -861,32 +990,40 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
             "erased_word_types": elaboration["erased_word_types"],
             "gamma_version": GAMMA_VERSION,
             "target_version": TARGET_VERSION,
-            "source": {"source_path": source_name, "source_text": source_text,
-                       "language_version": LANGUAGE_VERSION},
+            "source": {**source_envelope, "language_version": LANGUAGE_VERSION},
         },
         scratch,
         f"{name} compile",
     )
     expect_status(target_program, "success", f"{name} compile")
 
+    vm_request = {
+        "request_id": name,
+        "target_program": target_program["target_program"],
+        "initial_stack": initial_stack,
+        "image": {
+            "image_version": 1,
+            "gamma_version": TARGET_GAMMA_VERSION,
+        },
+        "gamma_version": GAMMA_VERSION,
+        "fuel": fuel,
+    }
     vm = adapter(
         [str(VM_BINARY), "vm-run"],
-        {
-            "request_id": name,
-            "target_program": target_program["target_program"],
-            "initial_stack": initial_stack,
-            "image": {
-                "image_version": 1,
-                "gamma_version": TARGET_GAMMA_VERSION,
-            },
-            "gamma_version": GAMMA_VERSION,
-            "fuel": fuel,
-        },
+        vm_request,
         scratch,
         f"{name} vm-run",
     )
     run_status = "success" if expected_trap is None else "trap"
     expect_status(vm, run_status, f"{name} vm-run")
+
+    semantics = adapter(
+        [str(LEAN_BIN / "firthTargetRun")],
+        vm_request,
+        scratch,
+        f"{name} target-run",
+    )
+    compare_target_semantics(vm, semantics, name)
 
     reference = adapter(
         [str(LEAN_BIN / "firthReferenceRun")],
@@ -912,6 +1049,8 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
         "entry": entry_word,
         "target_entry": target_program["target_program"]["entry"],
         "words": len(target_program["target_program"]["words"]),
+        "image": [{"name": word["name"], "body_digest": word["body_digest"]}
+                  for word in target_program["target_program"]["words"]],
         "stack": vm["stack"],
         "cost": vm["cost"]["total"],
         "kernel_cost": vm["cost"]["kernel"],

@@ -1,0 +1,181 @@
+\ Go on a padded board. Board cells: 0 empty, 1 black, 2 white, 4 wall;
+\ 3 marks a cell already reached by a flood fill. The board has side
+\ w = size + 2, so the four neighbours of p are p + 1, p - 1, p + w, p - w.
+
+\ Reach neighbour n: a cell of colour c joins the queue and is marked 3,
+\ any other cell kind v is noted in seen (seen[v] = 1).
+: visit
+  (forall ρ; ρ board:Seq Int^many q:Seq Int^many seen:Seq Int^many c:Int^many n:Int^many -- ρ rb:Seq Int^many rq:Seq Int^many rs:Seq Int^many)
+  locals { board q seen c n }
+  { board n prim seq-int.at c prim =
+    [ board n 3 prim seq-int.set  q n prim seq-int.push  seen ]
+    [ board q seen  board n prim seq-int.at 1 prim seq-int.set ] if };
+
+\ Breadth first fill over cells of colour c. head is the next queue entry.
+\ For a stone colour it stops as soon as a liberty (seen[0]) is known.
+: flood
+  (forall ρ; ρ board:Seq Int^many q:Seq Int^many seen:Seq Int^many head:Int^many c:Int^many w:Int^many -- ρ rb:Seq Int^many rq:Seq Int^many rs:Seq Int^many)
+  locals { board q seen head c w }
+  { head q prim seq-int.len prim >=
+    [ board q seen ]
+    [ c 0 prim = prim not  seen 0 prim seq-int.at 1 prim =  prim and
+      [ board q seen ]
+      [ q head prim seq-int.at
+        locals { p }
+        { board q seen c p 1 prim + visit
+          c p 1 prim - visit
+          c p w prim + visit
+          c p w prim - visit
+          head 1 prim + c w flood } ] if ] if };
+
+\ Fill the region of colour c containing s.
+: flood-start
+  (forall ρ; ρ board:Seq Int^many s:Int^many c:Int^many w:Int^many -- ρ rb:Seq Int^many rq:Seq Int^many rs:Seq Int^many)
+  locals { board s c w }
+  { board s 3 prim seq-int.set
+    prim seq-int.empty s prim seq-int.push
+    { 0 0 0 0 0 }
+    0 c w flood };
+
+\ Empty the cells listed in q from index i.
+: erase
+  (forall ρ; ρ board:Seq Int^many q:Seq Int^many i:Int^many -- ρ rb:Seq Int^many)
+  locals { board q i }
+  { i q prim seq-int.len prim <
+    [ board q i prim seq-int.at 0 prim seq-int.set  q i 1 prim + erase ]
+    [ board ] if };
+
+\ If neighbour n holds an opponent group without liberties, remove it.
+: try-capture
+  (forall ρ; ρ b:Seq Int^many cap:Int^many opp:Int^many n:Int^many w:Int^many -- ρ rb:Seq Int^many rcap:Int^many)
+  locals { b cap opp n w }
+  { b n prim seq-int.at opp prim =
+    [ b n opp w flood-start
+      locals { fb q seen }
+      { seen 0 prim seq-int.at 0 prim =
+        [ b q 0 erase  cap q prim seq-int.len prim + ]
+        [ b cap ] if } ]
+    [ b cap ] if };
+
+: capture-all
+  (forall ρ; ρ b:Seq Int^many opp:Int^many p:Int^many w:Int^many -- ρ rb:Seq Int^many rcap:Int^many)
+  locals { b opp p w }
+  { b 0 opp p 1 prim + w try-capture
+    opp p 1 prim - w try-capture
+    opp p w prim + w try-capture
+    opp p w prim - w try-capture };
+
+: same?
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many i:Int^many -- ρ r:Bool^many)
+  locals { a b i }
+  { i a prim seq-int.len prim >=
+    [ true ]
+    [ a i prim seq-int.at b i prim seq-int.at prim =
+      [ a b i 1 prim + same? ]
+      [ false ] if ] if };
+
+\ After captures: suicide and ko tests. Returns ok, board, captured.
+: finish-move
+  (forall ρ; ρ b2:Seq Int^many cap:Int^many before:Seq Int^many col:Int^many p:Int^many w:Int^many -- ρ ok:Int^many nb:Seq Int^many rcap:Int^many)
+  locals { b2 cap before col p w }
+  { b2 p col w flood-start
+    locals { fb q seen }
+    { seen 0 prim seq-int.at 0 prim =
+      [ 0 b2 0 ]
+      [ cap 0 prim >
+        [ b2 before 0 same?
+          [ 0 b2 0 ]
+          [ 1 b2 cap ] if ]
+        [ 1 b2 cap ] if ] if } };
+
+: try-move
+  (forall ρ; ρ b:Seq Int^many before:Seq Int^many col:Int^many p:Int^many w:Int^many -- ρ ok:Int^many nb:Seq Int^many cap:Int^many)
+  locals { b before col p w }
+  { b p prim seq-int.at 0 prim =
+    [ b p col prim seq-int.set  3 col prim - p w capture-all
+      before col p w finish-move ]
+    [ 0 b 0 ] if };
+
+\ ------------------------------------------------------------ scoring
+
+: stone-val
+  (forall ρ; ρ v:Int^many -- ρ d:Int^many)
+  locals { v }
+  { v 1 prim =
+    [ 1 ]
+    [ v 2 prim = [ -1 ] [ 0 ] if ] if };
+
+\ Walk the cells; stones count for their colour, an empty region counts
+\ for the colour that is its only neighbour. Visited regions are marked 3.
+: score-loop
+  (forall ρ; ρ sb:Seq Int^many i:Int^many lim:Int^many w:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { sb i lim w acc }
+  { i lim prim >=
+    [ acc ]
+    [ sb i prim seq-int.at
+      locals { v }
+      { v 0 prim =
+        [ sb i 0 w flood-start
+          locals { fb q seen }
+          { fb i 1 prim + lim w
+            acc q prim seq-int.len
+            seen 1 prim seq-int.at seen 2 prim seq-int.at prim -
+            prim * prim +
+            score-loop } ]
+        [ sb i 1 prim + lim w acc v stone-val prim + score-loop ] if } ] if };
+
+\ ------------------------------------------------------------ board i/o
+
+: pad-loop
+  (forall ρ; ρ out:Seq Int^many i:Int^many n:Int^many w:Int^many -- ρ r:Seq Int^many)
+  locals { out i n w }
+  { i n prim >=
+    [ out ]
+    [ out
+      i w prim div 0 prim =
+      i w prim div w 1 prim - prim = prim or
+      i w prim mod 0 prim = prim or
+      i w prim mod w 1 prim - prim = prim or
+      [ 4 ] [ 0 ] if
+      prim seq-int.push
+      i 1 prim + n w pad-loop ] if };
+
+: unpad-loop
+  (forall ρ; ρ b:Seq Int^many out:Seq Int^many i:Int^many n:Int^many size:Int^many w:Int^many -- ρ r:Seq Int^many)
+  locals { b out i n size w }
+  { i n prim >=
+    [ out ]
+    [ b  out
+      b i size prim div 1 prim + w prim *  i size prim mod prim + 1 prim +
+      prim seq-int.at prim seq-int.push
+      i 1 prim + n size w unpad-loop ] if };
+
+\ ------------------------------------------------------------ the game
+
+: play
+  (forall ρ; ρ moves:Seq Int^many b:Seq Int^many before:Seq Int^many col:Int^many passes:Int^many bt:Int^many wt:Int^many ill:Int^many i:Int^many w:Int^many size:Int^many -- ρ board:Seq Int^many rbt:Int^many rwt:Int^many rill:Int^many read:Int^many score:Int^many)
+  locals { moves b before col passes bt wt ill i w size }
+  { passes 2 prim >=  i moves prim seq-int.len prim >=  prim or
+    [ b prim seq-int.empty 0 size size prim * size w unpad-loop
+      bt wt ill i
+      b 0 w w prim * w 0 score-loop ]
+    [ moves i prim seq-int.at
+      locals { m }
+      { m 0 prim <
+        [ moves b b 3 col prim - passes 1 prim + bt wt ill i 1 prim + w size play ]
+        [ b before col  m size prim div 1 prim + w prim *  m size prim mod prim + 1 prim +  w try-move
+          locals { ok nb cap }
+          { ok 0 prim =
+            [ moves b before col passes bt wt ill 1 prim + i 1 prim + w size play ]
+            [ moves nb b 3 col prim - 0
+              bt col 1 prim = [ cap ] [ 0 ] if prim +
+              wt col 2 prim = [ cap ] [ 0 ] if prim +
+              ill i 1 prim + w size play ] if } ] if } ] if };
+
+: main
+  (forall ρ; ρ size:Int^many moves:Seq Int^many -- ρ board:Seq Int^many bt:Int^many wt:Int^many ill:Int^many read:Int^many score:Int^many)
+  locals { size moves }
+  { moves
+    prim seq-int.empty 0 size 2 prim + size 2 prim + prim * size 2 prim + pad-loop
+    locals { b }
+    { b b 1 0 0 0 0 0 size 2 prim + size play } };

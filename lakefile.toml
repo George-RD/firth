@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["Firth", "FirthProofs", "FirthProofTests", "firthProofRecords", "firthAxiomAudit", "firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "firthAllTest"]
+defaultTargets = ["Firth", "FirthProofs", "FirthProofTests", "firthProofRecords", "firthAxiomAudit", "firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "firthImportsTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "firthSources", "inventoryHost", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -11,12 +11,12 @@ roots = ["Firth", "FirthReferenceRun", "FirthLogicTest"]
 [[lean_lib]]
 name = "FirthElaborator"
 srcDir = "src"
-roots = ["elaborator.Firth.Parser", "elaborator.Firth.Names", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "elaborator.Firth.Account", "smt.Firth.SmtBoundary", "smt.Firth.SmtSolver", "elaborator.Firth.Refinement", "elaborator.Firth.Pipeline", "elaborator.FirthElaborator"]
+roots = ["elaborator.Firth.Parser", "elaborator.Firth.Names", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "elaborator.Firth.Account", "smt.Firth.SmtBoundary", "smt.Firth.SmtSolver", "elaborator.Firth.Refinement", "elaborator.Firth.Pipeline", "elaborator.Firth.Imports", "elaborator.FirthElaborator"]
 
 [[lean_lib]]
 name = "FirthCompiler"
 srcDir = "src"
-roots = ["compiler.Firth.Digest", "compiler.Firth.Target", "compiler.Firth.WordType", "compiler.Firth.Lowering", "compiler.Firth.Compile", "compiler.Firth.ExportLean", "compiler.Firth.ProofRecords", "compiler.Firth.AxiomAudit"]
+roots = ["compiler.Firth.Digest", "compiler.Firth.Target", "compiler.Firth.WordType", "compiler.Firth.Lowering", "compiler.Firth.LoweringFacts", "compiler.Firth.LoweringMutants", "compiler.Firth.TargetSemantics", "compiler.Firth.TargetSemanticsExamples", "compiler.Firth.TargetRun", "compiler.Firth.LoweringCorrect", "compiler.Firth.LoweringPrimitives", "compiler.Firth.LoweringSimulation", "compiler.Firth.LoweringSimulationMutants", "compiler.Firth.ContractTarget", "compiler.Firth.Compile", "compiler.Firth.ExportLean", "compiler.Firth.ProofRecords", "compiler.Firth.AxiomAudit"]
 
 [[lean_lib]]
 name = "FirthExports"
@@ -36,12 +36,17 @@ globs = ["prooftests.+"]
 [[lean_lib]]
 name = "FirthAgent"
 srcDir = "src"
-roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers", "agent.Firth.Agent.Validation", "agent.Firth.Agent.ElaboratorDiagnostics", "agent.Firth.Agent.ElaborateAdapter"]
+roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers", "agent.Firth.Agent.Validation", "agent.Firth.Agent.ElaboratorDiagnostics", "agent.Firth.Agent.ElaborateAdapter", "agent.Firth.Agent.Sources"]
 
 [[lean_lib]]
 name = "FirthAgentTests"
 srcDir = "src"
 roots = ["agent.Firth.Agent.DiagnosticEnvelopeTest", "agent.Firth.Agent.ValidationTest", "agent.Firth.Agent.ElaboratorDiagnosticsTest"]
+
+[[lean_exe]]
+name = "inventoryHost"
+root = "proofs.Inventory.HostMain"
+srcDir = "src"
 
 [[lean_exe]]
 name = "firthTest"
@@ -79,6 +84,16 @@ root = "agent.FirthElaborateCli"
 srcDir = "src"
 
 [[lean_exe]]
+name = "firthImportsTest"
+root = "compiler.FirthImportsTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthSources"
+root = "agent.FirthSourcesCli"
+srcDir = "src"
+
+[[lean_exe]]
 name = "firthCompilerTest"
 root = "compiler.FirthCompilerTest"
 srcDir = "src"
@@ -86,6 +101,11 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthCompile"
 root = "compiler.FirthCompileCli"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthTargetRun"
+root = "compiler.FirthTargetRunCli"
 srcDir = "src"
 
 [[lean_exe]]

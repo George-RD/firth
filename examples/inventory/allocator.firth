@@ -7,6 +7,10 @@
 \
 \ Result codes: 0 ok, 1 invalid-range, 2 duplicate-id.
 \ Reason codes: 0 fulfilled, 1 partial, 2 out-of-stock, 3 insufficient-stock.
+\
+\ Clients import this file and call `allocate-batch`, the one word it offers.
+
+export allocate-batch;
 
 \ True when every quantity from index i on is from 1 to 1,000,000.
 : quantities-in-range-from

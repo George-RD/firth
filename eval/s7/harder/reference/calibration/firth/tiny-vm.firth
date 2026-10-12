@@ -1,0 +1,52 @@
+\ Four-register machine interpreter.
+
+\ Runs the next instruction with registers rs (already updated), pc moved to npc.
+: go
+  (forall ρ; ρ code:Seq Int^many rs:Seq Int^many npc:Int^many steps:Int^many limit:Int^many -- ρ regs:Seq Int^many executed:Int^many status:Int^many)
+  locals { code rs npc steps limit }
+  { code rs npc steps 1 prim + limit run };
+
+\ Executes one instruction (op a b) at pc; steps already counts it.
+: exec
+  (forall ρ; ρ code:Seq Int^many rs:Seq Int^many pc:Int^many steps:Int^many limit:Int^many op:Int^many a:Int^many b:Int^many -- ρ regs:Seq Int^many executed:Int^many status:Int^many)
+  locals { code rs pc steps limit op a b }
+  { op 0 prim =
+    [ rs steps 1 prim + 0 ]
+    [ op 1 prim =
+      [ code rs a b prim seq-int.set pc 1 prim + steps limit go ]
+      [ op 2 prim =
+        [ code rs a rs a prim seq-int.at rs b prim seq-int.at prim + prim seq-int.set pc 1 prim + steps limit go ]
+        [ op 3 prim =
+          [ code rs a rs a prim seq-int.at rs b prim seq-int.at prim - prim seq-int.set pc 1 prim + steps limit go ]
+          [ op 4 prim =
+            [ code rs a rs a prim seq-int.at rs b prim seq-int.at prim * prim seq-int.set pc 1 prim + steps limit go ]
+            [ op 5 prim =
+              [ code rs a rs b prim seq-int.at prim seq-int.set pc 1 prim + steps limit go ]
+              [ op 6 prim =
+                [ code rs
+                  rs a prim seq-int.at 0 prim =
+                  [ pc 1 prim + ] [ b ] if
+                  steps limit go ]
+                [ code rs
+                  rs a prim seq-int.at 0 prim <
+                  [ b ] [ pc 1 prim + ] if
+                  steps limit go ] if ] if ] if ] if ] if ] if ] if };
+
+\ Checks the pc and limit, fetches the instruction at pc and executes it.
+: run
+  (forall ρ; ρ code:Seq Int^many rs:Seq Int^many pc:Int^many steps:Int^many limit:Int^many -- ρ regs:Seq Int^many executed:Int^many status:Int^many)
+  locals { code rs pc steps limit }
+  { pc 0 prim <  pc code prim seq-int.len 3 prim div prim >=  prim or
+    [ rs steps 1 ]
+    [ steps limit prim =
+      [ rs steps 2 ]
+      [ code rs pc steps limit
+        code pc 3 prim * prim seq-int.at
+        code pc 3 prim * 1 prim + prim seq-int.at
+        code pc 3 prim * 2 prim + prim seq-int.at
+        exec ] if ] if };
+
+: main
+  (forall ρ; ρ code:Seq Int^many regs:Seq Int^many limit:Int^many -- ρ regs-out:Seq Int^many executed:Int^many status:Int^many)
+  locals { code regs limit }
+  { code regs 0 0 limit run };

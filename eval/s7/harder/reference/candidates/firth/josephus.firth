@@ -1,0 +1,49 @@
+\ Josephus elimination.
+\ f is the position (counted from the circle's start) of the person we follow
+\ in a circle of size i. Growing the circle by one person gives
+\ f' = (f + k) mod (i + 1). While f + t k < i + t no step wraps, so t steps
+\ at once add t k to f; a wrapping step is taken singly.
+\ Survivor: start at size 1 with f = 0. The m-th removed person: at size
+\ s = n - m + 1 the next removed is at offset (k - 1) mod s, then grow to n.
+
+: min2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim < [ a ] [ b ] if };
+
+\ Advance (f, i) to circle size n.
+: adv
+  (forall ρ; ρ f:Int^many i:Int^many k:Int^many n:Int^many -- ρ r:Int^many)
+  locals { f i k n }
+  { i n prim >=
+    [ f ]
+    [ k 1 prim =
+      [ f n i prim - prim + ]
+      [ i f prim - 1 prim - k 1 prim - prim div  n i prim -  min2
+        locals { t }
+        { t 1 prim >=
+          [ f t k prim * prim +  i t prim +  k n adv ]
+          [ f k prim + i 1 prim + prim mod  i 1 prim +  k n adv ] if } ] if ] if };
+
+: survivor
+  (forall ρ; ρ n:Int^many k:Int^many -- ρ r:Int^many)
+  locals { n k } { 0 1 k n adv };
+
+: removed
+  (forall ρ; ρ n:Int^many k:Int^many m:Int^many -- ρ r:Int^many)
+  locals { n k m }
+  { n m prim - 1 prim +
+    locals { s } { k 1 prim - s prim mod  s  k n adv } };
+
+: loop
+  (forall ρ; ρ n:Seq Int^many k:Seq Int^many m:Seq Int^many j:Int^many sv:Seq Int^many rm:Seq Int^many -- ρ a:Seq Int^many b:Seq Int^many)
+  locals { n k m j sv rm }
+  { j n prim seq-int.len prim <
+    [ n k m j 1 prim +
+      sv n j prim seq-int.at k j prim seq-int.at survivor prim seq-int.push
+      rm n j prim seq-int.at k j prim seq-int.at m j prim seq-int.at removed prim seq-int.push
+      loop ]
+    [ sv rm ] if };
+
+: main
+  (forall ρ; ρ n:Seq Int^many k:Seq Int^many m:Seq Int^many -- ρ a:Seq Int^many b:Seq Int^many)
+  0 prim seq-int.empty prim seq-int.empty loop;
