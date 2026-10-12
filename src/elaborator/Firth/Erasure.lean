@@ -195,6 +195,11 @@ structure CallEdit where
   offset (the end of the text replaced when that is inside the edit), or
   `none` when it then checks. -/
   reached : Option (Nat × Nat) := none
+  /-- For an operation handed one value more than it takes, the local or
+  literal the edit removes, as written, and where it starts, as a line and
+  column: the one value written before the operation whose removal alone
+  lets the word check. -/
+  removed : Option (String × Nat × Nat) := none
   deriving Repr, BEq
 
 /-- For a word whose stack effect has no row and whose body runs short of
