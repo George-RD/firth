@@ -13,8 +13,9 @@ for path in glob.glob(f"{repo}/examples/**/*.firth", recursive=True) + glob.glob
     src = open(path).read()
     sources.setdefault(src, os.path.relpath(path, repo))
 def run(binary, src):
-    # A binary that crashes or prints no result must not count as a report,
-    # or two crashes would compare equal: stop instead.
+    # A binary that exits non-zero or prints no result must not count as a
+    # report, or two crashes would compare equal: stop instead. A refused
+    # program is a "failure" result with exit 0.
     done = subprocess.run([binary], input=json.dumps({"request_id": "c", "source_path": "a.firth",
         "source_text": src, "language_version": "0.1", "gamma_version": "0.8"}),
         capture_output=True, text=True)
@@ -22,7 +23,7 @@ def run(binary, src):
         o = json.loads(done.stdout)
     except ValueError:
         o = None
-    if not isinstance(o, dict) or o.get("status") not in ("success", "failure"):
+    if done.returncode != 0 or not isinstance(o, dict) or o.get("status") not in ("success", "failure"):
         raise SystemExit(f"{binary} gave no result (exit {done.returncode}): {done.stderr[:500]}")
     if o.get("status") == "success":
         return {"ok": True}
