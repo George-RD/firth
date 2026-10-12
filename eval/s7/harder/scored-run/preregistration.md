@@ -5,11 +5,12 @@ any scored task has been sent to a model. This file and `run-plan.md`
 next to it fix the run. Neither is changed after the pin below; anything
 learnt during the run is reported, not folded back in.
 
-**Not yet pinned.** The run is option (a) on the maintainer's open
-decision card, the scored head-to-head, which the card recommends. Under
-the maintainer's standing instruction to proceed on the recommended option,
-it goes ahead unless the maintainer answers otherwise. It starts only after
-all of the following:
+**Pinned on 11 October 2026 at main 627a0eb, in `runs/2026-10-11-scored/`;
+the conditions below are met ("Before the pin").** The run is option (a)
+on the maintainer's open decision card, the scored head-to-head, which the
+card recommends. Under the maintainer's standing instruction to proceed
+on the recommended option, it goes ahead unless the maintainer answers
+otherwise. It starts only after all of the following:
 - the project's coordinator confirms that the S7 inputs are settled and
   freezes them (`docs/getting-started.md`,
   `docs/firth-agent-guide.md`, `examples/programs/README.md`, `AGENTS.md`);
@@ -80,7 +81,8 @@ stands and the set is not edited or replaced
 
 **Sonnet and Haiku (sub-agents).** The tier's sub-agent protocol
 (`eval/s7/harder/README.md`, "Protocol").
-- `tier.py prompt` builds the prompts once, at the pin.
+- `tier.py prompt` builds the prompts once, at the pin. One sentence is
+  then appended to the Firth prompt ("Pre-pin amendment" below).
 - The author is started with this text, with the paths filled in:
 
   > You are the author in a programming evaluation. Use only two tools:
@@ -229,8 +231,11 @@ What each author sees besides its prompt is fixed here.
   reply and the feedback.
 
 Every comparison in this run is between Python and Firth for one subject,
-where both arms see the same context. The Firth-minus-Python difference is
-**not** compared across subjects. So the context is stated, not equalised.
+where both arms see the same context apart from the language itself. One
+difference follows from how answers run: Python authors have `min`, `max`
+and the rest of Python's builtins, while Firth authors in this run have no
+stdlib and must define every word they use ("Pre-pin amendment"). The
+Firth-minus-Python difference is **not** compared across subjects. So the context is stated, not equalised.
 
 Sub-agent authors are started from a session with no queued project
 message, and are not given the project's messages.
@@ -355,8 +360,14 @@ the run showed it catching a real error:
   with a wrong result, per task, from `kernel_cost` in each case of
   `results-N.json`. Passed cases and wrong-result cases are reported
   separately, with their total, so a cheap wrong answer cannot make an arm
-  look efficient. A refusal, a trap or a timeout has no measured cost,
-  and the report says so for those cases. It is measured, never a bound;
+  look efficient. A run out of steps (`trap fuel-exhausted`) has no
+  measured kernel cost: the budget is applied on both hosts and the error
+  does not say which ran out, and the VM spends it on target instructions
+  that cost no kernel step. Such runs are counted on their own line, as
+  having used up the 1,000,000-step budget, and never added to the
+  measured costs. Any other trap, a refusal or a timeout has no measured
+  cost either, and the report says so for those cases. It is measured,
+  never a bound;
 - a proved cost bound: none of the six tasks has a Lean cost contract, so
   the report says no proved bound applies. No guarantee is called proved
   in the report unless a Lean contract exists for it.
@@ -369,7 +380,14 @@ line in the error is one diagnostic, and each is sorted by its code,
 never by its message. The report counts diagnostics per row, and counts
 the refusal once under every row that at least one of its diagnostics
 falls in; a refusal whose diagnostics are all other refusal is an other
-refusal. The table:
+refusal. The kept error is what `harness.compact` wrote. When at least
+one diagnostic carries a message, it keeps only those (`harness.readable`),
+so a diagnostic without one is not in `results-1.json` and is not counted.
+When none carries a message, it keeps the first diagnostic's code as one
+`code:` line, then the first 300 characters of the raw error; that one
+code is counted, and the others are not. The report says so for each such
+refusal, and for any refusal whose error holds no `code:` line at all.
+The table:
 
 | Code | Row |
 | --- | --- |
@@ -427,11 +445,41 @@ scan output.
 Its permutation test and bootstrap are checked against a hand-worked
 example in its own test.
 
+## Pre-pin amendment
+
+Recorded before the pin, so it is part of the pre-registration, not a
+change after it.
+
+`docs/getting-started.md` (an S7 input) says a program imports
+`stdlib/core.firth` by a relative path. A scored answer cannot do that.
+`tier.run_firth` and `harness.check_one` write each answer to its own
+temporary file and check it there, in both rounds, so that file's
+directory is the source root. Measured on main at 627a0eb after a fresh
+build: an answer with `import "../../stdlib/core.firth"` is refused with
+`code: firth.name.import-path` ("is not an import path"; the path must stay
+inside the source root). The same word with the import and its call to
+`core.identity` removed runs, so the refusal is the import's.
+
+So, once `tier.py prompt` has built `prompt-firth.md` and before the pin,
+this sentence is appended to it, once, so every Firth author (Sonnet,
+Haiku and DeepSeek) reads the same text:
+
+> Imports are not available in this run: an `import` cannot reach
+> `stdlib/`, so define every word your answer uses in the answer itself.
+
+`tier.py` is not changed. `test_harder.py` pins the refusal through
+`tier.run_firth` (`stdlib_import_refused`, with a planted runner that
+accepts the import and one that refuses it with another code), checks that
+the word runs without the import, and checks that the pinned
+`prompt-firth.md` holds the sentence exactly once.
+
 ## Before the pin
 
-- [ ] No answer from the maintainer choosing otherwise than option (a).
-- [ ] Coordinator confirms the S7 inputs are settled and freezes them;
-  asked before the prompts are built.
+- [x] No answer from the maintainer choosing otherwise than option (a),
+  as of the pin (2026-10-11).
+- [x] Coordinator confirms the S7 inputs are settled and freezes them;
+  asked before the prompts are built. Confirmed on 2026-10-11 at main
+  627a0eb, frozen from the prompt build until authoring ends.
 - [x] `scored.py` merged with references, hidden tests, hand values,
   mutants and bounds checks covering order constraints (#229, #231).
 - [x] `context_seen.py` compares Sonnet and DeepSeek sample names whole
@@ -440,5 +488,7 @@ example in its own test.
   one end-to-end run (#232, #233, #234), and the listed-only round-2 rule
   shared by both paths (#235).
 - [x] The take rule checked on all 18 calibration samples (#237).
-- [ ] Prompts built at the pin and committed with `commit.txt`, this file
-  and `run-plan.md` in the run directory.
+- [x] Prompts built at the pin and committed with `commit.txt`, this file
+  and `run-plan.md` in the run directory: `runs/2026-10-11-scored/`,
+  built at main 627a0eb, with the no-imports sentence appended once to
+  `prompt-firth.md`.

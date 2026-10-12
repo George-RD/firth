@@ -800,6 +800,14 @@ def checked_dictionary(elaboration: dict[str, Any]) -> dict[str, dict[str, Any]]
     return dictionary
 
 
+def firth_type(item: dict[str, Any]) -> str:
+    """An erased boundary item as a stack effect writes its type."""
+    if item.get("kind") == "base" and isinstance(item.get("name"), str):
+        usage = item.get("usage")
+        return item["name"] + ("" if usage == "many" else f"^{usage}")
+    return "a quotation" if item.get("kind") == "quotation" else json.dumps(item, sort_keys=True)
+
+
 def validate_initial_stack(elaboration: dict[str, Any], entry: str,
                            stack: list[dict[str, Any]]) -> None:
     """Check external inputs against the selected word's erased boundary."""
@@ -819,7 +827,8 @@ def validate_initial_stack(elaboration: dict[str, Any], entry: str,
             literal["type"] = "seq-bool"
         actual = {"int": "Int", "bool": "Bool", **SEQUENCE_TYPES}[literal["type"]]
         if expected != {"kind": "base", "name": actual, "usage": "many"}:
-            fail(f"entry {entry}: initial stack type mismatch; expected {expected}, got {actual}")
+            fail(f"entry {entry}: initial stack type mismatch; the input is declared as "
+                 f"`{firth_type(expected)}`, but the case gives `{actual}`")
 
 
 def _canonical(value: Any) -> str:

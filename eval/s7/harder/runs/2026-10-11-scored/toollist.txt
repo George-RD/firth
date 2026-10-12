@@ -1,0 +1,39 @@
+2026-10-11T03:37:05.187Z sonnet-python-1 (kept): deferred_tools_delta 1 18005 7be49bff47d0; skill_listing 1 28255 88ea3cc09163; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 159677 1732d8c56891
+2026-10-11T03:41:29.499Z sonnet-firth-1 (kept): deferred_tools_delta 1 18005 7be49bff47d0; skill_listing 1 28255 88ea3cc09163; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 159677 1732d8c56891
+2026-10-11T04:13:10.317Z haiku-python-1 (kept): deferred_tools_delta 1 18005 7be49bff47d0; skill_listing 1 28255 88ea3cc09163; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 159677 1732d8c56891
+2026-10-11T04:16:50.947Z haiku-firth-1 (kept): deferred_tools_delta 1 18005 7be49bff47d0; skill_listing 1 28255 88ea3cc09163; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 159677 1732d8c56891
+2026-10-11T04:28:08.749Z sonnet-firth-2 (kept): deferred_tools_delta 1 18005 7be49bff47d0; skill_listing 1 28255 88ea3cc09163; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 159677 1732d8c56891
+2026-10-11T04:59:45.140Z sonnet-python-2 (kept): deferred_tools_delta 1 18005 7be49bff47d0; skill_listing 1 28255 88ea3cc09163; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 159677 1732d8c56891
+2026-10-11T05:27:22.676Z haiku-firth-2 (void): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T05:42:14.585Z haiku-python-2 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T05:46:15.919Z sonnet-python-3 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T05:48:24.471Z sonnet-firth-3 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T06:58:56.713Z haiku-python-3 (void): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T07:03:25.288Z haiku-firth-3 (void): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T07:15:25.190Z sonnet-firth-4 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T07:29:48.002Z sonnet-python-4 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T07:31:22.618Z haiku-firth-4 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T07:43:49.997Z haiku-python-4 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T07:47:29.395Z sonnet-python-5 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T07:49:10.726Z sonnet-firth-5 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T08:21:12.225Z haiku-python-5 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T08:24:26.751Z haiku-firth-5 (void): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T08:36:09.712Z sonnet-firth-6 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T09:10:26.361Z sonnet-python-6 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T09:12:40.260Z sonnet-python-7 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T09:15:26.648Z sonnet-firth-7 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T09:46:42.805Z sonnet-firth-8 (void): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T10:16:43.271Z sonnet-python-8 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T10:18:36.790Z haiku-python-6 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+2026-10-11T10:22:08.842Z sonnet-firth-9 (kept): deferred_tools_delta 1 17441 6c6f84274760; skill_listing 1 30300 2a41cf8750f2; prompt_snapshot 1 2917 cedba217ead0; prompt_snapshot 2 150068 ab80bc81ec1c
+
+deferred_tools_delta 1: 2 distinct versions
+  only in the first: ['CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'ListConnectors', 'ListMcpResourcesTool', 'PushNotification', 'ReadMcpResourceDirTool', 'ReadMcpResourceTool', 'SearchMcpRegistry', 'SuggestConnectors', 'SuggestPluginInstall', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskUpdate']
+  only in the second: []
+prompt_snapshot 1: 1 distinct versions
+prompt_snapshot 2: 2 distinct versions
+  only in the first: ['CONFIRMED', 'ListAgents', 'PLAUSIBLE', 'ReportFindings', 'ShowOnboardingRolePicker', 'SuggestSkills', 'category', 'channel', 'contextLabel', 'failure_scenario', 'findings', 'fixed', 'keywords', 'level', 'line', 'no_change_needed', 'outcome', 'proactive', 'q', 'short_summary', 'skipped', 'summary', 'trigger', 'user_asked', 'verdict']
+  only in the second: []
+skill_listing 1: 2 distinct versions
+  only in the first: []
+  only in the second: ['firth-ds:cairn-apply', 'firth-ds:cairn-archive', 'firth-ds:cairn-dev', 'firth-ds:cairn-explore', 'firth-ds:cairn-propose']

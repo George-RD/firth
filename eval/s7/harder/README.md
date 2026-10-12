@@ -72,8 +72,9 @@ in and reads back.
 
 ## Files
 
-- `calibration.py`, `calibration2.py` and `calibration3.py`: the pools, and
-  `scored.py`: the scored set. Each task's `ref` is its meaning, in plain
+- `calibration.py`, `calibration2.py` and `calibration3.py`: the pools,
+  `scored.py`: the scored set, and `candidates.py`: the candidates for the
+  next scored set (below, "The candidate set"). Each task's `ref` is its meaning, in plain
   Python written independently of any Firth code.
 - `reference/<pool>/firth/<id>.firth` and `reference/<pool>/python/<id>.py`:
   a Firth and a Python reference solution per task. The Python ones are
@@ -84,13 +85,22 @@ in and reads back.
   tier. It reuses the MVP harness's runners, comparison, sandbox and
   diagnostics. Scoring records the hashes of the task set and the scorer as
   they were imported, and refuses if they or the Firth tree change while it
-  runs. Python answers run in the harness's sandbox, which needs root.
+  runs. Each Firth answer runs as `answer.firth` in its own source root,
+  beside a copy of `stdlib/`. So `import "stdlib/core.firth";` works, the
+  Firth prompt shows the library, and the library's files are among the
+  hashes (since the scored run of 11 October 2026, whose answers ran alone
+  and could import nothing). Every task's input and output names are valid
+  in both Firth and Python (no `_`, no `-`), so both arms see the same
+  names. Python answers run in the harness's sandbox, which needs root.
   The sandbox's own scan for copies of hidden files knows only the MVP
   tier's, so before scoring Python `tier.py` scans what the sandbox would
   show for copies of this tier's hidden files, committed runs and
   `test_harder.py` (a file with the content of one, a directory named
   `eval/s7/harder`, or git storage holding any revision of them) and
   refuses if it finds one.
+- `author_tools.py`: the check that every sub-agent author had
+  exactly Read, Write and the hand-back, in one working directory (below,
+  "Author tool set"); `test_author_tools.py` checks it on planted logs.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown, and this tier's `take` for the check that each
@@ -139,6 +149,69 @@ tasks, so their kept solutions are the same under both rules, and all 18
 calibration samples, Firth and Python, keep the solutions this tier's rule
 takes (`test_harder.py`, `take_rule`). `audit.py` rebuilds each kept
 `solutions-<n>.json` by this tier's rule.
+
+### Author tool set (from the next tier)
+
+In the scored run of 11 October 2026 the sub-agent authors had whatever
+tools the driver's session had, including session-messaging tools (two
+Haiku authors called `send_message` and were voided), and that list changed
+partway through the run (`runs/2026-10-11-scored/results.md`). Its skill
+listing gained five `firth-ds:cairn-*` skills at the same point, probably
+because the driver's working directory moved to a `firth-ds` checkout; that
+cause is inferred, not shown. From the next tier on, every sub-agent
+author in both language arms gets the same fixed set: Read, Write and the
+hand-back (`todo.s7-author-tool-set`).
+
+1. **The agent type.** Every author is started as `s7-harder-author`
+   (`.claude/agents/s7-harder-author.md`: `tools: Read, Write`, no hooks,
+   no model), with the subject's model passed when it is started. The
+   harness adds `SubagentHandback` to the listed tools
+   (`runs/2026-10-11-tool-probe/notes.md`). No other agent type starts an
+   author. A session may not see an agent type added after it started (the
+   session that added this one saw it only some minutes later), so the
+   driver's session must start with this definition on its checkout. The
+   probe of 11 October 2026 shows an author of this type got exactly Read,
+   Write and `SubagentHandback` (`runs/2026-10-11-tool-probe/`).
+2. **The working directory.** Before the first author starts, the driver
+   sets its working directory to the pinned checkout and writes that path
+   in `run-notes.md`. Until the last author has handed back it does not
+   `cd` anywhere else (it uses absolute paths, `git -C` and subshells) and
+   opens no other checkout in that session. It also starts no sub-agent
+   other than the probe and the authors: the check below refuses any
+   sub-agent log that `agent-ids.txt` does not list. Each line of a
+   sub-agent's raw log records the working directory, so the check below
+   sees a move.
+3. **A probe first.** Still before the first sample, the driver starts one
+   author of that type that is not a sample, with a prompt asking it to
+   name its tools and write nothing else, and runs
+
+       python3 eval/s7/harder/author_tools.py --logs LOG_DIR --probe AGENT_ID --cwd DIR
+
+   where `LOG_DIR` is the session's `subagents/` log directory under
+   `~/.claude/projects/`. The run starts only if this prints `ok`. Its
+   output is committed as `tool-probe.txt` in the run directory: it shows
+   that the `tools:` line was honoured in the session the samples ran in.
+4. **A record per author.** After each author hands back, before it is
+   scored, the driver runs
+
+       python3 eval/s7/harder/author_tools.py --logs LOG_DIR --ids RUN/agent-ids.txt --cwd DIR
+
+   which prints, for every author so far, its agent type, model, working
+   directory and tool list, and refuses unless every author, voided or
+   kept, had exactly Read, Write and `SubagentHandback`, no deferred tool,
+   and only that working directory. `agent-ids.txt` lists the probe as the
+   row `probe <id>` and every author; a sub-agent log in `LOG_DIR` that the
+   list leaves out, or a name or id listed twice, also refuses the run, so
+   an author cannot go unchecked by being left off the list. The last output is committed as
+   `author-tools.txt`, the run's record of each author's tools. A refusal
+   stops the run before the next author starts; the next tier's
+   pre-registration says how a refused author counts.
+
+`test_author_tools.py` checks the check on hand-written logs, with planted
+logs it must refuse (an extra `send_message` tool, a deferred tool, no
+Write, the wrong agent type, no tool list, a moved working directory).
+The transcript audit (`audit.py`) still flags any call outside the allowed
+ones, as before.
 
 ## Calibration plan
 
@@ -675,6 +748,89 @@ order from another. In `checkers`, taking a jumped piece off at once
 cannot be told apart from taking it off at the end of the capture, since
 a jump never lands on a square a jumped piece stood on; the rule that the
 moving piece's own square is empty during the capture is tested.
+
+## The candidate set
+
+`candidates.py`: nine tasks for the next scored set, none of them yet sent
+to a model. The 11 October scored set is not reused, because the checker's
+fix hints that followed it were built and tested on that run's programs.
+Three candidates are of the rule-dense genre that has sat at Sonnet's Python
+ceiling in every pool (`go-game`, Go with captures, suicide, ko and area
+scoring; `tennis`, scoring with tiebreaks, no-ad games and serve order;
+`kalah`, sowing with captures, extra moves and the end sweep). Six are hard
+in another way: `josephus` and `perm-rank` need an algorithm, since direct
+simulation or enumeration is too slow at the stated sizes in either
+language; `huffman` (a code built in a stated merge order, then made
+canonical), `avl-tree` (inserts and deletes with rotations, deleting by the
+successor) and `build-sched` (list scheduling by priority on several
+workers) are exact procedures with tie-breaks and edge cases; and
+`wire-decode` is edge cases in a binary format. Which six become the scored
+set, and whether a scored run starts at all, is fixed before any of them is
+run, in `next-run/calibration.md`.
+
+Review of the first draft (commit `a6dcf7f`) dropped four candidates under
+the close-relative rule (`next-run/calibration.md`): `order-match`,
+`stack-vm`, `expr-eval` and `timetable`, each a close relative of an
+earlier task Sonnet passed in Python every time. They were replaced by
+`huffman`, `avl-tree`, `kalah` and `build-sched`, chosen to need neither
+values beyond 64 bits nor compute heavy enough for the Firth step budget to
+shape them (`bigint` and a best-rational-approximation task were ruled out
+for that reason).
+
+Sonnet workers wrote both references from each task's prompt text alone:
+the Python ones (24 to 103 lines, 542 in all, `wc -l`) without access to
+the repository, the Firth ones (49 to 211 lines, 1,204) with the docs,
+stdlib and examples but not `candidates.py`, the tests or each other's
+code. Where a worker's reading differed from the meaning and the
+description allowed it, the sentence was made explicit (`tennis`: a match
+tiebreak, finished or not, is given as its points so far). The Python
+references agree with the meanings on every hidden test and on 3,000
+seeded random inputs per task (`test_harder.py`,
+`candidates_random_agreement`, with a planted `tennis` reference that
+disagrees). Each example has its result worked out by hand; each input
+keeps to its description's bounds, with a planted bad input for each kind
+of constraint; each task has a Python mutant of its meaning that passes the
+example and fails a hidden test; eleven sentences a careful reader could
+take two ways are each kept as a reading the hidden tests tell apart
+(`candidates_readings`); and a Firth `wire-decode` reference that accepts
+field number 0 fails the hidden tests.
+
+Each task's last hidden test is its costliest input for the Firth
+reference among a fixed list (`costliest.py --candidates`): every hand case,
+20 to 40 seeded random inputs at the largest sizes each description allows,
+and inputs built to be slow (circles near 10^12 counting by 12, every digit
+twice, the longest records, 400 alternating points, Fibonacci weights with
+the longest code repeated, ascending inserts followed by deletes, a long
+chain of dependencies). The record is `costliest-candidates.tsv`, where
+every result also agreed with the meaning, and `candidates_costliest`
+checks that each last hidden test is the recorded costliest and costs at
+most a quarter of the 1,000,000-step budget, with a planted record for
+each. The most kernel steps on such an input are 74,975 (`go-game`),
+207,883 (`josephus`), 36,355 (`perm-rank`, on one of its hand cases, which
+the first draft's search left out and so reported 30,421), 47,341
+(`wire-decode`), 56,746 (`tennis`), 194,148 (`huffman`), 98,368
+(`avl-tree`), 58,192 (`kalah`) and 89,832 (`build-sched`). That is a
+measured figure over these inputs, not a bound.
+
+Bounds were cut where the Firth reference ran past a quarter of the
+budget on inputs within the drafted ones: `josephus` from 4 questions
+counting by up to 20 to 3 counting by up to 12 (459,865 steps near 10^12)
+and `huffman` from 40 symbols to 20 (416,163 for the committed reference
+with frequencies `s % 7 + 1` and message `s * 13 % 40` for `s` below
+40 and 100). Two candidates dropped later under the close-relative
+rule had been cut the same way: `order-match` from 40 orders to 30 and
+`stack-vm` from a step limit of 2,000 to 800. Making only the
+reference faster was rejected: a straightforward Firth answer would then
+have had less room than the tier allows, a cost the Python arm never
+pays. A tenth candidate, `chess-moves` (count the legal moves in a
+position, with castling, en passant and promotions), was dropped for the
+same reason. Its first Firth reference took up to 564,839 steps on the
+known 218-move positions; a second, which tests a move for check only
+when the move could change it, still took 246,739 to 266,812 on those
+and up to 264,653 on positions searched for cost with no more than the
+starting material and 12 pieces on the board, so no natural bound kept
+it within a quarter. The positions, both references, the script and its
+output are in `runs/2026-10-11-chess-moves-dropped/`.
 
 ## DeepSeek
 

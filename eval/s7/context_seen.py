@@ -41,11 +41,11 @@ OURS = ("You are the author in a programming evaluation.",
         "The coordinator sent a message while you were working:\nFeedback round ")
 SAMPLE = re.compile(r"haiku-(?:firth|python)-([0-9]+)")
 # The harder tier's scored run names a sample by subject, language and number
-# (`sonnet-python-2`, `deepseek-firth-5`), so the same number in another
-# subject or language is another author: compare whole names, not numbers.
-# Haiku names stay with SAMPLE's number rule, so a Haiku run's results are
-# what they were before (run 14's `session.py`).
-SAMPLE_NAME = re.compile(r"(?<![\w-])((?:sonnet|deepseek)-(?:firth|python)-[0-9]+)(?![\w-])")
+# (`sonnet-python-2`, `deepseek-firth-5`, `haiku-python-1`), so the same number
+# in another subject or language is another author: compare whole names, not
+# numbers. Haiku names are compared whole too (`todo.s7-context-seen-haiku-whole-names`);
+# SAMPLE's number rule still runs for them, so nothing it flagged goes unflagged.
+SAMPLE_NAME = re.compile(r"(?<![\w-])((?:sonnet|deepseek|haiku)-(?:firth|python)-[0-9]+)(?![\w-])")
 TASKS = re.compile(r"/tasks/([0-9a-f]{8,})")
 # How the eval session labels its authors when it starts them ("Control author
 # B10"); the harness can repeat another task's label with no path (Codex, on #181).
@@ -294,8 +294,12 @@ def self_test() -> None:
         == ["deepseek-firth-2"]
     assert "sample_names" not in crossing("wrote sonnet-firth-2/answer-1.md", "sonnet-firth-2", None, None)
     assert "sample_names" not in crossing("xsonnet-firth-2x", "sonnet-firth-1", None, None)
-    # A Haiku name is still judged by its number alone, as before.
-    assert "sample_names" not in crossing("haiku-python-4/answer-1.md", "haiku-firth-4", None, None)
+    # A Haiku name is compared whole as well: another Haiku author with the
+    # same number in the other language crosses (planted, cubic on #245);
+    # the author's own name does not, and the number rule still holds.
+    assert crossing("haiku-python-1/answer-1.md", "haiku-firth-1", None, None)["sample_names"] \
+        == ["haiku-python-1"]
+    assert "sample_names" not in crossing("wrote haiku-firth-1/answer-1.md", "haiku-firth-1", None, None)
     assert crossing("haiku-firth-3/answer-1.md", "sonnet-firth-3", None, None)["names"] == ["3"]
     assert clean["injected"] == [] and clean["cross_sample"] == [], clean
     assert clean["compactions"] == [], clean

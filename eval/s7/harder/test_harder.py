@@ -17,9 +17,16 @@
    for every task, a planted Python mutant with one such mistake fails, and
    in each pool and the scored set a planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
+   The scored run's pinned Firth prompt says exactly once that imports are
+   not available, and the Python prompt does not say it. A refusal keeps
+   the `code:` lines the pre-registration says it counts.
 6. The audit refuses options that widen an author's tools, scoring refuses
    a link named as the answer directory, and the scan run before scoring
    Python finds planted copies of this tier's hidden files.
+7. A Firth answer runs beside a copy of `stdlib/` (`tier.stage`): an import
+   of `stdlib/core.firth` works, an unexported word is refused, and the
+   Firth prompt shows the library and how to import it. Every task's input
+   and output names are valid in both Firth and Python.
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
@@ -36,6 +43,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -606,8 +614,9 @@ def ints(v):
 def bounds() -> None:
     """Every pool-2, pool-3 and scored input keeps to its description's stated
     bounds, and every input and expected integer of every task fits in an `Int`."""
-    check(set(BOUNDS) == {t.id for t in SETS["calibration2"] + SETS["calibration3"] + SETS["scored"]},
-          "every pool-2, pool-3 and scored task has its bounds")
+    check(set(BOUNDS) == {t.id for t in SETS["calibration2"] + SETS["calibration3"] + SETS["scored"]
+                          + SETS["candidates"]},
+          "every pool-2, pool-3, scored and candidate task has its bounds")
     for tid, check_args in BOUNDS.items():
         t = BY_ID[tid]
         every = [*cases(t), *(a for i, a, _ in HAND if i == tid)]
@@ -640,6 +649,7 @@ def bounds() -> None:
           and not bj([14], [0], [1], 1) and not bj([1], [0], [0], 1),
           "the bounds check refuses a 121-card shoe, a 21st round, a card of 14 and a bet of 0")
     scored_planted()
+    candidates_planted()
     for name, tasks in SETS.items():
         big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
                if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
@@ -1021,17 +1031,18 @@ def scored_readings() -> None:
         check(n > 0, f"{tid}, {what}: told apart by {n} hidden test(s)")
 
 
-def costliest_problems(record: str) -> list[str]:
-    """What is wrong with the scored set's last hidden tests, given a recorded
-    output of `costliest.py`: each must be the costliest candidate it ran."""
+def costliest_problems(record: str, set_name: str = "scored", budget: int | None = None) -> list[str]:
+    """What is wrong with a set's last hidden tests, given a recorded output
+    of `costliest.py`: each must be the costliest candidate it ran, and,
+    with BUDGET, cost at most that many steps."""
     import costliest
-    every = costliest.candidates()
+    every = costliest.candidate_inputs() if set_name == "candidates" else costliest.candidates()
     rows: dict[str, dict[str, tuple[int | None, bool]]] = {}
     for line in record.splitlines():
         tid, name, cost, ok = line.split("\t")
         rows.setdefault(tid, {})[name] = (None if cost == "None" else int(cost), ok == "True")
     problems = []
-    for t in SETS["scored"]:
+    for t in SETS[set_name]:
         got = rows.get(t.id, {})
         if set(got) != {name for name, _ in every[t.id]}:
             problems.append(f"{t.id}: the record does not cover exactly the candidates")
@@ -1044,7 +1055,44 @@ def costliest_problems(record: str) -> list[str]:
         args = dict(every[t.id])[top]
         if json.dumps(list(t.hidden[-1])) != json.dumps(list(args)):
             problems.append(f"{t.id}: the last hidden test is not the costliest candidate, {top}")
+        if budget is not None and got[top][0] > budget:
+            problems.append(f"{t.id}: {top} costs {got[top][0]} steps, above {budget}")
     return problems
+
+
+def candidates_costliest() -> None:
+    """The candidate set's last hidden tests are its recorded costliest
+    inputs (costliest-candidates.tsv), each within a quarter of the budget."""
+    record = (HERE / "costliest-candidates.tsv").read_text()
+    quarter = tier.FUEL // 4
+    check(costliest_problems(record, "candidates", quarter) == [],
+          "each candidate's last hidden test is its costliest recorded input, within a quarter of the budget")
+    lines = record.splitlines()
+    # Planted: another input recorded as costlier than the one kept.
+    import costliest
+    every = costliest.candidate_inputs()
+    k = next(i for i, line in enumerate(lines) if line.startswith("josephus\t")
+             and json.dumps(list(dict(every["josephus"])[line.split("\t")[1]]))
+             != json.dumps(list(BY_ID["josephus"].hidden[-1])))
+    tid, name, _, ok = lines[k].split("\t")
+    planted = lines[:k] + [f"{tid}\t{name}\t{quarter}\t{ok}"] + lines[k + 1:]
+    check(any(p.startswith("josephus: the last hidden test is not") for p in
+              costliest_problems("\n".join(planted), "candidates", quarter)),
+          "a record with a costlier josephus input than the last hidden test is refused")
+    # Planted: the kept input recorded above a quarter of the budget.
+    k = next(i for i, line in enumerate(lines) if line.startswith("josephus\t")
+             and json.dumps(list(dict(every["josephus"])[line.split("\t")[1]]))
+             == json.dumps(list(BY_ID["josephus"].hidden[-1])))
+    tid, name, _, ok = lines[k].split("\t")
+    planted = lines[:k] + [f"{tid}\t{name}\t{quarter + 1}\t{ok}"] + lines[k + 1:]
+    check(any(p.startswith("josephus: ") and p.endswith(f"above {quarter}") for p in
+              costliest_problems("\n".join(planted), "candidates", quarter)),
+          "a record whose costliest josephus input is above a quarter of the budget is refused")
+    # Planted: a row where the reference disagreed with the meaning.
+    planted = lines[:k] + [f"{tid}\t{name}\t100\tFalse"] + lines[k + 1:]
+    check(any(p.startswith("josephus: the reference failed or disagreed") for p in
+              costliest_problems("\n".join(planted), "candidates", quarter)),
+          "a record where the josephus reference disagreed is refused")
 
 
 def scored_costliest() -> None:
@@ -1501,6 +1549,64 @@ def calibration_mismatches(samples: list) -> dict[str, list[str]]:
     return out
 
 
+SCORED = HERE / "runs" / "2026-10-11-scored"
+EDIT = re.compile(r"write `([^`]*)` in place of `([^`]+)` on line (\d+)\.")
+
+
+def applied(source: str, hint: str) -> str | None:
+    """`source` with the edit a hint names applied literally: on the line it
+    names, the text it replaces (found once there) replaced. `None` when the
+    hint names no edit or the text is not found once on that line."""
+    m = EDIT.search(hint)
+    if not m:
+        return None
+    new, old, line = m.group(1), m.group(2), int(m.group(3))
+    lines = source.split("\n")
+    if not 0 < line <= len(lines) or lines[line - 1].count(old) != 1:
+        return None
+    lines[line - 1] = lines[line - 1].replace(old, new)
+    return "\n".join(lines)
+
+
+def count_edit_hints() -> None:
+    """The checker's report for the two round-1 Sonnet answers refused for one
+    value too many (scored run, sonnet-firth-6) names the value to remove. The
+    edit, applied literally, gives the author's own round-2 answer: sokoban's
+    then passes every hidden test, and regex's checks but fails the hidden
+    tests it failed in round 2 (16 of 25, results-2.json), from mistakes
+    elsewhere in it."""
+    first = json.loads((SCORED / "sonnet-firth-6" / "solutions-1.json").read_text())
+    second = json.loads((SCORED / "sonnet-firth-6" / "solutions-2.json").read_text())
+    edits = {}
+    for tid in ("sokoban", "regex"):
+        report = harness.check_one(first[tid])
+        hint = next((l[len("hint: "):] for l in report.split("\n") if l.startswith("hint: ")), "")
+        check(hint.startswith("Remove the `m` written at line "),
+              f"one value too many in sonnet-firth-6's {tid}: the hint names the value to remove: {hint}")
+        edited = edits[tid] = applied(first[tid], hint)
+        check(edited == second[tid], f"one value too many in sonnet-firth-6's {tid}: the edit applied gives the round-2 answer")
+        check(edited is not None and harness.check_one(edited) == "ok",
+              f"one value too many in sonnet-firth-6's {tid}: with the edit applied the program checks")
+    sokoban = [BY_ID["sokoban"]]
+    res = tier.score({"sokoban": edits["sokoban"] or ""}, "firth", sokoban)["tasks"]["sokoban"]
+    check(res["pass"] and res["hidden_passed"] == res["hidden_total"],
+          f"sokoban with the named edit applied: hidden {res['hidden_passed']}/{res['hidden_total']}")
+    regex = json.loads((SCORED / "sonnet-firth-6" / "results-2.json").read_text())["tasks"]["regex"]["cases"]
+    check(sum(not c["pass"] for c in regex if not c["visible"]) == 16,
+          "regex with the named edit (the round-2 answer) failed 16 hidden tests in the scored run")
+    # Planted: the report main gave names no edit, and an edit that checks
+    # but is wrong (`mod` for `div` beside the removal) fails a hidden test,
+    # so the hidden tests can tell a right edit from a wrong one here.
+    generic = ("The second value from the top, `m` (Seq Int), is not what `undo4` takes there (Int). "
+               "Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.")
+    check(applied(first["sokoban"], generic) is None, "planted: the old one-value-too-many hint names no edit")
+    wrong = first["sokoban"].replace("{ m e m m e 16 prim div dlt undo4 }", "{ m e m e 16 prim mod dlt undo4 }")
+    check(wrong != first["sokoban"] and harness.check_one(wrong) == "ok", "planted: the wrong edit applies and checks")
+    bad = tier.score({"sokoban": wrong}, "firth", sokoban)["tasks"]["sokoban"]
+    check(bad["hidden_passed"] < bad["hidden_total"],
+          f"planted: the wrong edit fails a hidden test: hidden {bad['hidden_passed']}/{bad['hidden_total']}")
+
+
 def deepseek_sample_scored() -> None:
     """End to end with the real scorer: a planted DeepSeek sample answers the
     first calibration pool with its Firth references, one of them broken, and
@@ -1577,6 +1683,254 @@ def firth_mutant() -> None:
     check(res["cases"][0]["pass"] and not res["pass"],
           "a Firth sokoban reference that counts a box in a corner on a goal as dead passes the example "
           f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
+
+    # The candidate set: a record with field number 0 read as valid.
+    src = (HERE / "reference/candidates/firth/wire-decode.firth").read_text()
+    t = BY_ID["wire-decode"]
+    field0 = "tag 8 prim div 0 prim ="
+    mutant = src.replace(field0, "false", 1)
+    check(src.count(field0) == 1 and mutant != src, "the wire-decode mutant changes the reference")
+    res = tier.score({"wire-decode": mutant}, "firth", [t])["tasks"]["wire-decode"]
+    check(all(c["ok"] for c in res["cases"]), "the wire-decode mutant checks and runs on every case")
+    check(res["cases"][0]["pass"] and not res["pass"],
+          "a Firth wire-decode reference that accepts field number 0 passes the example "
+          f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
+
+# The scored run's Firth prompt says this once, appended after `tier.py
+# prompt` builds it (preregistration.md, "Pre-pin amendment").
+NO_IMPORTS = ("Imports are not available in this run: an `import` cannot reach `stdlib/`, "
+              "so define every word your answer uses in the answer itself.")
+STDLIB_IMPORT = ('import "../../stdlib/core.firth";\n'
+                 ": main\n  ( forall \u03c1; \u03c1 x:Int^many -- \u03c1 y:Int^many )\n  core.identity;\n")
+
+
+def import_problems(run) -> list[str]:
+    """What is wrong if RUN (`tier.run_firth`'s shape) lets a scored answer
+    import a file by climbing out of its source root, the answer's own
+    directory: the import must be refused as not an import path."""
+    out = run(STDLIB_IMPORT, (3,))
+    if out.get("ok"):
+        return [f"an answer importing stdlib ran: {out}"]
+    if "code: firth.name.import-path" not in out.get("error", ""):
+        return [f"an answer importing stdlib was refused for another reason: {out.get('error', '')[:200]}"]
+    return []
+
+
+NO_MESSAGE = ("checker refused: [{'code': 'firth.type.stack-underflow', 'word': 'a'}, "
+              "{'code': 'firth.name.unresolved', 'word': 'b'}]")
+SOME_MESSAGE = ("checker refused: [{'code': 'firth.type.stack-underflow', 'word': 'a'}, "
+                "{'code': 'firth.name.unresolved', 'word': 'b', 'message': 'm'}]")
+
+
+def kept_code_problems(compact) -> list[str]:
+    """What is wrong with the pre-registration's rule for diagnostics without
+    a message, read against COMPACT (`harness.compact`'s shape): the `code:`
+    lines it keeps are the ones the report counts."""
+    def codes(text: str) -> list[str]:
+        return [line[len("code: "):] for line in compact(text).splitlines() if line.startswith("code: ")]
+    problems = []
+    if codes(NO_MESSAGE) != ["firth.type.stack-underflow"]:
+        problems.append(f"with no message, kept {codes(NO_MESSAGE)}, not the first code alone")
+    if codes(SOME_MESSAGE) != ["firth.name.unresolved"]:
+        problems.append(f"with one message, kept {codes(SOME_MESSAGE)}, not only that diagnostic's code")
+    return problems
+
+
+def messageless_diagnostics() -> None:
+    """Pins the pre-registration's "Sorting a case's error" rule. Planted: a
+    compact that keeps every code is caught."""
+    check(kept_code_problems(harness.compact) == [],
+          "a refusal with no message keeps its first code alone; with messages, only theirs")
+    check(kept_code_problems(lambda t: "\n".join(f"code: {c}" for c in re.findall(r"'code': '([^']+)'", t))) != [],
+          "planted: a compact that keeps every code is caught")
+
+
+STDLIB_USE = STDLIB_IMPORT.replace("../../stdlib/core.firth", "stdlib/core.firth")
+
+
+def stdlib_problems(run) -> list[str]:
+    """What is wrong if RUN (`tier.run_firth`'s shape) does not stage the
+    standard library beside an answer: an answer that imports
+    `stdlib/core.firth` and calls one of its exported words must run, and
+    one that calls a word the library does not export must be refused."""
+    out = []
+    got = run(STDLIB_USE, (3,))
+    if not (got.get("ok") and got.get("stack") == [3]):
+        out.append(f"an answer importing stdlib/core.firth did not run: {str(got)[:200]}")
+    got = run(STDLIB_USE.replace("core.identity", "core.missing"), (3,))
+    if got.get("ok") or "code: firth.name.unresolved" not in got.get("error", ""):
+        out.append(f"an answer calling a word stdlib does not export was not refused as unresolved: "
+                   f"{str(got)[:200]}")
+    return out
+
+
+def stdlib_staged() -> None:
+    """Pins `todo.s7-stage-stdlib`: a scored Firth answer can import the
+    standard library, a word it does not export is refused, an import that
+    climbs out of the source root is still refused, and the library's files
+    are hashed with the scorer. Planted: `tier.run_firth` with nothing
+    staged (the scored run of 11 October's runner), a runner that accepts
+    every answer, and hashes without the library are each caught."""
+    check(stdlib_problems(tier.run_firth) == [],
+          "a scored answer that imports stdlib/core.firth runs, and an unexported word is refused")
+    check(import_problems(tier.run_firth) == [],
+          "an import that climbs out of the answer's source root is refused with firth.name.import-path")
+    saved = tier.STDLIB_FILES
+    tier.STDLIB_FILES = ()
+    try:
+        check(stdlib_problems(tier.run_firth) != [], "planted: run_firth with nothing staged is caught")
+    finally:
+        tier.STDLIB_FILES = saved
+    check(stdlib_problems(lambda src, args: {"ok": True, "stack": [3]}) != [],
+          "planted: a runner that accepts every answer is caught")
+    check(stdlib_hash_problems(tier.HASHED) == [], "every stdlib file is hashed with the scorer")
+    check(stdlib_hash_problems({k: v for k, v in tier.HASHED.items() if not k.startswith("stdlib/")}) != [],
+          "planted: hashes without the standard library are caught")
+
+
+def stdlib_hash_problems(hashed: dict) -> list[str]:
+    """What is missing from HASHED (`tier.HASHED`'s shape): every file under
+    `stdlib/` that `tier.stage` copies."""
+    root = harness.ROOT / "stdlib"
+    want = {str(f.relative_to(root.parent)) for f in root.rglob("*.firth")}
+    return [f"{n} is staged but not hashed" for n in sorted(want - set(hashed))] if want else ["stdlib is empty"]
+
+
+def stdlib_note_problems(firth: str, python: str) -> list[str]:
+    """What is wrong with a Firth prompt FIRTH and a Python prompt PYTHON
+    built by `tier.prompt`: the Firth one holds the stdlib note and every
+    stdlib file's text once, and the Python one holds neither."""
+    out = []
+    note = tier.stdlib_note()
+    if firth.count(note) != 1:
+        out.append(f"the Firth prompt holds the stdlib note {firth.count(note)} times, not once")
+    for f in tier.STDLIB_FILES:
+        rel = f.relative_to(tier.STDLIB.parent)
+        if f.read_text() not in firth:
+            out.append(f"the Firth prompt lacks {rel}")
+    out += missing_imports(firth)
+    if "stdlib/" in python:
+        out.append("the Python prompt mentions stdlib/")
+    return out
+
+
+def missing_imports(text: str) -> list[str]:
+    """Each staged library file whose import line TEXT does not give."""
+    return [f"no import line for {f.relative_to(tier.STDLIB.parent)}" for f in tier.STDLIB_FILES
+            if f'`import "{f.relative_to(tier.STDLIB.parent)}";`' not in text]
+
+
+def stdlib_prompt() -> None:
+    """The Firth prompt says how to import the staged library and shows it;
+    the Python prompt does not. Planted: a Firth prompt without the note,
+    and a Python prompt with it, are each caught."""
+    tasks = list(SETS["scored"])
+    firth, python = tier.prompt(tasks, "firth"), tier.prompt(tasks, "python")
+    check(stdlib_note_problems(firth, python) == [], "the Firth prompt shows the staged stdlib once; Python's does not")
+    check(stdlib_note_problems(firth.replace(tier.stdlib_note(), ""), python) != [],
+          "planted: a Firth prompt without the stdlib note is caught")
+    check(stdlib_note_problems(firth, python + tier.stdlib_note()) != [],
+          "planted: a Python prompt with the stdlib note is caught")
+    # Planted (Codex on #249): a second library file must get its own import
+    # line, not only core.firth's.
+    import tempfile
+    saved = (tier.STDLIB, tier.STDLIB_FILES)
+    with tempfile.TemporaryDirectory() as d:
+        lib = Path(d) / "stdlib"
+        lib.mkdir()
+        for f in saved[1]:
+            (lib / f.name).write_text(f.read_text())
+        (lib / "more.firth").write_text("export more.one;\nvocab more { : one ( -- r:Int ) 1; }\n")
+        tier.STDLIB, tier.STDLIB_FILES = lib, tuple(sorted(lib.rglob("*.firth")))
+        try:
+            two = tier.stdlib_note()
+            check('`import "stdlib/more.firth";`' in two and '`import "stdlib/core.firth";`' in two,
+                  "with a second library file, the note gives an import line for each")
+            check(missing_imports(two) == [], "with a second library file, no import line is missing")
+            check(missing_imports(two.replace('`import "stdlib/more.firth";`', "")) == ["no import line for stdlib/more.firth"],
+                  "planted: a note naming only core.firth's import, with a second file staged, is caught")
+        finally:
+            tier.STDLIB, tier.STDLIB_FILES = saved
+
+
+PY_KEYWORDS = frozenset(__import__("keyword").kwlist)
+FIRTH_TYPES = {"Int", "Bool", "Seq Int", "Seq Bool"}
+
+
+def name_problems(tasks, firth_check) -> list[str]:
+    """What is wrong with the input and output names of TASKS: each must be
+    a valid name in both languages, so both arms read the same names. A
+    Python name is an identifier and not a keyword; a Firth name is what
+    FIRTH_CHECK (source -> None or an error) accepts in a stack effect."""
+    out = []
+    words = []
+    for k, t in enumerate(tasks):
+        for side, names in (("input", t.inputs), ("output", t.outputs)):
+            for n, ty in names:
+                if not n.isidentifier() or n in PY_KEYWORDS:
+                    out.append(f"{t.id}: {side} {n!r} is not a Python name")
+            effect = " ".join(f"{n}:{ty}" for n, ty in names)
+            words.append(f": names-{k}-{side} ( forall \u03c1; \u03c1 {effect} -- \u03c1 {effect} ) ;")
+    err = firth_check("\n".join(words) + "\n")
+    if err:
+        out.append(f"the Firth checker refused the task names: {err[:300]}")
+    return out
+
+
+def firth_check(source: str) -> str | None:
+    """None if `firth_run.py check` accepts SOURCE, else its error."""
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "names.firth"
+        f.write_text(source)
+        p = subprocess.run([sys.executable, str(harness.RUNNER), "check", str(f)],
+                           cwd=harness.ROOT, capture_output=True, text=True, timeout=harness.TIMEOUT)
+    harness.toolchain_failure(p.stderr)
+    return None if p.returncode == 0 else (p.stdout + p.stderr).strip() or f"exit {p.returncode}"
+
+
+def task_names() -> None:
+    """Every task's input and output names are valid in Firth and in Python,
+    so neither arm's author copies a name its language refuses (the scored
+    run of 11 October's `white_took`). Planted: a task with `white_took`
+    (refused by Firth) and one with `white-took` (not a Python name) are
+    each caught."""
+    import dataclasses
+    tasks = [t for ts in SETS.values() for t in ts]
+    check(all(ty in FIRTH_TYPES for t in tasks for _, ty in t.inputs + t.outputs),
+          "every task name's type is one the names check spells")
+    check(name_problems(tasks, firth_check) == [], "every task's names are valid in Firth and in Python")
+    t = BY_ID["checkers"]
+    for bad, why in (("white_took", "Firth"), ("white-took", "Python")):
+        planted = dataclasses.replace(t, outputs=tuple((bad if n == "whiteTook" else n, ty) for n, ty in t.outputs))
+        check(name_problems([planted], firth_check) != [], f"planted: an output named {bad} is caught ({why})")
+
+
+def prompt_sentence_problems(text: str) -> list[str]:
+    """What is wrong with a scored Firth prompt TEXT: it must hold the
+    no-imports sentence exactly once."""
+    n = text.count(NO_IMPORTS)
+    return [] if n == 1 else [f"the Firth prompt holds the no-imports sentence {n} times, not once"]
+
+
+SCORED_RUN = HERE / "runs" / "2026-10-11-scored"
+
+
+def pinned_prompts() -> None:
+    """The scored run's pinned Firth prompt holds the no-imports sentence
+    exactly once, and the Python prompt does not hold it. Planted: the
+    Firth prompt without the sentence, and with it twice, are each caught."""
+    firth = (SCORED_RUN / "prompt-firth.md").read_text()
+    python = (SCORED_RUN / "prompt-python.md").read_text()
+    check(prompt_sentence_problems(firth) == [],
+          "the pinned Firth prompt holds the no-imports sentence exactly once")
+    check(NO_IMPORTS not in python, "the pinned Python prompt does not hold the no-imports sentence")
+    check(prompt_sentence_problems(firth.replace(NO_IMPORTS, "")) != [],
+          "planted: a Firth prompt without the no-imports sentence is caught")
+    check(prompt_sentence_problems(firth + "\n" + NO_IMPORTS + "\n") != [],
+          "planted: a Firth prompt with the no-imports sentence twice is caught")
+
 
 def prompt_and_repair() -> None:
     for name, tasks in SETS.items():
@@ -1756,6 +2110,220 @@ def ci_matrix(path: Path) -> None:
           "planted: --only calibration against a ci.yml without rest fails")
 
 
+# --- the candidate set (candidates.py) ---------------------------------------------
+
+CAND_EX = {t.id: t.example for t in SETS["candidates"]}
+
+# The candidates' examples, which an author is shown, worked out by hand.
+HAND += [
+    # Black 4, white 0, black 1, white 2, black 3 takes white's 0 (its neighbours 1 and 3
+    # are black). Two passes end it after 7 moves. Black has 1, 3, 4 and the empty corner 0;
+    # the empty 5, 6, 7, 8 touch both colours. 4 - 1 = 3.
+    ("go-game", CAND_EX["go-game"], ([0, 1, 2, 1, 1, 0, 0, 0, 0], 1, 0, 0, 7, 3)),
+    # 7 people counting by 3 are removed in the order 2, 5, 1, 6, 4, 0, leaving 3; 10
+    # counting by 2: 1, 3, 5, 7, 9, 2, 6, 0, 8, leaving 4; one person is the survivor.
+    ("josephus", CAND_EX["josephus"], ([3, 4, 0], [5, 4, 0])),
+    # 1 1 2 < 1 2 1 < 2 1 1: three, 1 2 1 is number 1, number 2 is 2 1 1, and so is the next.
+    ("perm-rank", CAND_EX["perm-rank"], (3, 1, [2, 1, 1], [2, 1, 1])),
+    # 8 = field 1 wire 0, value 22 + 128 = 150; 17 = field 2 wire 1, u = 3, value -2; 26 =
+    # field 3 wire 2, length 2, two bytes skipped; at byte 9, 8 then 128 0 ends a two-byte
+    # varint with 0: error 2.
+    ("wire-decode", CAND_EX["wire-decode"], ([1, 2, 3], [0, 1, 2], [150, -2, 2], 2, 9)),
+    # Server 0. Game 1 to 0 (hold), game 2 to 0 (break), game 3 to 1 at 4-1 (break), game
+    # 4 to 0 after deuce, served by 1 (break); 0 1 in game 5, served by 0.
+    ("tennis", CAND_EX["tennis"], ([3, 1], -1, 23, [1, 1], 0, [2, 1])),
+    # Merges: 5 + 9 = 14 (key 0), 12 + 13 = 25 (key 2), 14 + 16 = 30 (key 0), 25 + 30 = 55,
+    # 45 + 55 = 100. Lengths 4, 4, 3, 3, 3, 1. Canonical: 5 gets 0; 2, 3, 4 get 4, 5, 6
+    # (0 + 1 shifted two bits); 0, 1 get 14, 15. Bits: 1110, 0, 1111.
+    ("huffman", CAND_EX["huffman"], ([4, 4, 3, 3, 3, 1], [14, 15, 4, 5, 6, 0],
+                                     [1, 1, 1, 0, 0, 1, 1, 1, 1], -1)),
+    # 3, 2, 1: rotate 3 right, root 2. 4 under 3; 5 unbalances 3: rotate left, 4 over 3 and
+    # 5. Delete 2 (two children): 3 copied up, 3 removed from the right subtree. Tree 3, 1,
+    # 4, 5; 2 is gone, 4 is there. Two rotations, height 3.
+    ("avl-tree", CAND_EX["avl-tree"], ([3, 1, 4, 5], [F, T], 2, 0, 3)),
+    # Player 0 sows pit 0 into 1, 2 and the store: again. Pit 1's 4 seeds reach 2, 3, 4,
+    # 5: player 1's turn. Its pit at 6 sows into 7, 0, 1: player 0, whose move 5 is out
+    # of range: illegal, still player 0. Four moves read.
+    ("kalah", CAND_EX["kalah"], ([1, 1, 5, 2, 4, 4, 0, 1], 0, 1, 4, [0, 0], -1)),
+    # At 0 tasks 0 and 1 are ready; 1 (priority 1) goes to worker 0, 0 to worker 1. At 2
+    # worker 0 waits (task 0 runs to 3). At 3, 3 (priority 5) to worker 0 until 4, 2 to
+    # worker 1 until 7; worker 0 then waits 3 more. Idle 1 + 3.
+    ("build-sched", CAND_EX["build-sched"], ([0, 0, 3, 3], [1, 0, 1, 0], 7, 4, 0)),
+]
+
+
+BOUNDS |= {
+    "go-game": lambda size, moves: (_in(size, 2, 7) and len(moves) <= 60
+                                    and all(m == -1 or _in(m, 0, size * size - 1) for m in moves)),
+    "josephus": lambda n, k, m: (_in(len(n), 1, 3) and _same_len(n, k, m) and _all_in(n, 1, 10 ** 12)
+                                 and _all_in(k, 1, 12) and all(_in(c, 1, min(200, a)) for a, c in zip(n, m))),
+    "perm-rank": lambda items, perm, k: (_in(len(items), 1, 20) and len(perm) <= 20 and _all_in(items + perm, 0, 9)
+                                         and _in(k, 0, 10 ** 16)),
+    "wire-decode": lambda data: len(data) <= 200 and _all_in(data, 0, 255),
+    "tennis": lambda points, best_of, final_set, no_ad, server: (
+        len(points) <= 400 and _all_in(points, 0, 1) and best_of in (3, 5) and _in(final_set, 0, 2)
+        and isinstance(no_ad, bool) and _in(server, 0, 1)),
+    "huffman": lambda freqs, msg: (_in(len(freqs), 1, 20) and _all_in(freqs, 0, 1_000_000) and len(msg) <= 100
+                                   and _all_in(msg, -5, 45)),
+    "avl-tree": lambda ops, keys: len(ops) <= 60 and _same_len(ops, keys) and _all_in(ops, 0, 2) and _all_in(keys, 0, 999),
+    "kalah": lambda pits, seeds, moves: (_in(pits, 1, 6) and _in(seeds, 1, 6) and len(moves) <= 80
+                                         and _all_in(moves, -1, 7)),
+    "build-sched": lambda dur, before, after, prio, workers: (
+        _in(len(dur), 1, 16) and _same_len(dur, prio) and _all_in(dur, 1, 20) and _all_in(prio, 0, 9)
+        and len(before) <= 30 and _same_len(before, after) and _all_in(before + after, 0, len(dur) - 1)
+        and _in(workers, 1, 4)),
+}
+
+
+def candidates_planted() -> None:
+    """Each kind of candidate constraint, shown to refuse a known-bad input."""
+    def refuses(tid, good, bad, what):
+        check(BOUNDS[tid](*good) and not any(BOUNDS[tid](*b) for b in bad), f"the bounds check refuses {what}")
+    refuses("go-game", (3, [8, -1]), [(3, [9]), (8, []), (3, [-2]), (2, [0] * 61)],
+            "a point off the board, size 8, a move of -2 and 61 moves")
+    refuses("josephus", ([5], [2], [5]), [([5], [2], [6]), ([5], [13], [1]), ([10 ** 12 + 1], [2], [1]),
+                                          ([300], [2], [201]), ([1] * 4, [1] * 4, [1] * 4)],
+            "m above n, k of 13, n above 10^12, m of 201 and four questions")
+    refuses("perm-rank", ([1, 2], [2, 1], 0), [([], [], 0), ([10], [10], 0), ([1] * 21, [], 0),
+                                               ([1], [1], 10 ** 16 + 1)],
+            "no items, a digit of 10, 21 items and k above 10^16")
+    refuses("wire-decode", ([0, 255],), [([256],), ([-1],), ([0] * 201,)], "a byte of 256 or -1 and 201 bytes")
+    refuses("tennis", ([0, 1], 3, 0, False, 0), [([2], 3, 0, False, 0), ([], 4, 0, False, 0),
+                                                ([], 3, 3, False, 0), ([], 3, 0, 0, 0), ([0] * 401, 3, 0, False, 0)],
+            "a point won by player 2, best of 4, final-set rule 3, a no-ad that is not a Bool and 401 points")
+    refuses("huffman", ([1, 0], [0, 7]), [([], []), ([1] * 21, []), ([1_000_001], []), ([-1], []), ([1], [46]),
+                                          ([1], [-6]), ([1], [0] * 101)],
+            "no symbols, 21 symbols, a frequency of 1,000,001 or -1, a message value of 46 or -6 and 101 values")
+    refuses("avl-tree", ([0, 1, 2], [0, 999, 5]), [([3], [1]), ([0], [1000]), ([0], [-1]), ([0, 0], [1]),
+                                                    ([0] * 61, [1] * 61)],
+            "op 3, key 1,000 or -1, unequal lengths and 61 operations")
+    refuses("kalah", (6, 6, [-1, 7]), [(0, 1, []), (7, 1, []), (1, 0, []), (1, 7, []), (1, 1, [8]), (1, 1, [-2]),
+                                       (1, 1, [0] * 81)],
+            "0 or 7 pits, 0 or 7 seeds, a move of 8 or -2 and 81 moves")
+    sched = ([1, 2], [0], [1], [0, 9], 4)
+    refuses("build-sched", sched, [([], [], [], [], 1), ([0], [], [], [0], 1), ([21], [], [], [0], 1),
+                                   ([1], [], [], [10], 1), ([1, 2], [0], [2], [0, 0], 1), ([1], [], [], [0], 5),
+                                   ([1], [], [], [0], 0), ([1], [0] * 31, [0] * 31, [0], 1), ([1, 1], [], [], [0], 1)],
+            "no tasks, a duration of 0 or 21, priority 10, an edge to a missing task, 5 or 0 workers, "
+            "31 edges and unequal lengths")
+
+
+PY_MUTANTS |= {
+    "go-game": ("no ko rule", meaning_mutant("_go_game", "        if b == before[3 - player]:",
+                                              "        if False:", "candidates.py")),
+    "josephus": ("counting by 1 leaving person n instead of n - 1",
+                 meaning_mutant("_josephus", "    if k == 1:\n        return n - 1\n    sizes",
+                                "    if k == 1:\n        return n\n    sizes", "candidates.py")),
+    "perm-rank": ("the arrangement after the last one wrapping round to the first",
+                  meaning_mutant("_perm_rank", "nxt = unrank(rank + 1) if rank != -1 and rank + 1 < total else []",
+                                 "nxt = unrank((rank + 1) % total) if rank != -1 else []", "candidates.py")),
+    "wire-decode": ("a varint of nine bytes accepted",
+                    meaning_mutant("_wire_decode", "        for i in range(8):", "        for i in range(9):",
+                                   "candidates.py")),
+    "tennis": ("no-ad ignored", meaning_mutant("_tennis", "(no_ad and pts", "(False and pts", "candidates.py")),
+    "huffman": ("equal weights taken largest symbol first",
+                meaning_mutant("_huffman", "            nodes.sort(key=lambda x: (x[0], x[1]))",
+                               "            nodes.sort(key=lambda x: (x[0], -x[1]))", "candidates.py")),
+    "avl-tree": ("a duplicate insert not counted as ignored",
+                 meaning_mutant("_avl", "        if k == t[0]:\n            ignored += 1\n            return t",
+                                "        if k == t[0]:\n            return t", "candidates.py")),
+    "kalah": ("no captures",
+              meaning_mutant("_kalah", "            if board[opp] > 0:", "            if False:", "candidates.py")),
+    "build-sched": ("ties in priority taken by the lowest number, not the longest",
+                    meaning_mutant("_build_sched", "ready.sort(key=lambda i: (-prio[i], -dur[i], i))",
+                                   "ready.sort(key=lambda i: (-prio[i], i))", "candidates.py")),
+}
+
+
+def cand_reading(name: str, *edits: tuple[str, str]) -> str:
+    """A candidate's meaning as another reading of its description would have it."""
+    src = (HERE / "candidates.py").read_text()
+    for old, new in edits:
+        assert src.count(old) == 1, f"the reading's text is not in candidates.py once: {old!r}"
+        src = src.replace(old, new)
+    future = "from __future__ import annotations\n"
+    src = src.replace(future, future + f"__file__ = {str(HERE / 'candidates.py')!r}\n", 1)
+    return src + f"\n\ndef main(*args):\n    return {name}(*args)\n"
+
+
+# Sentences of the candidates a careful reader could take two ways, made explicit before
+# any author ran: each other reading must be told apart by a hidden test.
+CAND_READINGS = [
+    ("tennis", "an unfinished match tiebreak given as 0 and 0",
+     cand_reading("_tennis", ("            if target == 10:\n                g[0], g[1] = pts\n", ""),
+                  ("                if target != 10:\n                    g[w] += 1",
+                   "                if target == 10:\n                    g[0], g[1] = pts\n"
+                   "                else:\n                    g[w] += 1"))),
+    ("go-game", "ko compared with the board before the player's own previous turn",
+     cand_reading("_go_game", ("        if b == before[3 - player]:", "        if b == before[player]:"))),
+    ("wire-decode", "the wire type checked before the field",
+     cand_reading("_wire_decode", ("            if field == 0:\n                raise _Bad(4)\n", ""),
+                  ("            else:\n                raise _Bad(5)",
+                   "            else:\n                raise _Bad(5)\n            if field == 0:\n"
+                   "                raise _Bad(4)"))),
+    ("huffman", "leaves taken before a merged node of equal weight",
+     cand_reading("_huffman", ("            nodes.sort(key=lambda x: (x[0], x[1]))",
+                               "            nodes.sort(key=lambda x: (x[0], len(x[2]) > 1, x[1]))"))),
+    ("avl-tree", "a child of balance 0 rotated first, as a double rotation",
+     cand_reading("_avl", ("            if h(t[1][1]) - h(t[1][2]) < 0:", "            if h(t[1][1]) - h(t[1][2]) <= 0:"),
+                  ("            if h(t[2][1]) - h(t[2][2]) > 0:", "            if h(t[2][1]) - h(t[2][2]) >= 0:"))),
+    ("avl-tree", "a node with two children given the largest key on its left",
+     cand_reading("_avl", ("            m = t[2]\n            while m[1] is not None:\n                m = m[1]\n"
+                           "            t[0] = m[0]\n            t[2] = delete(t[2], m[0])",
+                           "            m = t[1]\n            while m[2] is not None:\n                m = m[2]\n"
+                           "            t[0] = m[0]\n            t[1] = delete(t[1], m[0])"))),
+    ("kalah", "the pit just emptied not counted as empty for a capture",
+     cand_reading("_kalah", ("        if i in mine and board[i] == 1:", "        if i in mine and board[i] == 1 and hand_was < 2 * p + 1:"),
+                  ("        hand, board[i] = board[i], 0", "        hand, board[i] = board[i], 0\n        hand_was = hand"))),
+    ("kalah", "a capture made even when the opposite pit is empty",
+     cand_reading("_kalah", ("            if board[opp] > 0:", "            if True:"))),
+    ("build-sched", "a task ready only after its dependencies finished strictly before the moment",
+     cand_reading("_build_sched", ("finish[a] <= t for a, b", "finish[a] < t for a, b"))),
+    ("build-sched", "the highest-numbered free worker starting a task",
+     cand_reading("_build_sched", ("        for w in range(workers):\n            if busy[w] == -1 and ready:",
+                                   "        for w in reversed(range(workers)):\n            if busy[w] == -1 and ready:"))),
+    ("perm-rank", "an empty perm taken as the arrangement before the first",
+     cand_reading("_perm_rank", ("    rank = rank_of(perm) if sorted(perm) == sorted(items) else -1",
+                                 "    rank = rank_of(perm) if sorted(perm) == sorted(items) else -1\n"
+                                 "    if not perm:\n        return total, -1, unrank(k) if k < total else [], "
+                                 "unrank(0)"))),
+]
+
+
+def candidates_readings() -> None:
+    check(told_apart("tennis", cand_reading("_tennis")) == 0,
+          "a candidate reading that is the meaning itself is told apart by no hidden test")
+    for tid, what, src in CAND_READINGS:
+        n = told_apart(tid, src)
+        check(n > 0, f"{tid}, {what}: told apart by {n} hidden test(s)")
+
+
+def candidates_random_agreement(n: int = 3000) -> None:
+    """The candidates' Python references, written from the descriptions alone, agree with
+    the meanings on n seeded random inputs per task, beyond the hidden tests."""
+    import candidates as c
+    gens = {"go-game": c._random_go, "josephus": c._random_josephus, "perm-rank": c._random_perm_rank,
+            "wire-decode": c._random_wire, "tennis": c._random_tennis, "huffman": c._random_huffman,
+            "avl-tree": c._random_avl, "kalah": c._random_kalah, "build-sched": c._random_sched}
+    check(set(gens) == {t.id for t in SETS["candidates"]}, "every candidate has a generator")
+
+    def disagree(src: str, tid: str) -> int:
+        ns: dict = {}
+        exec(compile(src, f"{tid}.py", "exec"), ns)
+        t = BY_ID[tid]
+        return sum(not harness.same(json.loads(json.dumps(as_list(ns["main"](*a), t))), t.expected(a))
+                   for a in map(gens[tid], range(n)))
+    bad_inputs = [tid for tid in gens if not all(BOUNDS[tid](*gens[tid](s)) for s in range(200))]
+    check(not bad_inputs, f"every candidate's random inputs keep to its bounds (outside: {bad_inputs})")
+    for tid in gens:
+        src = (HERE / "reference" / "candidates" / "python" / f"{tid}.py").read_text()
+        check(disagree(src, tid) == 0, f"Python reference candidates/{tid} agrees with the meaning on {n} "
+              "seeded inputs")
+    # Planted: the tennis reference with no-ad ignored disagrees.
+    check(disagree(PY_MUTANTS["tennis"][1], "tennis") > 0,
+          "the seeded comparison catches a tennis answer that ignores no-ad")
+
+
 def main() -> int:
     if "--only" in sys.argv:
         i = sys.argv.index("--only")
@@ -1781,19 +2349,28 @@ def main() -> int:
     scored_random_agreement()
     python_mutants()
     scored_readings()
+    candidates_readings()
+    candidates_random_agreement()
     scored_costliest()
+    candidates_costliest()
     regex_drafted_bounds()
     deepseek_driver()
     deepseek_sample_driver()
     take_rule()
     prompt_and_repair()
+    stdlib_prompt()
+    pinned_prompts()
+    messageless_diagnostics()
     if "--no-firth" not in sys.argv:
         if part is None:
             firth_references()
         firth_hand_values()
         firth_mutant()
+        stdlib_staged()
+        task_names()
         regex_drafted_rerun()
         deepseek_sample_scored()
+        count_edit_hints()
     print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
     return 1 if FAILED else 0
 

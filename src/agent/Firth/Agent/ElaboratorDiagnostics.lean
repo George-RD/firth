@@ -88,6 +88,22 @@ def worldPrimitiveSchemes : List (String × Firth.Elaborator.StackEffect.Scheme)
         (.base "Handle" .linear)) (.base "Bytes" .linear)
       output := .snoc row (.base "World" .linear) })]
 
+/-- The base type names in a scheme stack, bottom to top. -/
+private def stackBaseNames : Firth.Elaborator.StackEffect.AStack → List String
+  | .snoc rest (.base name _) => stackBaseNames rest ++ [name]
+  | .snoc rest _ => stackBaseNames rest
+  | .empty | .row _ => []
+
+/-- The base types a source stack effect may declare: the four value types a
+literal or a surface primitive gives (`Int`, `Bool`, `Seq Int`, `Seq Bool`),
+then the nominal types `worldPrimitiveSchemes` threads (`World`, `Handle`,
+`Bytes`). The kernel's `Unit` is not one: no literal or primitive a program
+can write gives a `Unit` value (`dec.source-type-names`). -/
+def sourceTypes : List String :=
+  ["Int", "Bool", "Seq Int", "Seq Bool"] ++
+    (worldPrimitiveSchemes.flatMap fun entry =>
+      stackBaseNames entry.2.input ++ stackBaseNames entry.2.output).eraseDups
+
 /-- The names in `worldPrimitiveSchemes`. -/
 def worldPrimitives : List String := worldPrimitiveSchemes.map (·.1)
 
@@ -233,6 +249,23 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
     | "firth.syntax.overlong-character" =>
         ("A character literal holds exactly one character between its quotes, as in `'a'`.",
           "Write exactly one character between the quotes, and close the literal with `'`.")
+    | "firth.syntax.underscore-in-name" =>
+        let written := error.actual.getD "This name"
+        -- No rename is the fix (`whiteTook` checks as well as `white-took`),
+        -- so `-` for `_` is only an example, and none is given when the file
+        -- already uses that name.
+        (s!"`{written}` is not a name: a name cannot contain `_`.",
+          match error.expected with
+          | some renamed => s!"Rename it everywhere it appears, for example as `{renamed}`."
+          | none => "Rename it everywhere it appears, to a name the file does not already use.")
+    | "firth.syntax.unnamed-stack-item" =>
+        let type := error.actual.getD "Int"
+        -- `Seq` alone, or over anything but `Int` or `Bool`, is no type
+        -- either, so the example gives the two that are.
+        let shown := if type == "Seq" || (type.startsWith "Seq " && !sourceTypes.contains type) then "`name:Seq Int` or `name:Seq Bool`"
+          else s!"`{error.expected.getD s!"name:{type}"}`"
+        (s!"`{type}` here is a type with no name: every item in a stack effect is written `name:Type`.",
+          s!"Give it a name, as in {shown}. Any name will do: stack-effect names only document the stack.")
     | "firth.syntax.quote-in-name" =>
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
           "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
@@ -617,7 +650,14 @@ private def declaredInputsExplanation (word : String) (short : Firth.Elaborator.
     | "if", 2 => "push them before the quotations `if` chooses between"
     | "if", _ => "push them before the condition `if` tests"
     | _, _ => s!"push them before {subject}"
-  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise {push}."
+  -- With only its quotations on the stack, `if` is missing its condition
+  -- too, which goes on top of the other values missing: `true 1 2` would
+  -- have it test `2`. With no input declared, a new last input is on top.
+  let condition := if short.operation != "if" || short.present != 2 then ""
+    else if short.needed - short.present == 1 then " The value missing is the `Bool` that `if` tests."
+    else if inputs.declared == 0 then " Either way, the `Bool` that `if` tests goes last, on top of the others."
+    else " If you push them, the `Bool` that `if` tests goes last, on top of the others."
+  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise {push}.{condition}"
   (message, hint)
 
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic
@@ -1049,6 +1089,16 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
         | none, some word => s!" With that edit `{word}` checks."
         | some (line, column), some word => s!" With that edit, the next error in `{word}` is at line {line}, column {column}."
         | _, none => ""
+      match edit.removed with
+      | some (removed, line, column) =>
+          -- Found by removing each item written before the operation in
+          -- turn: this one alone lets the word check. Written out in place
+          -- only when the text replaced is on one line.
+          let rewrite := if edit.replacement.isEmpty then ""
+            else s!": write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}"
+          pure (s!"{message} One value too many is pushed before it.",
+            s!"Remove the `{removed}` written at line {line}, column {column}{rewrite}.{outcome}")
+      | none =>
       pure (message, s!"These are the values {account.operation} takes, in another order. To push them in its order, write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}")
   | none =>
       if !account.assignment.isEmpty then
@@ -1165,6 +1215,16 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   | "firth.type.expected-bool", _, _ =>
       (s!"`if`{inWord} needs a Bool condition under its two quotations, but the stack before it is {before}.",
         "Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.")
+  | "firth.type.unknown-type", _, _ =>
+      let types := s!"The types a stack effect can declare are {listing ((sourceTypes.take 4).map (s!"`{·}`"))}, and {listing ((sourceTypes.drop 4).map (s!"`{·}`"))} for effects."
+      let place := match diagnostic.word with
+        | some word => s!" in the stack effect of `{word}`"
+        | none => ""
+      if at_ == "Seq" then
+        (s!"`Seq`{place} needs its element type.", s!"Write `Seq Int` or `Seq Bool`. {types}")
+      else if at_.startsWith "Seq " then
+        (s!"`{at_}`{place} is not a type: a sequence holds `Int` or `Bool`.", types)
+      else (s!"`{at_}`{place} is not a type.", types)
   | "firth.type.expected-quotation", _, _ =>
       (s!"`{at_}`{inWord} needs a quotation, but the stack before it is {before}.",
         "Put a `[ ... ]` quotation where the operation expects one.")

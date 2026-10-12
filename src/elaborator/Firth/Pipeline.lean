@@ -77,7 +77,7 @@ structure ImportedWord where
 
 structure PipelineConfig where
   erasureEnv : EffectEnv := {}
-  typingEnv : Env := { literal := defaultLiteralType }
+  typingEnv : Env := { literal := defaultLiteralType, types := some sourceTypeNames }
   requestId : String := "firth.elaborator"
   sourcePath : String := "<source>"
   refinementBuilder : RefinementBuilder := emptyRefinementBuilder
@@ -364,7 +364,7 @@ private def firstErrorAlone (config : PipelineConfig) (words : List WordDefiniti
   match erase (makeErasureEnv config (word :: others)) word.effect word.body with
   | .error error => some (.erasure word.name error)
   | .ok erased =>
-      let typed := others.filter fun other => (schemeOfEffect other.effect).toOption.isSome
+      let typed := others.filter fun other => (schemeIn config.typingEnv other.effect).toOption.isSome
       let definitions : List StackEffect.Definition :=
         { name := word.name, declared := word.effect, program := erased.program, span := word.span } ::
           typed.map fun other => { name := other.name, declared := other.effect, program := [], span := other.span }
@@ -606,6 +606,172 @@ private def checkCallEdit (config : PipelineConfig) (source : String) (word : Wo
   let (line, column) := editPlace source start stop written
   pure { start, stop, line, column, written, replacement, after, reached
          consulted := consultedWords config editedWords editedWord }
+
+/-- The items of a body with quotations and `locals` blocks opened, each with
+its span and the locals bound around it. -/
+private partial def leafItems (bound : List String) : List Item → List (Item × Span × List String)
+  | [] => []
+  | .quotation inner _ :: rest => leafItems bound inner ++ leafItems bound rest
+  | .locals names inner _ :: rest =>
+      leafItems (names.map (·.name) ++ bound) inner ++ leafItems bound rest
+  | item@(.literal _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.word _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.atom _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.primitive _ span) :: rest => (item, span, bound) :: leafItems bound rest
+
+/-- Every item of a body, at every depth, with its span: quotations and
+`locals` blocks as well as the items inside them. -/
+private partial def everyItem : List Item → List (Item × Span)
+  | [] => []
+  | item@(.quotation inner span) :: rest => (item, span) :: everyItem inner ++ everyItem rest
+  | item@(.locals _ inner span) :: rest => (item, span) :: everyItem inner ++ everyItem rest
+  | item@(.literal _ span) :: rest => (item, span) :: everyItem rest
+  | item@(.word _ span) :: rest => (item, span) :: everyItem rest
+  | item@(.atom _ span) :: rest => (item, span) :: everyItem rest
+  | item@(.primitive _ span) :: rest => (item, span) :: everyItem rest
+
+/-- An item without its spans: two edited bodies with the same shapes are
+the same program, whatever their spacing and comments. -/
+private partial def itemShape : Item → String
+  | .literal literal _ => s!"{repr literal.value}"
+  | .word name _ => s!"w {name}"
+  | .atom name _ => s!"a {name}"
+  | .primitive name _ => s!"p {name}"
+  | .quotation inner _ => "[ " ++ " ".intercalate (inner.map itemShape) ++ " ]"
+  | .locals names inner _ =>
+      "locals { " ++ " ".intercalate (names.map (·.name)) ++ " } { " ++ " ".intercalate (inner.map itemShape) ++ " }"
+
+/-- The definition that starts at byte `start`, in a vocabulary or not. -/
+private partial def wordAt (start : Nat) : List Declaration → Option WordDefinition
+  | [] => none
+  | .word definition :: rest =>
+      if definition.span.start.offset == start then some definition else wordAt start rest
+  | .vocabulary _ inner _ :: rest => (wordAt start inner).orElse fun _ => wordAt start rest
+  | _ :: rest => wordAt start rest
+
+/-- Whether the item starting at `candidate` and the one starting at
+`operation` are in the same list of items with no quotation or `locals`
+block between them: in the same run of items, told from the parse, so a
+sequence literal `{ 1 }` between them is no bracket. -/
+private partial def sameRun (candidate operation : Nat) (items : List Item) : Bool :=
+  let starts := items.map (itemSpan · |>.start.offset)
+  if starts.contains candidate && starts.contains operation then
+    !items.any fun item =>
+      let span := itemSpan item
+      span.start.offset > candidate && span.start.offset < operation &&
+        match item with
+        | .quotation _ _ | .locals _ _ _ => true
+        | _ => false
+  else items.any fun
+    | .quotation inner _ | .locals _ inner _ => sameRun candidate operation inner
+    | _ => false
+
+/-- The most items written before an operation that `extraValueEdit`
+removes in turn, each removal a check of the whole source. -/
+def extraValueBudget : Nat := 256
+
+/-- The most that `extraValueEdit` checks for one report, counted as the
+items it removes in turn times the bytes of the source each check reads:
+the search for one word costs no more than this, however long the file. -/
+def extraValueCost : Nat := 2 ^ 21
+
+/-- For a word or primitive handed values it does not take, where no other
+edit was found: the edit that removes one value written before it, in the
+same run of items, as the extra `m` in `m e m m e 16 prim div dlt undo4`
+for `undo4 ( m:Seq Int e:Int d:Int -- ... )`. Every item written before the
+operation, at any depth and of any kind (a word, a primitive, a quotation, a
+value inside brackets), is removed in turn and the word checked again
+(`checkCallEdit`). An edit is named only when exactly one edited source lets
+the word check, so removing either of two adjacent `m`s, which leaves one
+text, counts once, and only when that removal is of a local or a literal
+in the same run of items as the operation (`sameRun`). It never changes what is
+accepted. -/
+private def extraValueEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
+    (operation : Span) : Option CallEdit :=
+  if !config.checkEdits then none else
+  let opStart := operation.start.offset
+  let locals := (leafItems [] word.body).filterMap fun (item, span, bound) =>
+    match item with
+    | .word name _ => if bound.contains name then some span.start.offset else none
+    | _ => none
+  -- Each removal that lets the word check. Each is a check of the whole
+  -- source, so past `extraValueBudget` items before the operation, or
+  -- `extraValueCost` in all, the search is not made and no removal is named.
+  let before := (everyItem word.body).filter fun (_, span) => span.stop.offset ≤ opStart
+  if before.length > extraValueBudget || before.length * source.utf8ByteSize > extraValueCost then none else
+  let checking := before.filterMap fun (item, span) =>
+    let start := span.start.offset
+    let stop := span.stop.offset
+    -- Only a removal after which the word checks: one that gets past the
+    -- operation to a later error is not shown to be the fix.
+    (checkCallEdit config source word start stop "" (opStart - stop)).bind fun edit =>
+      if edit.after.isSome then none else
+      -- Compared as items: removing either of two `i`s with a comment or
+      -- more space between them leaves the same program.
+      let edited := bytesText source 0 start ++ bytesText source stop source.utf8ByteSize
+      let shape : Option String := match parse edited with
+        | .success file => (wordAt word.span.start.offset file.declarations).map fun definition =>
+            " ".intercalate (definition.body.map itemShape)
+        | .failure _ => none
+      shape.map fun shape => (shape, item, span)
+  match (checking.map (·.1)).eraseDups with
+  | [_] =>
+      -- Named only as a local or a literal in the same run of items as the
+      -- operation (`sameRun`): no quotation or `locals` block between them.
+      -- Named as written, so only a value written on one line.
+      let named := checking.filter fun (_, item, span) =>
+        let value := match item with
+          | .literal _ _ => true
+          | .word _ _ => locals.contains span.start.offset
+          | _ => false
+        value && sameRun span.start.offset opStart word.body &&
+          !(bytesText source span.start.offset span.stop.offset).contains '\n'
+      named.getLast?.bind fun (_, _, span) =>
+        let start := span.start.offset
+        let removed := bytesText source start span.stop.offset
+        let (line, column) := lineColumn source start
+        -- The items from the value to the operation: in the same run, so
+        -- none is a quotation or `locals` block.
+        let run := (everyItem word.body).filterMap fun (_, item) =>
+          if item.start.offset ≥ start && item.stop.offset ≤ opStart then some item else none
+        let last := (run.map (·.stop.offset)).foldl max span.stop.offset
+        -- Written out in place, as for a reordering, only when that text is
+        -- exactly those items with one space between them: no line break,
+        -- comment or wider space, inside a literal too, so both texts in the
+        -- hint are as written. Otherwise the value alone.
+        let text := bytesText source start last
+        let alone := collapseSpace text != text ||
+          text != " ".intercalate (run.map fun item => bytesText source item.start.offset item.stop.offset)
+        let stop := if alone then span.stop.offset else last
+        let replacement := collapseSpace (bytesText source span.stop.offset stop)
+        -- The same items as the removal that checks, so this checks too.
+        (checkCallEdit config source word start stop replacement
+            (replacement.utf8ByteSize + (opStart - stop))).map fun edit =>
+          { edit with removed := some (removed, line, column) }
+  | _ => none
+
+/-- `extraValueEdit` for a word or primitive the checker refused because the
+values it was handed are not the ones it takes, when `withCallAccount`
+found no reordering and the order is not open. A value missing needs no
+guard: removing a value leaves the operation one value fewer, so the word
+cannot then check. -/
+private def withExtraValue (config : PipelineConfig) (source : String) (word : WordDefinition) :
+    PipelineDiagnostic → PipelineDiagnostic
+  | .stackEffect diagnostic =>
+      if diagnostic.code != "firth.type.word-input-mismatch" &&
+          diagnostic.code != "firth.type.primitive-input-mismatch" then .stackEffect diagnostic else
+      match diagnostic.callAccount with
+      | some account =>
+          -- Where the order is open (values of one type that could fill
+          -- several inputs), a removal that checks may still leave a value
+          -- in the wrong input, as removing the second `xs` in
+          -- `xs k xs k 0 count-loop` gives `k` for the start index.
+          if account.edit.isSome || !account.assignment.isEmpty then .stackEffect diagnostic else
+          match extraValueEdit config source word diagnostic.primary with
+          | some edit => .stackEffect { diagnostic with callAccount := some { account with edit := some edit } }
+          | none => .stackEffect diagnostic
+      | none => .stackEffect diagnostic
+  | other => other
 
 /-- For an operation handed fewer values than it takes (`CallAccount.missing`),
 the edit that moves the values written just after it to before it, when
@@ -1018,18 +1184,6 @@ private def itemsIn (source : String) (start stop : Nat) : List (String × Nat �
   | some (item, from_) => items ++ [(item, from_, stop)]
   | none => items
 
-/-- The items of a body with quotations and `locals` blocks opened, each with
-its span and the locals bound around it. -/
-private partial def leafItems (bound : List String) : List Item → List (Item × Span × List String)
-  | [] => []
-  | .quotation inner _ :: rest => leafItems bound inner ++ leafItems bound rest
-  | .locals names inner _ :: rest =>
-      leafItems (names.map (·.name) ++ bound) inner ++ leafItems bound rest
-  | item@(.literal _ span) :: rest => (item, span, bound) :: leafItems bound rest
-  | item@(.word _ span) :: rest => (item, span, bound) :: leafItems bound rest
-  | item@(.atom _ span) :: rest => (item, span, bound) :: leafItems bound rest
-  | item@(.primitive _ span) :: rest => (item, span, bound) :: leafItems bound rest
-
 /-- Whether a run of items, as written, takes a value from below where it
 starts: `some false` when every item's arity is known and none reaches
 below, `some true` when one does, `none` when an item's arity is not known
@@ -1190,8 +1344,15 @@ private inductive WordOutcome where
   scheme, so there is nothing to check its call against. -/
   | skipped (callee : String) (span : Span)
 
+/-- A refused type in `word`'s stack effect names `word`, so the report can
+say whose effect it is in. Other refusals of the effect are left as they are. -/
+private def namedUnknownType (word : WordDefinition) (diagnostic : StackEffect.Diagnostic) :
+    StackEffect.Diagnostic :=
+  if diagnostic.code == "firth.type.unknown-type" then { diagnostic with word := some word.name }
+  else diagnostic
+
 /-- One word, stage by stage, as the whole-program pipeline would check it:
-names, the `locals` order, source refinements, erasure, the declared effect,
+the declared types, names, the `locals` order, source refinements, erasure, the declared effect,
 typing and refinements. A word that calls a word whose effect is refused is
 skipped before erasure, unless its own effect is refused too. The other words are trusted to have their declared
 effects, whatever their bodies do, so an error in one word is never charged
@@ -1200,6 +1361,13 @@ private def checkWord (config : PipelineConfig) (source : String)
     (words written : List WordDefinition) (env : EffectEnv) (typing : Env)
     (unusable : List String) (word : WordDefinition) (resolution : Option ParseError) :
     WordOutcome :=
+  -- A type the effect declares that is not one is the effect's first
+  -- error, before a name in the body that does not resolve, its
+  -- refinements, the body's `locals` or anything that counts or checks
+  -- values of that type.
+  match unknownType typing word.effect with
+  | some diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
+  | none =>
   match resolution with
   | some error => .refused [.parse error]
   | none =>
@@ -1212,22 +1380,22 @@ private def checkWord (config : PipelineConfig) (source : String)
   -- Before erasure: erasing a call to a word whose effect is refused reads
   -- that effect's shape all the same, and an underflow it finds there says
   -- nothing about this word. The word's own effect is its own error.
-  match (calledWords [] word.body).find? (unusable.contains ·.1), schemeOfEffect word.effect with
-  | some _, .error diagnostic => .refused [.stackEffect diagnostic]
+  match (calledWords [] word.body).find? (unusable.contains ·.1), schemeIn typing word.effect with
+  | some _, .error diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
   | some (callee, span), .ok _ => .skipped callee span
   | none, _ =>
   match erase env word.effect word.body with
   | .error error => .refused [withShortCall config source words word
       (withBranchEdit config source (withAccount config source words (.erasure word.name error)))]
   | .ok erased =>
-  match schemeOfEffect word.effect with
-  | .error diagnostic => .refused [.stackEffect diagnostic]
+  match schemeIn typing word.effect with
+  | .error diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
   | .ok declared =>
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
-      .refused [withShortCall config source words word (withConditionEdit config source words word (withCallAccount config source words
-        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic)))))]
+      .refused [withShortCall config source words word (withConditionEdit config source words word (withExtraValue config source word (withCallAccount config source words
+        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic))))))]
   | .ok _ =>
       let premises := config.refinementBuilder config.requestId config.sourcePath
         word erased.program declared
@@ -1247,7 +1415,7 @@ private def checkWord (config : PipelineConfig) (source : String)
 for erasure and for typing, and the words whose effect is no type scheme. -/
 private def environments (config : PipelineConfig) (declared : List WordDefinition) :
     EffectEnv × Env × List String :=
-  let schemes := declared.map fun word => (word.name, (schemeOfEffect word.effect).toOption)
+  let schemes := declared.map fun word => (word.name, (schemeIn config.typingEnv word.effect).toOption)
   let typing : Env := { config.typingEnv with
     word := fun name =>
       match schemes.find? (·.1 == name) with

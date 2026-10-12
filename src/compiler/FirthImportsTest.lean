@@ -223,6 +223,19 @@ def main : IO Unit := do
   reject "unexported vocabulary" (src "main.firth" "import \"lib.firth\"; use core; : main ( -- ) ;") [lib]
     [("firth.name.unresolved", "main.firth", [])]
 
+  -- An imported word exported from outside any vocabulary is a candidate
+  -- inside the importer's vocabularies too, beside their own words.
+  accept "top-level import in a vocabulary"
+    (src "main.firth" "import \"lib.firth\"; vocab app { : main ( -- r:Int^many ) 2 double; }") [lib]
+    [("lib.firth", ["double", "helper"]), ("main.firth", ["app.main"])]
+  reject "unexported top-level import in a vocabulary"
+    (src "main.firth" "import \"lib.firth\"; vocab app { : main ( -- r:Int^many ) 2 helper; }") [lib]
+    [("firth.name.not-exported", "main.firth", ["lib.firth"])]
+  reject "top-level import beside a vocabulary word"
+    (src "main.firth" ("import \"lib.firth\"; vocab app { : double (forall ρ; ρ n:Int^many -- ρ m:Int^many) ; "
+      ++ ": main ( -- r:Int^many ) 2 double; }")) [lib]
+    [("firth.name.ambiguous-use", "main.firth", [])]
+
   -- A refused import stops its importers, not the files beside it.
   let broken := src "broken.firth" "export bad; : bad ( -- r:Int^many ) true;"
   let ok := src "ok.firth" "export good; : good ( -- r:Int^many ) 1; : wrong ( -- r:Int^many ) false;"

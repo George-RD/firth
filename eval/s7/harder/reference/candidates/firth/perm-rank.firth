@@ -1,0 +1,103 @@
+\ Rank and unrank the arrangements of a multiset of digits.
+\ c is the count of each digit 0..9 still to place, L their sum, T the number
+\ of arrangements of those (n! / product of c!). Arrangements that start with
+\ digit e number T * c[e] / L.
+
+\ t * a / b when the result is an integer, without overflowing t * a.
+: muldiv
+  (forall ρ; ρ t:Int^many a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { t a b }
+  { t b prim div a prim *  t b prim mod a prim * b prim div prim + };
+
+\ Counts of each digit of xs, from index i.
+: count-from
+  (forall ρ; ρ c:Seq Int^many xs:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { c xs i }
+  { i xs prim seq-int.len prim <
+    [ c xs i prim seq-int.at
+      c xs i prim seq-int.at prim seq-int.at 1 prim + prim seq-int.set
+      xs i 1 prim + count-from ]
+    [ c ] if };
+
+\ Number of arrangements: place the copies of digit d one by one (j-th copy
+\ makes the l-th element), multiplying by l / j.
+: tot
+  (forall ρ; ρ c:Seq Int^many d:Int^many j:Int^many l:Int^many t:Int^many -- ρ r:Int^many)
+  locals { c d j l t }
+  { d 10 prim >=
+    [ t ]
+    [ j c d prim seq-int.at prim >
+      [ c d 1 prim + 1 l t tot ]
+      [ c d j 1 prim + l 1 prim + t l 1 prim + j muldiv tot ] if ] if };
+
+\ Sum of the arrangement counts starting with a digit below d, from e.
+: below
+  (forall ρ; ρ c:Seq Int^many t:Int^many n:Int^many d:Int^many e:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { c t n d e acc }
+  { e d prim >=
+    [ acc ]
+    [ c t n d e 1 prim +
+      acc  c e prim seq-int.at 0 prim >
+      [ t c e prim seq-int.at n muldiv prim + ] [ ] if
+      below ] if };
+
+: rank-loop
+  (forall ρ; ρ c:Seq Int^many t:Int^many n:Int^many perm:Seq Int^many p:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { c t n perm p acc }
+  { p perm prim seq-int.len prim >=
+    [ acc ]
+    [ perm p prim seq-int.at
+      locals { d }
+      { c d prim seq-int.at 0 prim =
+        [ -1 ]
+        [ c d c d prim seq-int.at 1 prim - prim seq-int.set
+          t c d prim seq-int.at n muldiv
+          n 1 prim -  perm p 1 prim +
+          acc c t n d 0 0 below prim +
+          rank-loop ] if } ] if };
+
+\ Rank of perm among the arrangements, or -1.
+: rank-of
+  (forall ρ; ρ c:Seq Int^many t:Int^many n:Int^many perm:Seq Int^many -- ρ r:Int^many)
+  locals { c t n perm }
+  { perm prim seq-int.len n prim =
+    [ c t n perm 0 0 rank-loop ]
+    [ -1 ] if };
+
+\ Appends the arrangement with rank k among those of (c, t, n); e is the
+\ digit being tried.
+: choose-digit
+  (forall ρ; ρ c:Seq Int^many t:Int^many n:Int^many k:Int^many out:Seq Int^many e:Int^many -- ρ r:Seq Int^many)
+  locals { c t n k out e }
+  { c e prim seq-int.at 0 prim =
+    [ c t n k out e 1 prim + choose-digit ]
+    [ t c e prim seq-int.at n muldiv
+      locals { cnt }
+      { k cnt prim <
+        [ c e c e prim seq-int.at 1 prim - prim seq-int.set
+          cnt n 1 prim - k out e prim seq-int.push unrank ]
+        [ c t n k cnt prim - out e 1 prim + choose-digit ] if } ] if };
+
+: unrank
+  (forall ρ; ρ c:Seq Int^many t:Int^many n:Int^many k:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { c t n k out }
+  { n 0 prim =
+    [ out ]
+    [ c t n k out 0 choose-digit ] if };
+
+: main
+  (forall ρ; ρ items:Seq Int^many perm:Seq Int^many k:Int^many -- ρ total:Int^many rank:Int^many kth:Seq Int^many after:Seq Int^many)
+  locals { items perm k }
+  { { 0 0 0 0 0 0 0 0 0 0 } items 0 count-from
+    locals { c }
+    { c 0 1 0 1 tot
+      locals { t }
+      { c t items prim seq-int.len perm rank-of
+        locals { r }
+        { t r
+          k t prim <
+          [ c t items prim seq-int.len k prim seq-int.empty unrank ]
+          [ prim seq-int.empty ] if
+          r 0 prim >=  r 1 prim + t prim <  prim and
+          [ c t items prim seq-int.len r 1 prim + prim seq-int.empty unrank ]
+          [ prim seq-int.empty ] if } } } };

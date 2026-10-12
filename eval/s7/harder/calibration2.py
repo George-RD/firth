@@ -484,7 +484,7 @@ CALIBRATION2: tuple[Task, ...] = (
        "ordered by lower number first. Return the team numbers in ranking order, best first, "
        "and the points of each team, indexed by team number. n is 2 to 10, there are at most "
        "45 matches, and every goal count is 0 to 20.",
-       [("n", I), ("homes", SI), ("aways", SI), ("home-goals", SI), ("away-goals", SI)],
+       [("n", I), ("homes", SI), ("aways", SI), ("homeGoals", SI), ("awayGoals", SI)],
        [("order", SI), ("points", SI)], _league,
        (4, [0, 1, 2, 3, 0, 1], [1, 2, 3, 0, 2, 3], [2, 1, 0, 1, 3, 2], [0, 1, 0, 3, 3, 2]),
        [(2, [], [], [], []),
@@ -662,7 +662,7 @@ CALIBRATION2: tuple[Task, ...] = (
        "as 6 (1 January 2000 was a Saturday), and the day of the year of the second date (1 "
        "January is 1).",
        [("y1", I), ("m1", I), ("d1", I), ("y2", I), ("m2", I), ("d2", I)],
-       [("days", I), ("weekday", I), ("day-of-year", I)], _date_diff,
+       [("days", I), ("weekday", I), ("dayOfYear", I)], _date_diff,
        (2000, 1, 1, 2000, 3, 1),
        [(2000, 1, 1, 2000, 1, 1),
         (1999, 12, 31, 2000, 1, 1),

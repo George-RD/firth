@@ -348,7 +348,7 @@ def _swiss(ratings, rounds, results):
 # --- warehouse -------------------------------------------------------------------
 
 def _warehouse(days, price, rp, rq, lead, shelf,
-               ev_day, ev_kind, ev_prod, ev_qty, ev_expiry):
+               evDay, evKind, evProd, evQty, evExpiry):
     P = len(price)
     lots = [[] for _ in range(P)]  # [qty, expiry, arrival serial]
     back = [[] for _ in range(P)]  # [qty, day placed]
@@ -394,10 +394,10 @@ def _warehouse(days, price, rp, rq, lead, shelf,
             if supply[p] == d:
                 supply[p] = None
                 add_lot(p, rq[p], d + shelf[p])
-        while e < len(ev_day) and ev_day[e] == d:
-            p, q = ev_prod[e], ev_qty[e]
-            if ev_kind[e] == 1:
-                add_lot(p, q, ev_expiry[e])
+        while e < len(evDay) and evDay[e] == d:
+            p, q = evProd[e], evQty[e]
+            if evKind[e] == 1:
+                add_lot(p, q, evExpiry[e])
             else:
                 got = take(p, q) if not back[p] else 0
                 revenue += got * price[p]
@@ -660,12 +660,12 @@ def _random_warehouse(seed, P=None, days=None, events=None):
     lead = [rng.randint(1, 10) for _ in range(P)]
     shelf = [rng.randint(1, 30) for _ in range(P)]
     m = events if events is not None else rng.randint(0, 80)
-    ev_day = sorted(rng.randint(0, days - 1) for _ in range(m))
-    ev_kind = [rng.choice([1, 2, 2]) for _ in range(m)]
-    ev_prod = [rng.randint(0, P - 1) for _ in range(m)]
-    ev_qty = [rng.randint(1, 40 if rng.random() < 0.8 else 200) for _ in range(m)]
-    ev_expiry = [d + rng.randint(0, 60) if k == 1 else 0 for d, k in zip(ev_day, ev_kind)]
-    return days, price, rp, rq, lead, shelf, ev_day, ev_kind, ev_prod, ev_qty, ev_expiry
+    evDay = sorted(rng.randint(0, days - 1) for _ in range(m))
+    evKind = [rng.choice([1, 2, 2]) for _ in range(m)]
+    evProd = [rng.randint(0, P - 1) for _ in range(m)]
+    evQty = [rng.randint(1, 40 if rng.random() < 0.8 else 200) for _ in range(m)]
+    evExpiry = [d + rng.randint(0, 60) if k == 1 else 0 for d, k in zip(evDay, evKind)]
+    return days, price, rp, rq, lead, shelf, evDay, evKind, evProd, evQty, evExpiry
 
 
 # cache-sim
@@ -1045,9 +1045,9 @@ _WAREHOUSE = (
     "d, in this order: first, every lot whose expiry day is before d is thrown away. "
     "Second, for each product in order, a supply ordered earlier that is due on day d "
     "arrives as a lot of rq[p] units expiring on day d + shelf[p]. Third, the events of "
-    "day d happen in the order listed: event e is on day ev_day[e], for product "
-    "ev_prod[e], with quantity ev_qty[e]. Kind 1 is a delivery: a lot of that quantity "
-    "arrives, expiring on day ev_expiry[e]. Kind 2 is a customer order: if the product "
+    "day d happen in the order listed: event e is on day evDay[e], for product "
+    "evProd[e], with quantity evQty[e]. Kind 1 is a delivery: a lot of that quantity "
+    "arrives, expiring on day evExpiry[e]. Kind 2 is a customer order: if the product "
     "has any backorder, the whole order joins the end of its backorder queue; otherwise "
     "as many units as are in stock, up to the quantity, are taken and shipped, and any "
     "units not shipped join the end of the queue as a backorder placed on day d. Fourth, "
@@ -1061,9 +1061,9 @@ _WAREHOUSE = (
     "supplies ordered, and the units still owed on backorder at the end. price, rp, rq, "
     "lead and shelf have the same length P, 1 to 5; each price is 1 to 1,000, each rp 0 to "
     "100, each rq 1 to 200, each lead 1 to 10 and each shelf 1 to 30; days is 1 to 60. The "
-    "five event sequences have the same length, at most 80; ev_day is 0 to days - 1 and "
-    "never decreases from one event to the next; ev_kind is 1 or 2; ev_prod is 0 to P - 1; "
-    "ev_qty is 1 to 200; ev_expiry is ev_day to ev_day + 60 for a delivery and 0 for an "
+    "five event sequences have the same length, at most 80; evDay is 0 to days - 1 and "
+    "never decreases from one event to the next; evKind is 1 or 2; evProd is 0 to P - 1; "
+    "evQty is 1 to 200; evExpiry is evDay to evDay + 60 for a delivery and 0 for an "
     "order."
 )
 
@@ -1129,7 +1129,7 @@ SCORED: tuple[Task, ...] = (
        ["seq", "loop", "rules", "state", "heavy"]),
     _t("checkers", _CHECKERS,
        [("board", SI), ("turn", I), ("plies", I)],
-       [("board", SI), ("played", I), ("white_took", I), ("black_took", I), ("crowned", I), ("result", I)],
+       [("board", SI), ("played", I), ("whiteTook", I), ("blackTook", I), ("crowned", I), ("result", I)],
        _checkers, _CHECKERS_EX,
        [*_checkers_cases(), *(_random_checkers(s) for s in (5, 6, 7, 8)), _CHECKERS_MAX],
        ["seq", "nested-loop", "rules", "state", "heavy"]),
@@ -1145,16 +1145,16 @@ SCORED: tuple[Task, ...] = (
        [*_swiss_cases(), *(_random_swiss(s) for s in (1, 2, 3, 4)), _SWISS_MAX],
        ["seq", "nested-loop", "rules", "state", "sort", "heavy"]),
     _t("warehouse", _WAREHOUSE,
-       [("days", I), ("price", SI), ("rp", SI), ("rq", SI), ("lead", SI), ("shelf", SI), ("ev_day", SI),
-        ("ev_kind", SI), ("ev_prod", SI), ("ev_qty", SI), ("ev_expiry", SI)],
+       [("days", I), ("price", SI), ("rp", SI), ("rq", SI), ("lead", SI), ("shelf", SI), ("evDay", SI),
+        ("evKind", SI), ("evProd", SI), ("evQty", SI), ("evExpiry", SI)],
        [("stock", SI), ("earned", I), ("shipped", I), ("discarded", I), ("cancelled", I), ("supplies", I),
         ("owed", I)], _warehouse, _WAREHOUSE_EX,
        [*_warehouse_cases(), *(_random_warehouse(s) for s in (1, 2, 3, 4)), _WAREHOUSE_MAX],
        ["seq", "loop", "rules", "state", "heavy"]),
     _t("cache-sim", _CACHE,
        [("s1", I), ("w1", I), ("s2", I), ("w2", I), ("addrs", SI), ("writes", SB)],
-       [("l1_hits", I), ("l1_misses", I), ("l2_hits", I), ("l2_misses", I), ("mem_reads", I),
-        ("mem_writes", I), ("dirty", I), ("l1_blocks", SI)], _cache_sim, _CACHE_EX,
+       [("l1Hits", I), ("l1Misses", I), ("l2Hits", I), ("l2Misses", I), ("memReads", I),
+        ("memWrites", I), ("dirty", I), ("l1Blocks", SI)], _cache_sim, _CACHE_EX,
        [*_cache_cases(), *(_random_cache(s) for s in (1, 2, 3, 4)), _CACHE_MAX],
        ["seq", "nested-loop", "rules", "state", "divmod", "bool-seq", "heavy"]),
 )

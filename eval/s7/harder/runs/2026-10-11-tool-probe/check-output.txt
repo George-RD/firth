@@ -1,0 +1,4 @@
+probe a973715484d11fd44: type=statusline-setup model=haiku cwd=/home/user tools=Edit,Read,SubagentHandback
+  refused: agent type is 'statusline-setup', not 's7-harder-author'
+  refused: line 14: tool list is ['Edit', 'Read', 'SubagentHandback'], not ['Read', 'SubagentHandback', 'Write']
+refused: 1 problem(s); not every author is shown to have had exactly Read, SubagentHandback, Write

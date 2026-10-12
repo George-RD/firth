@@ -1,0 +1,286 @@
+\ Legal move counting on a 10 by 12 padded board. Cell (rank + 2) * 10 +
+\ file + 1; walls hold 13. Up the board is +10. ctx = { ob ksq passant castle check }:
+\ ob is 0 for white to move, 6 for black (own pieces are ob + 1 to ob + 6),
+\ ksq the king's cell, passant a padded cell or -1, check 1 if the side to
+\ move is in check, else 0.
+\ acc = { moves captures en-passant castles promotions }.
+
+: own?
+  (forall ρ; ρ v:Int^many ob:Int^many -- ρ r:Bool^many)
+  locals { v ob }
+  { v ob prim >  v ob 6 prim + prim <=  prim and };
+
+\ ------------------------------------------------------------- attacks
+
+: leap-hit
+  (forall ρ; ρ b:Seq Int^many sq:Int^many offs:Seq Int^many i:Int^many code:Int^many -- ρ r:Bool^many)
+  locals { b sq offs i code }
+  { i offs prim seq-int.len prim >=
+    [ false ]
+    [ b sq offs i prim seq-int.at prim + prim seq-int.at code prim =
+      [ true ]
+      [ b sq offs i 1 prim + code leap-hit ] if ] if };
+
+: ray-hit
+  (forall ρ; ρ b:Seq Int^many pos:Int^many off:Int^many p1:Int^many p2:Int^many -- ρ r:Bool^many)
+  locals { b pos off p1 p2 }
+  { b pos off prim + prim seq-int.at
+    locals { v }
+    { v 0 prim =
+      [ b pos off prim + off p1 p2 ray-hit ]
+      [ v p1 prim =  v p2 prim =  prim or ] if } };
+
+: rays-hit
+  (forall ρ; ρ b:Seq Int^many sq:Int^many offs:Seq Int^many i:Int^many p1:Int^many p2:Int^many -- ρ r:Bool^many)
+  locals { b sq offs i p1 p2 }
+  { i offs prim seq-int.len prim >=
+    [ false ]
+    [ b sq offs i prim seq-int.at p1 p2 ray-hit
+      [ true ]
+      [ b sq offs i 1 prim + p1 p2 rays-hit ] if ] if };
+
+\ Is cell sq attacked by pieces of base by (0 white, 6 black)?
+: attacked?
+  (forall ρ; ρ b:Seq Int^many sq:Int^many by:Int^many -- ρ r:Bool^many)
+  locals { b sq by }
+  { by 0 prim = [ 10 ] [ -10 ] if
+    locals { dir }
+    { b sq dir prim - 1 prim - prim seq-int.at by 1 prim + prim =
+      b sq dir prim - 1 prim + prim seq-int.at by 1 prim + prim =  prim or
+      [ true ]
+      [ b sq { -21 -19 -12 -8 8 12 19 21 } 0 by 2 prim + leap-hit
+        [ true ]
+        [ b sq { -11 -10 -9 -1 1 9 10 11 } 0 by 6 prim + leap-hit
+          [ true ]
+          [ b sq { -11 -9 9 11 } 0 by 3 prim + by 5 prim + rays-hit
+            [ true ]
+            [ b sq { -10 -1 1 10 } 0 by 4 prim + by 5 prim + rays-hit ] if ] if ] if ] if } };
+
+\ ------------------------------------------------------------- counting
+
+\ Are cells f and k on one rank, file or diagonal?
+: aligned?
+  (forall ρ; ρ f:Int^many k:Int^many -- ρ r:Bool^many)
+  locals { f k }
+  { f 10 prim div k 10 prim div prim -  f 10 prim mod k 10 prim mod prim -
+    locals { dr dc }
+    { dr 0 prim =  dc 0 prim =  prim or  dr dr prim * dc dc prim * prim =  prim or } };
+
+\ Is cell t a knight's move from cell k?
+: knight-of?
+  (forall ρ; ρ t:Int^many k:Int^many -- ρ r:Bool^many)
+  locals { t k }
+  { t 10 prim div k 10 prim div prim -  t 10 prim mod k 10 prim mod prim -
+    locals { dr dc }
+    { dr dr prim * dc dc prim * prim + 5 prim = } };
+
+\ Whether a move from f to t by a piece other than the king, not en passant,
+\ is decided without testing: 1 legal, 2 illegal, 0 test it. Not in check,
+\ a piece on no line with the king cannot uncover it; in check, a move to a
+\ cell on no line with the king and not a knight's move from it neither
+\ blocks nor takes the checker.
+: decided
+  (forall ρ; ρ ctx:Seq Int^many f:Int^many t:Int^many -- ρ r:Int^many)
+  locals { ctx f t }
+  { ctx 1 prim seq-int.at
+    locals { k }
+    { ctx 4 prim seq-int.at 0 prim =
+      [ f k aligned? [ 0 ] [ 1 ] if ]
+      [ t k aligned?  t k knight-of?  prim or [ 0 ] [ 2 ] if ] if } };
+
+: add-at
+  (forall ρ; ρ acc:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { acc i d }
+  { acc i acc i prim seq-int.at d prim + prim seq-int.set };
+
+\ A pseudo-legal move from cell f to cell t; ep and promo are 0 or 1.
+\ Counted only if the mover's king is not attacked afterwards, tested unless
+\ `decided` settles it.
+: try-move
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many f:Int^many t:Int^many ep:Int^many promo:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx f t ep promo }
+  { b f prim seq-int.at
+    locals { piece }
+    { ctx 0 prim seq-int.at
+      locals { ob }
+      { piece ob 6 prim + prim =  ep 1 prim =  prim or
+        [ 0 ] [ ctx f t decided ] if
+        locals { known }
+      { b f 0 prim seq-int.set  t piece prim seq-int.set
+        ep 1 prim =
+        [ t  ob 0 prim = [ 10 ] [ -10 ] if  prim -  0 prim seq-int.set ]
+        [ ] if
+        piece ob 6 prim + prim =
+        [ t ] [ ctx 1 prim seq-int.at ] if
+        known 0 prim =
+        [ 6 ob prim - attacked? ]
+        [ drop drop known 2 prim = ] if
+        [ acc ]
+        [ acc
+          0 promo 1 prim = [ 4 ] [ 1 ] if add-at
+          1 b t prim seq-int.at 0 prim = prim not  ep 1 prim =  prim or
+              [ promo 1 prim = [ 4 ] [ 1 ] if ] [ 0 ] if add-at
+          2 ep add-at
+          4 promo 4 prim * add-at ] if } } } };
+
+\ ------------------------------------------------------------- generation
+
+\ Leapers (knight, king): every offset whose target is empty or enemy.
+: gen-leap
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many idx:Int^many offs:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx idx offs i }
+  { i offs prim seq-int.len prim >=
+    [ acc ]
+    [ idx offs i prim seq-int.at prim +
+      locals { t }
+      { b t prim seq-int.at
+        locals { v }
+        { v 0 prim =  v 6 ctx 0 prim seq-int.at prim - own?  prim or
+          [ acc b ctx idx t 0 0 try-move ]
+          [ acc ] if
+          b ctx idx offs i 1 prim + gen-leap } } ] if };
+
+\ Sliders: walk the ray from pos in direction off.
+: slide-ray
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many idx:Int^many pos:Int^many off:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx idx pos off }
+  { pos off prim +
+    locals { t }
+    { b t prim seq-int.at
+      locals { v }
+      { v 0 prim =
+        [ acc b ctx idx t 0 0 try-move  b ctx idx t off slide-ray ]
+        [ v 6 ctx 0 prim seq-int.at prim - own?
+          [ acc b ctx idx t 0 0 try-move ]
+          [ acc ] if ] if } } };
+
+: gen-slide
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many idx:Int^many offs:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx idx offs i }
+  { i offs prim seq-int.len prim >=
+    [ acc ]
+    [ acc b ctx idx idx offs i prim seq-int.at slide-ray
+      b ctx idx offs i 1 prim + gen-slide ] if };
+
+\ Pawn capture (or en passant) onto cell t; pr is the promotion row.
+: pawn-cap
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many idx:Int^many t:Int^many pr:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx idx t pr }
+  { b t prim seq-int.at 6 ctx 0 prim seq-int.at prim - own?
+    [ acc b ctx idx t 0 t 10 prim div pr prim = [ 1 ] [ 0 ] if try-move ]
+    [ t ctx 2 prim seq-int.at prim =
+      [ acc b ctx idx t 1 0 try-move ]
+      [ acc ] if ] if };
+
+: gen-pawn
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many idx:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx idx }
+  { ctx 0 prim seq-int.at 0 prim = [ 10 3 9 ] [ -10 8 2 ] if
+    locals { dir sr pr }
+    { b idx dir prim + prim seq-int.at 0 prim =
+      [ acc b ctx idx idx dir prim + 0
+        idx dir prim + 10 prim div pr prim = [ 1 ] [ 0 ] if try-move
+        idx 10 prim div sr prim =
+        b idx dir 2 prim * prim + prim seq-int.at 0 prim = prim and
+        [ b ctx idx idx dir 2 prim * prim + 0 0 try-move ]
+        [ ] if ]
+      [ acc ] if
+      b ctx idx idx dir prim + 1 prim - pr pawn-cap
+      b ctx idx idx dir prim + 1 prim + pr pawn-cap } };
+
+\ Castling on one side: s is +1 or -1, n the number of squares that must be
+\ empty (2 or 3), bit the right.
+: castle-side
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many s:Int^many n:Int^many bit:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx s n bit }
+  { ctx 1 prim seq-int.at
+    locals { k }
+    { ctx 3 prim seq-int.at bit prim div 2 prim mod 1 prim =
+      b k s prim + prim seq-int.at 0 prim =  prim and
+      b k s 2 prim * prim + prim seq-int.at 0 prim =  prim and
+      n 2 prim =  b k s 3 prim * prim + prim seq-int.at 0 prim =  prim or  prim and
+      [ b k s prim + 6 ctx 0 prim seq-int.at prim - attacked?
+        b k s 2 prim * prim + 6 ctx 0 prim seq-int.at prim - attacked?
+        prim or
+        [ acc ]
+        [ acc 0 1 add-at 3 1 add-at ] if ]
+      [ acc ] if } };
+
+: gen-all
+  (forall ρ; ρ acc:Seq Int^many b:Seq Int^many ctx:Seq Int^many idx:Int^many -- ρ r:Seq Int^many)
+  locals { acc b ctx idx }
+  { idx 98 prim >
+    [ acc ]
+    [ b idx prim seq-int.at ctx 0 prim seq-int.at own?
+      [ b idx prim seq-int.at ctx 0 prim seq-int.at prim -
+        locals { t }
+        { t 1 prim =
+          [ acc b ctx idx gen-pawn ]
+          [ t 2 prim =
+            [ acc b ctx idx { -21 -19 -12 -8 8 12 19 21 } 0 gen-leap ]
+            [ t 3 prim =
+              [ acc b ctx idx { -11 -9 9 11 } 0 gen-slide ]
+              [ t 4 prim =
+                [ acc b ctx idx { -10 -1 1 10 } 0 gen-slide ]
+                [ t 5 prim =
+                  [ acc b ctx idx { -11 -10 -9 -1 1 9 10 11 } 0 gen-slide ]
+                  [ acc b ctx idx { -11 -10 -9 -1 1 9 10 11 } 0 gen-leap ] if ] if ] if ] if ] if } ]
+      [ acc ] if
+      b ctx idx 1 prim + gen-all ] if };
+
+\ ------------------------------------------------------------- set-up
+
+: pad-loop
+  (forall ρ; ρ board:Seq Int^many out:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { board out i }
+  { i 120 prim >=
+    [ out ]
+    [ out
+      i 10 prim div  i 10 prim mod
+      locals { row col }
+      { col 0 prim =  col 9 prim = prim or  row 2 prim < prim or  row 9 prim > prim or
+        [ 13 ]
+        [ board row 2 prim - 8 prim * col prim + 1 prim - prim seq-int.at ] if }
+      prim seq-int.push
+      board swap i 1 prim + pad-loop ] if };
+
+: find-king
+  (forall ρ; ρ b:Seq Int^many k:Int^many i:Int^many -- ρ r:Int^many)
+  locals { b k i }
+  { b i prim seq-int.at k prim =
+    [ i ]
+    [ b k i 1 prim + find-king ] if };
+
+: main
+  (forall ρ; ρ board:Seq Int^many side:Int^many castle:Int^many passant:Int^many -- ρ moves:Int^many captures:Int^many enpassant:Int^many castles:Int^many promotions:Int^many check:Bool^many outcome:Int^many)
+  locals { board side castle passant }
+  { board prim seq-int.empty 0 pad-loop
+    locals { b }
+    { side 6 prim *
+      locals { ob }
+      { b ob 6 prim + 21 find-king
+        locals { ksq }
+        { b ksq 6 ob prim - attacked?
+          locals { check }
+          { prim seq-int.empty ob prim seq-int.push ksq prim seq-int.push
+            passant 0 prim <
+            [ -1 ]
+            [ passant 8 prim div 2 prim + 10 prim *  passant 8 prim mod prim + 1 prim + ] if
+            prim seq-int.push
+            castle prim seq-int.push
+            check [ 1 ] [ 0 ] if prim seq-int.push
+            locals { ctx }
+            { { 0 0 0 0 0 } b ctx 21 gen-all
+              check
+              [ ]
+              [ ob 0 prim = [ 1 ] [ 4 ] if  ob 0 prim = [ 2 ] [ 8 ] if
+                locals { kb qb }
+                { b ctx 1 2 kb castle-side
+                  b ctx -1 3 qb castle-side } ] if
+              locals { acc }
+              { acc 0 prim seq-int.at acc 1 prim seq-int.at acc 2 prim seq-int.at
+                acc 3 prim seq-int.at acc 4 prim seq-int.at
+                check
+                acc 0 prim seq-int.at 0 prim >
+                [ 0 ]
+                [ check [ 1 ] [ 2 ] if ] if } } } } } } };

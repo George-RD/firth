@@ -1,0 +1,31 @@
+{"at": "2026-10-11T04:27:56Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "test"}
+{"at": "2026-10-11T05:01:36Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-2"}
+{"at": "2026-10-11T05:02:41Z", "status": 200, "seconds": 1.2, "chars": 65000, "result": ["stop", 13039, "ok"], "before": "deepseek-python-2 (diagnostic: large filler, no task text)"}
+{"at": "2026-10-11T05:03:22Z", "status": 200, "seconds": 29.9, "result": ["stop", 21657, 91864], "before": "deepseek-python-2 (diagnostic: long reply, no task text)"}
+{"at": "2026-10-11T05:05:29Z", "status": 502, "seconds": 30.5, "body": "upstream request failed", "before": "deepseek-python-2 (diagnostic, NON-SAMPLE: the real round-1 Firth prompt through deepseek.post with run()'s body; reply discarded unread, never scored)"}
+{"at": "2026-10-11T05:07:44Z", "status": 200, "seconds": 8.1, "chunks": 2870, "chars": 11954, "done": true, "done_reason": "stop", "error": null, "before": "deepseek-python-2 (diagnostic, NON-SAMPLE: streaming transport check, long-output prompt, no task text)"}
+{"at": "2026-10-11T05:07:57Z", "status": 200, "seconds": 5.0, "chunks": 1839, "chars": 8014, "done": true, "done_reason": "stop", "error": null, "before": "deepseek-python-2 (diagnostic, NON-SAMPLE: streaming transport check, long-output prompt, no task text)"}
+{"at": "2026-10-11T05:08:25Z", "status": 200, "seconds": 7.2, "chunks": 2548, "chars": 10836, "done": true, "done_reason": "stop", "error": null, "before": "deepseek-python-2 (diagnostic, NON-SAMPLE: streaming transport check, long-output prompt, no task text)"}
+{"at": "2026-10-11T05:09:57Z", "status": 200, "seconds": 81.2, "chunks": 34155, "chars": 97548, "done": true, "done_reason": "stop", "error": null, "before": "deepseek-python-2 (diagnostic, NON-SAMPLE: streaming transport check, long-output prompt, no task text)"}
+{"at": "2026-10-11T05:10:35Z", "status": 502, "seconds": 30.2, "body": "upstream request failed", "error": null, "before": "deepseek-python-2 (diagnostic, NON-SAMPLE: same hard prompt, not streamed, control for the streaming check)"}
+{"at": "2026-10-11T05:25:54Z", "status": 200, "seconds": 674.0, "model": "deepseek-v4.1-flash", "done": true, "done_reason": "length", "prompt_eval_count": 89, "eval_count": 393216, "content_chars": 0, "thinking_chars": 903225, "before": "deepseek-python-2 (diagnostic, NON-SAMPLE: the patched deepseek.post, streamed and joined, same hard prompt)"}
+{"at": "2026-10-11T04:11:17Z", "status": 502, "seconds": 31.1, "body": "upstream request failed", "sample": "deepseek-python-1", "streamed": false, "note": "SAMPLE round 1, void (transport); time from the sample's driver output file: created at launch, last written at exit (so it includes driver start-up); recorded after the fact on 11 Oct 05:40Z"}
+{"at": "2026-10-11T04:12:10Z", "status": 502, "seconds": 31.1, "body": "upstream request failed", "sample": "deepseek-firth-1", "streamed": false, "note": "SAMPLE round 1, void (transport); time from the sample's driver output file: created at launch, last written at exit (so it includes driver start-up); recorded after the fact on 11 Oct 05:40Z"}
+{"at": "2026-10-11T05:01:43Z", "status": 502, "seconds": 30.7, "body": "upstream request failed", "sample": "deepseek-firth-2", "streamed": false, "note": "SAMPLE round 1, void (transport); time from the sample's driver output file: created at launch, last written at exit (so it includes driver start-up); recorded after the fact on 11 Oct 05:40Z"}
+{"at": "2026-10-11T06:22:10Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-2"}
+{"at": "2026-10-11T06:25:05Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-3"}
+{"at": "2026-10-11T06:25:42Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-3"}
+{"at": "2026-10-11T06:28:06Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-3"}
+{"at": "2026-10-11T06:29:22Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-4"}
+{"at": "2026-10-11T06:31:24Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-4"}
+{"at": "2026-10-11T06:33:20Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-5"}
+{"at": "2026-10-11T06:36:24Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-5"}
+{"at": "2026-10-11T06:37:33Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-6"}
+{"at": "2026-10-11T06:39:01Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-6"}
+{"at": "2026-10-11T06:42:01Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-7"}
+{"at": "2026-10-11T06:44:44Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-7"}
+{"at": "2026-10-11T06:45:48Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-8"}
+{"at": "2026-10-11T06:47:55Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-8"}
+{"at": "2026-10-11T06:50:24Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-python-9"}
+{"at": "2026-10-11T06:52:44Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-9"}
+{"at": "2026-10-11T06:56:29Z", "status": 200, "done_reason": "stop", "reply": "ok", "ok": true, "before": "deepseek-firth-10"}
