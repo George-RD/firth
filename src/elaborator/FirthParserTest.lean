@@ -313,6 +313,18 @@ def runParserTests : IO Unit := do
     "firth.syntax.invalid-character" 12 13
   expectSpanFailure (": x ( -- ) '" ++ String.singleton (Char.ofNat 1) ++ "' ;")
     "firth.syntax.invalid-character" 11 14
+  -- The first error in the source is reported, lexical or not.
+  expectSpanFailure ": f ( -- Bool ) @ ;" "firth.syntax.unnamed-stack-item" 9 13
+  expectSpanFailure ": f ( -- Bool ) a_b @ ;" "firth.syntax.unnamed-stack-item" 9 13
+  -- A lexical error before a parse error stays the report.
+  expectSpanFailure ": f ( -- r:Int ) @ Bool ( ;" "firth.syntax.invalid-token" 17 18
+  -- The cut that the lexical error makes is not an error of its own.
+  expectSpanFailure ": f ( -- r:Int @ ;" "firth.syntax.invalid-token" 15 16
+  expectSpanFailure ": f ( -- r:Int ) dup [ @ ;" "firth.syntax.invalid-token" 23 24
+  -- A name with `_` before the lexical error is the report, unless a parse
+  -- error comes before it.
+  expectSpanFailure ": f ( -- r:Int ) a_b @ ;" "firth.syntax.underscore-in-name" 17 20
+  expectSpanFailure ": f ( -- r:Int ) a_b : @ ;" "firth.syntax.underscore-in-name" 17 20
   IO.println "parser tests passed"
 
 def main : IO Unit := runParserTests

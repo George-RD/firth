@@ -766,7 +766,19 @@ private def underscoreError (tokens : List Token) : Option ParseError :=
 def parse (source : String) : ParseOutput :=
   let initial := startPos
   match lex { chars := source.toList, position := initial } [] with
-  | .error (e, before) => .failure [(underscoreError before.reverse).getD e]
+  | .error (e, before) =>
+      -- The lexer stops at its error, so the tokens read before it are
+      -- parsed to find an error that comes first in the source. Running out
+      -- of those tokens is the cut, not a mistake of the program: that report
+      -- is placed at the lexical error, so it never comes first.
+      let tokens := before.reverse
+      let truncated : Parser := { tokens := tokens.toArray, index := 0, eofPosition := e.primary.start }
+      let earlier : Option ParseError := match parseDeclarations truncated none true with
+        | .error pe => some pe
+        | .ok _ => none
+      let candidates := [underscoreError tokens, earlier, some e].filterMap id
+      .failure [candidates.foldl (fun best c =>
+        if c.primary.start.offset < best.primary.start.offset then c else best) e]
   | .ok result =>
       let p : Parser := { tokens := result.tokens.toArray, index := 0, eofPosition := result.endPosition }
       let underscore := underscoreError result.tokens
