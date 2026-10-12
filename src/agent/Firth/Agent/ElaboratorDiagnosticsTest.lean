@@ -1514,6 +1514,140 @@ private def runCallAccountTests : IO Unit := do
   let insertMoved := (s!"{insertSorted}").replace "pos 1 prim + insert-sorted value" "value pos 1 prim + insert-sorted"
   let _ ← callReport "insert-sorted with the move made" "firth.type.expected-bool" insertMoved
     ["`if` in `insert-sorted` needs a Bool condition"]
+  -- One value too many (sonnet-firth-6's sokoban in the scored run of
+  -- 2026-10-11, reduced): `m` is written twice before `undo4`. Removing
+  -- either of the two leaves one text, and nothing else removed lets
+  -- `undo3` check, so the report names that one removal and says it is one
+  -- value too many. [5, 6, 7] with `e` = 1: `dlt` reads m[0] = 5, written
+  -- at 1.
+  let extra := ": dlt (forall ρ; ρ m:Seq Int^many x:Int^many -- ρ r:Int^many) prim seq-int.at ;\n: undo4 (forall ρ; ρ m:Seq Int^many e:Int^many d:Int^many -- ρ r:Seq Int^many) prim seq-int.set ;\n: undo3 (forall ρ; ρ m:Seq Int^many e:Int^many -- ρ r:Seq Int^many)\n  locals { m e } { m e m m e 16 prim div dlt undo4 } ;"
+  callCase "one value too many" "firth.type.word-input-mismatch" extra
+      ["`undo4` in `undo3` takes m:Seq Int, e:Int, d:Int, bottom to top, but here it gets, bottom to top, `e` (Int), `m` (Seq Int) and the result of `dlt` (Int). One value too many is pushed before it.",
+       "Remove the `m` written at line 4, column 26: write `e 16 prim div dlt` in place of `m e 16 prim div dlt` on line 4. With that edit `undo3` checks."]
+      [] "undo3" [.intSeq [5, 6, 7], .int 1] [.intSeq [5, 5, 7]]
+  -- Planted: the report main gave (at 35c73c1) names no removal, so it
+  -- fails the case.
+  let oldExtra := "The second value from the top, `m` (Seq Int), is not what `undo4` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation."
+  if (oldExtra.splitOn "Remove the `m` written at line 4, column 26").length > 1 then
+    fail "one value too many: the old report passes the check"
+  -- Three removals let `ac` check (sonnet-firth-9's checkers, reduced: the
+  -- author meant `40 cnt 1 prim - prim +`, an operation missing): `40`,
+  -- `cnt` or `1`. None is named, and the report does not say the count is
+  -- off.
+  let _ ← callReport "several values whose removal checks" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: ac (forall ρ; ρ m:Seq Int^many cnt:Int^many -- ρ r:Int^many)\n  locals { m cnt } { m 40 cnt 1 prim - gt } ;"
+    ["is not what `gt` takes there (Seq Int)"] ["Remove the", "One value too many", "in place of"]
+  -- The extra value just before the operation: removing the last `i`
+  -- leaves a space more than removing the first, but the same items, so
+  -- it is one removal. Nothing is written in its place.
+  let _ ← callReport "the extra value just before the operation" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i i gt } ;"
+    ["One value too many is pushed before it.", "Remove the `i` written at line 3, column 24. With that edit `f` checks."] ["in place of"]
+  -- One removal gets past the first `gt`, the extra `i`, but `f` still
+  -- does not check: the second `gt` gets two Ints. A removal is named only
+  -- when the word then checks, so none is here.
+  let _ ← callReport "a removal that leaves a later error" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i i gt 1 gt } ;"
+    ["is not what `gt` takes there"] ["Remove the", "One value too many"]
+
+/-- Where removing one value before an operation would not be shown to be
+the fix, no removal is named (`extraValueEdit`). -/
+private def runExtraValueTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-call" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let extraReport (label code source : String) (needles absent : List String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label code emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        for needle in absent do
+          if emitted.contains needle then
+            fail s!"{label}: the report says {needle}: {emitted}"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
+  -- Every removal before the operation is counted, of any kind and at any
+  -- depth: in each of these, removing an `e` lets `u` check, and so does
+  -- removing something else, so no removal is named.
+  let undo4 := ": undo4 (forall ρ; ρ m:Seq Int^many e:Int^many d:Int^many -- ρ r:Seq Int^many) prim seq-int.set ;\n: zero (forall ρ; ρ -- ρ v:Int^many) 0 ;\n: mk (forall ρ; ρ -- ρ s:Seq Int^many) prim seq-int.empty ;\n: u (forall ρ; ρ m:Seq Int^many e:Int^many -- ρ r:Seq Int^many)\n  locals { m e } "
+  for (name, body) in [("an atom", "{ m e dup e undo4 } ;"), ("a word", "{ m zero e e undo4 } ;"),
+      ("an atom just before the operation", "{ m e e dup undo4 } ;"),
+      ("a value with a bracket between", "{ m e [ e ] drop e e undo4 } ;")] do
+    extraReport s!"another removal checks: {name}" "firth.type.word-input-mismatch" (undo4 ++ body)
+      ["`undo4` in `u` takes m:Seq Int, e:Int, d:Int"] ["Remove the", "One value too many"]
+  -- The only removal that checks is of `mk`, a word and not a value written
+  -- as a local or a literal, so none is named.
+  extraReport "the removal of a word" "firth.type.word-input-mismatch" (undo4 ++ "{ m e e mk undo4 } ;")
+    ["`undo4` in `u` takes m:Seq Int, e:Int, d:Int"] ["Remove the", "One value too many"]
+  -- The only removal that checks is of an `i` before `[ ]` (either `i`,
+  -- leaving one program), not in the same run of items as `gt`, so none is
+  -- named; nor where the bracket is written against the items beside it.
+  for body in ["{ m i i [ ] call gt } ;", "{ m i i [] call gt } ;",
+      -- A `locals` block between: removing `i` lets `f` check, and nothing
+      -- else does, but the block is not in the same run.
+      "{ m i m locals { s } { s prim seq-int.len } gt } ;"] do
+    extraReport s!"a bracket between: {body}" "firth.type.word-input-mismatch"
+      (": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } " ++ body)
+      ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  -- The order is open: `count-loop` takes `xs k i cnt`, and `main` pushes
+  -- `xs k xs k 0`. Removing the second `xs` lets `main` check, but gives `k`
+  -- for the start index `i` (the author meant `xs k 0 0`), so it is not
+  -- named (haiku-firth-7, check-tool run of 2026-09-30, with `count-loop`'s
+  -- body cut to `cnt`).
+  extraReport "the order is open" "firth.type.word-input-mismatch"
+    ": count-loop (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many cnt:Int^many -- ρ count:Int^many)\n  locals { xs k i cnt } { cnt } ;\n: main (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { xs k xs k 0 count-loop } ;"
+    ["`count-loop` in `main`"] ["Remove the", "One value too many"]
+  -- A sequence literal between the value and the operation is no bracket:
+  -- removing the second `m` is the one removal that checks, and it is named.
+  extraReport "a sequence literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1 } drop undo4 } ;")
+    ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24: write `e { 1 } drop` in place of `m e { 1 } drop` on line 5. With that edit `u` checks."] []
+  -- Both texts of the rewrite are as written, so wider space inside a
+  -- literal or between the items leaves the value alone.
+  extraReport "wider space inside a literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1  2 } drop undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  extraReport "wider space between the items" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m  e undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  -- A comment between two `i`s: removing either leaves the same program,
+  -- so it is one removal, and it is named.
+  extraReport "a comment between the same values" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i (* note *) i gt } ;"
+    ["One value too many is pushed before it.", "Remove the `i` written at line 3, column 35"] []
+  -- A comment just before the operation is not part of the text written
+  -- in place; a comment among the items to rewrite leaves the value alone.
+  extraReport "a comment before the operation" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e (* the index *) undo4 } ;")
+    ["Remove the `m` written at line 5, column 24: write `e` in place of `m e` on line 5, column 24. With that edit `u` checks."] []
+  extraReport "a comment among the items" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m (* the index *) e undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  -- Past `extraValueBudget` items before the operation, no removal is
+  -- searched for or named; just under it, the same removal is named.
+  let filler (pairs : Nat) := " ".intercalate (List.replicate pairs "[ ] call")
+  let budgetWord (pairs : Nat) :=
+    s!": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals \{ m i } \{ m {filler pairs} i i gt } ;"
+  extraReport "past the search budget" "firth.type.word-input-mismatch"
+    (budgetWord (Firth.Elaborator.extraValueBudget / 2)) ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "within the search budget" "firth.type.word-input-mismatch"
+    (budgetWord (Firth.Elaborator.extraValueBudget / 2 - 2)) ["One value too many is pushed before it.", "Remove the `i`"] []
+  -- A long file: the same word, after a long comment, costs more than
+  -- `extraValueCost` to search, so no removal is named.
+  let comment := "(* " ++ String.mk (List.replicate 12000 'x') ++ " *)\n"
+  extraReport "past the search cost" "firth.type.word-input-mismatch"
+    (comment ++ budgetWord 100) ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "within the search cost" "firth.type.word-input-mismatch"
+    (budgetWord 100) ["One value too many is pushed before it.", "Remove the `i`"] []
+  -- A value is named as written: a sequence literal over two lines is not
+  -- named, and one with more space inside keeps it.
+  let seqWord (literal : String) :=
+    s!": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals \{ m i } \{ m i {literal} gt } ;"
+  extraReport "a value over two lines" "firth.type.word-input-mismatch" (seqWord "{ 1\n 2 }")
+    ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "a value with more space inside" "firth.type.word-input-mismatch" (seqWord "{ 1  2 }")
+    ["Remove the `{ 1  2 }` written at line 3, column 24. With that edit `f` checks."] []
+  -- The text from the value to the operation crosses a line, so it is not
+  -- written out in place: the hint names the value alone.
+  extraReport "a removal across lines" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m\n  e undo4 } ;")
+    ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
 
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
   | .snoc rest type => stackTypes rest ++ [type]
@@ -3114,6 +3248,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   runClosedCalleeTests
   runDeclaredInputsTests
   runCallAccountTests
+  runExtraValueTests
   runPrimitiveRolesTests
   runSourceTypeTests
   runEveryErrorTests
