@@ -766,7 +766,24 @@ private def underscoreError (tokens : List Token) : Option ParseError :=
 def parse (source : String) : ParseOutput :=
   let initial := startPos
   match lex { chars := source.toList, position := initial } [] with
-  | .error (e, before) => .failure [(underscoreError before.reverse).getD e]
+  | .error (e, before) =>
+      -- The lexer stops at its error, so the tokens read before it are
+      -- parsed to find an error that comes first in the source. Running out
+      -- of those tokens is the cut, not a mistake of the program, so an
+      -- end-of-input report from them is not one.
+      let tokens := before.reverse
+      let truncated : Parser := { tokens := tokens.toArray, index := 0, eofPosition := e.primary.start }
+      let earlier : Option ParseError := match parseDeclarations truncated none true with
+        | .error pe => if pe.code == "firth.syntax.unexpected-eof" then none else some pe
+        | .ok _ => none
+      -- The earliest start wins; on equal starts the first listed does: the
+      -- underscore, then the parse error, then the lexical error (a
+      -- `quote-in-name` report starts where the name does).
+      let candidates := [underscoreError tokens, earlier].filterMap id ++ [e]
+      let first : Option ParseError := candidates.foldl (fun best c => match best with
+        | some b => if c.primary.start.offset < b.primary.start.offset then some c else some b
+        | none => some c) none
+      .failure [first.getD e]
   | .ok result =>
       let p : Parser := { tokens := result.tokens.toArray, index := 0, eofPosition := result.endPosition }
       let underscore := underscoreError result.tokens
