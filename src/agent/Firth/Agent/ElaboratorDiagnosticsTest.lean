@@ -1582,9 +1582,12 @@ private def runExtraValueTests : IO Unit := do
   extraReport "the removal of a word" "firth.type.word-input-mismatch" (undo4 ++ "{ m e e mk undo4 } ;")
     ["`undo4` in `u` takes m:Seq Int, e:Int, d:Int"] ["Remove the", "One value too many"]
   -- The only removal that checks is of an `i` before `[ ]` (either `i`,
-  -- leaving one text), not in the same run of items as `gt`, so none is
+  -- leaving one program), not in the same run of items as `gt`, so none is
   -- named; nor where the bracket is written against the items beside it.
-  for body in ["{ m i i [ ] call gt } ;", "{ m i i [] call gt } ;"] do
+  for body in ["{ m i i [ ] call gt } ;", "{ m i i [] call gt } ;",
+      -- A `locals` block between: removing `i` lets `f` check, and nothing
+      -- else does, but the block is not in the same run.
+      "{ m i m locals { s } { s prim seq-int.len } gt } ;"] do
     extraReport s!"a bracket between: {body}" "firth.type.word-input-mismatch"
       (": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } " ++ body)
       ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
@@ -1600,6 +1603,17 @@ private def runExtraValueTests : IO Unit := do
   -- removing the second `m` is the one removal that checks, and it is named.
   extraReport "a sequence literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1 } drop undo4 } ;")
     ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24: write `e { 1 } drop` in place of `m e { 1 } drop` on line 5. With that edit `u` checks."] []
+  -- A comment between two `i`s: removing either leaves the same program,
+  -- so it is one removal, and it is named.
+  extraReport "a comment between the same values" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i (* note *) i gt } ;"
+    ["One value too many is pushed before it.", "Remove the `i` written at line 3, column 35"] []
+  -- A comment just before the operation is not part of the text written
+  -- in place; a comment among the items to rewrite leaves the value alone.
+  extraReport "a comment before the operation" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e (* the index *) undo4 } ;")
+    ["Remove the `m` written at line 5, column 24: write `e` in place of `m e` on line 5, column 24. With that edit `u` checks."] []
+  extraReport "a comment among the items" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m (* the index *) e undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
   -- The text from the value to the operation crosses a line, so it is not
   -- written out in place: the hint names the value alone.
   extraReport "a removal across lines" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m\n  e undo4 } ;")

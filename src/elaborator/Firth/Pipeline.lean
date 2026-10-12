@@ -630,6 +630,25 @@ private partial def everyItem : List Item → List (Item × Span)
   | item@(.atom _ span) :: rest => (item, span) :: everyItem rest
   | item@(.primitive _ span) :: rest => (item, span) :: everyItem rest
 
+/-- An item without its spans: two edited bodies with the same shapes are
+the same program, whatever their spacing and comments. -/
+private partial def itemShape : Item → String
+  | .literal literal _ => s!"{repr literal.value}"
+  | .word name _ => s!"w {name}"
+  | .atom name _ => s!"a {name}"
+  | .primitive name _ => s!"p {name}"
+  | .quotation inner _ => "[ " ++ " ".intercalate (inner.map itemShape) ++ " ]"
+  | .locals names inner _ =>
+      "locals { " ++ " ".intercalate (names.map (·.name)) ++ " } { " ++ " ".intercalate (inner.map itemShape) ++ " }"
+
+/-- The definition that starts at byte `start`, in a vocabulary or not. -/
+private partial def wordAt (start : Nat) : List Declaration → Option WordDefinition
+  | [] => none
+  | .word definition :: rest =>
+      if definition.span.start.offset == start then some definition else wordAt start rest
+  | .vocabulary _ inner _ :: rest => (wordAt start inner).orElse fun _ => wordAt start rest
+  | _ :: rest => wordAt start rest
+
 /-- Whether the item starting at `candidate` and the one starting at
 `operation` are in the same list of items with no quotation or `locals`
 block between them: in the same run of items, told from the parse, so a
@@ -666,18 +685,23 @@ private def extraValueEdit (config : PipelineConfig) (source : String) (word : W
     match item with
     | .word name _ => if bound.contains name then some span.start.offset else none
     | _ => none
-  -- Each removal that lets the word check, compared as items: removing the
-  -- last of two `m`s just before the operation leaves a space more than
-  -- removing the first.
+  -- Each removal that lets the word check.
   let checking := (everyItem word.body).filterMap fun (item, span) =>
     if span.stop.offset > opStart then none else
     let start := span.start.offset
     let stop := span.stop.offset
     let edited := bytesText source 0 start ++ bytesText source stop source.utf8ByteSize
+    -- Compared as items: removing either of two `i`s with a comment or
+    -- more space between them leaves the same program.
+    let shape : Option String := match parse edited with
+      | .success file => (wordAt word.span.start.offset file.declarations).map fun definition =>
+          " ".intercalate (definition.body.map itemShape)
+      | .failure _ => none
     -- Only a removal after which the word checks: one that gets past the
     -- operation to a later error is not shown to be the fix.
+    shape.bind fun shape =>
     (checkCallEdit config source word start stop "" (opStart - stop)).bind fun edit =>
-      if edit.after.isSome then none else some (collapseSpace edited, item, span)
+      if edit.after.isSome then none else some (shape, item, span)
   match (checking.map (·.1)).eraseDups with
   | [_] =>
       -- Named only as a local or a literal in the same run of items as the
@@ -690,17 +714,25 @@ private def extraValueEdit (config : PipelineConfig) (source : String) (word : W
         value && sameRun span.start.offset opStart word.body
       named.getLast?.bind fun (_, _, span) =>
         let start := span.start.offset
-        let removed := bytesText source start span.stop.offset
+        let removed := collapseSpace (bytesText source start span.stop.offset)
         let (line, column) := lineColumn source start
-        -- Up to the last item before the operation, as for a reordering,
-        -- when that is on one line; otherwise the value alone.
-        let last := start + (bytesText source start opStart).trimAsciiEnd.toString.utf8ByteSize
-        let stop := if (bytesText source start last).contains '\n' then span.stop.offset else last
+        -- The items from the value to the operation: in the same run, so
+        -- none is a quotation or `locals` block.
+        let run := (everyItem word.body).filterMap fun (_, item) =>
+          if item.start.offset ≥ start && item.stop.offset ≤ opStart then some item else none
+        let last := (run.map (·.stop.offset)).foldl max span.stop.offset
+        -- Written out in place, as for a reordering, only when that text is
+        -- those items alone (no comment among them) on one line; otherwise
+        -- the value alone.
+        let alone := (bytesText source start last).contains '\n' ||
+          collapseSpace (bytesText source start last) !=
+            " ".intercalate (run.map fun item => collapseSpace (bytesText source item.start.offset item.stop.offset))
+        let stop := if alone then span.stop.offset else last
         let replacement := collapseSpace (bytesText source span.stop.offset stop)
+        -- The same items as the removal that checks, so this checks too.
         (checkCallEdit config source word start stop replacement
-            (replacement.utf8ByteSize + (opStart - stop))).bind fun edit =>
-          if edit.after.isSome then none else
-          some { edit with removed := some (removed, line, column) }
+            (replacement.utf8ByteSize + (opStart - stop))).map fun edit =>
+          { edit with removed := some (removed, line, column) }
   | _ => none
 
 /-- `extraValueEdit` for a word or primitive the checker refused because the
