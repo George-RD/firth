@@ -234,22 +234,24 @@ As run 13, with these changes:
     36b240c, and the change that followed it, which compares Haiku names
     whole too). It compares whole sample names, so an injected item naming
     a sample of another subject or language is flagged even when it has the
-    author's own number. Checked on 12 October, with `context_seen.py` at
-    7d82348 beside the current one and run 14's call pattern
-    (`LOG --arm-set ... --arm ... --sample haiku-firth-N --label ...`):
-    32 Haiku-named cases give the same exit code and the same flagged
-    items, apart from a new `sample_names` field on each flagged item. A
-    log that names `sonnet-firth-4`, `deepseek-firth-4` or
+    author's own number. Checked on 12 October with
+    `runs/2026-10-10-context-seen-names/haiku_same.py 7d82348`, which runs
+    `context_seen.py` at 7d82348 beside the current one with run 14's call
+    pattern (`LOG --arm-set ... --arm ... --sample haiku-firth-N --label
+    ...`; 7d82348 has no run14 arm set, so the script uses run13's): 32
+    Haiku-named cases give the same exit code, report and text apart from
+    a new `sample_names` field on each flagged item, and the script's
+    planted cases (a Sonnet-named item, an extra field, a changed `names`)
+    differ. A log that names `sonnet-firth-4`, `deepseek-firth-4` or
     `haiku-python-4` for author `haiku-firth-4` and nothing else exited 0
     and now exits 1 (a `context` void, and a `cross_sample` item also
-    writes the STOP file). So "run 14's context results are unchanged"
-    holds only for logs that name no sonnet-, deepseek- or haiku-python-
-    sample; run 14's authors are Haiku and write Firth, and nothing in a
-    session should name such a sample. The harness's own check of this
-    (`runs/2026-10-10-context-seen-names/haiku_same.py`) asserts
-    byte-identical output, which the `sample_names` field now breaks on
-    its first case; that is reported to the harder tier's owner, not
-    changed here.
+    writes the STOP file). So run 14's context results change only for a
+    log whose sole mention of another sample is a sonnet-, deepseek- or
+    haiku-python- name that carries the author's own number. A name with
+    another number (`haiku-python-7` for author `haiku-firth-4`) was
+    flagged before and still is. Run 14's authors
+    are Haiku and write Firth, and nothing in a session should name such
+    a sample.
 - **Edit replay.** The rule exists so that the scored answer is tied to
   the author's own calls: the audit replays an author's writes and edits
   and requires the result to be the kept copy that was scored. Arm A has
