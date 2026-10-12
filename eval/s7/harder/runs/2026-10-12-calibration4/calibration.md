@@ -9,10 +9,11 @@ fresh authors. Neither this file nor the
 candidates change after the pin below; anything learnt in calibration is
 reported, not folded back in.
 
-**Status: draft. Not pinned. No author has run.** Calibration starts only
-when the maintainer has chosen calibrate-then-select over freezing an
-unrun set (the coordinator's card of 11 October 2026), and only after the
-conditions in "Before the pin" are met.
+**Status: draft. Not pinned. No author has run.** The maintainer chose
+calibrate-then-select over freezing an unrun set on the coordinator's card
+of 11 October 2026 ("Calibrate first", answered 12 October 2026).
+Calibration starts only after the other conditions in "Before the pin" are
+met.
 
 ## Why new tasks, and why calibrate
 
@@ -196,7 +197,8 @@ outcome, computed by a script committed with it from the kept results only.
 
 ## Before the pin
 
-- [ ] The maintainer chooses calibrate-then-select (coordinator's card).
+- [x] The maintainer chooses calibrate-then-select (coordinator's card):
+  "Calibrate first", 12 October 2026.
 - [ ] The hints PR has merged and the coordinator says the S7 inputs are
   settled.
 - [x] #251 (the tool-probe notes) has merged (`d837ac2`).
