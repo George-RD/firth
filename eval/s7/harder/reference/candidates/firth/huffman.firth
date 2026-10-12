@@ -1,0 +1,157 @@
+\ Huffman code lengths, canonical codes and encoding.
+
+\ Builds alive flags A (1 if freq > 0), groups G (G[s] = s) and lengths L (0).
+: build
+  (forall ρ; ρ freqs:Seq Int^many A:Seq Int^many G:Seq Int^many L:Seq Int^many i:Int^many -- ρ A2:Seq Int^many G2:Seq Int^many L2:Seq Int^many)
+  locals { freqs A G L i }
+  { i freqs prim seq-int.len prim <
+    [ freqs i prim seq-int.at 0 prim >
+      [ A 1 prim seq-int.push ] [ A 0 prim seq-int.push ] if
+      G i prim seq-int.push
+      L 0 prim seq-int.push
+      locals { A2 G2 L2 } { freqs A2 G2 L2 i 1 prim + build } ]
+    [ A G L ] if };
+
+\ Index of the first alive node (not ex) with the lowest weight, or -1.
+: argmin
+  (forall ρ; ρ W:Seq Int^many A:Seq Int^many ex:Int^many i:Int^many best:Int^many -- ρ r:Int^many)
+  locals { W A ex i best }
+  { i W prim seq-int.len prim <
+    [ A i prim seq-int.at 1 prim = i ex prim = prim not prim and
+      [ best 0 prim <
+        [ i ]
+        [ W i prim seq-int.at W best prim seq-int.at prim < [ i ] [ best ] if ]
+        if ]
+      [ best ] if
+      locals { nb } { W A ex i 1 prim + nb argmin } ]
+    [ best ] if };
+
+\ Number of alive nodes.
+: count
+  (forall ρ; ρ A:Seq Int^many i:Int^many acc:Int^many -- ρ k:Int^many)
+  locals { A i acc }
+  { i A prim seq-int.len prim <
+    [ A i 1 prim + acc A i prim seq-int.at prim + count ]
+    [ acc ] if };
+
+\ Every symbol in group a or b joins group lo and gains one bit of length.
+: relabel
+  (forall ρ; ρ G:Seq Int^many L:Seq Int^many a:Int^many b:Int^many lo:Int^many i:Int^many -- ρ G2:Seq Int^many L2:Seq Int^many)
+  locals { G L a b lo i }
+  { i G prim seq-int.len prim <
+    [ G i prim seq-int.at
+      locals { g }
+      { g a prim = g b prim = prim or
+        [ G i lo prim seq-int.set L i L i prim seq-int.at 1 prim + prim seq-int.set ]
+        [ G L ] if
+        a b lo i 1 prim + relabel } ]
+    [ G L ] if };
+
+: merge-loop
+  (forall ρ; ρ W:Seq Int^many A:Seq Int^many G:Seq Int^many L:Seq Int^many k:Int^many -- ρ L2:Seq Int^many)
+  locals { W A G L k }
+  { k 1 prim >
+    [ W A -1 0 -1 argmin
+      locals { a }
+      { W A a 0 -1 argmin
+        locals { b }
+        { a b prim < [ a b ] [ b a ] if
+          locals { lo hi }
+          { W lo W a prim seq-int.at W b prim seq-int.at prim + prim seq-int.set
+            A hi 0 prim seq-int.set
+            G L a b lo 0 relabel
+            k 1 prim -
+            merge-loop } } } ]
+    [ L ] if };
+
+: huff
+  (forall ρ; ρ freqs:Seq Int^many A:Seq Int^many G:Seq Int^many L:Seq Int^many -- ρ L2:Seq Int^many)
+  locals { freqs A G L }
+  { A 0 0 count
+    locals { k }
+    { k 1 prim =
+      [ freqs A -1 0 -1 argmin locals { r } { L r 1 prim seq-int.set } ]
+      [ freqs A G L k merge-loop ] if } };
+
+: maxl
+  (forall ρ; ρ L:Seq Int^many i:Int^many m:Int^many -- ρ r:Int^many)
+  locals { L i m }
+  { i L prim seq-int.len prim <
+    [ L i 1 prim +
+      L i prim seq-int.at m prim >
+      [ L i prim seq-int.at ] [ m ] if
+      maxl ]
+    [ m ] if };
+
+: neg1s
+  (forall ρ; ρ n:Int^many C:Seq Int^many -- ρ C2:Seq Int^many)
+  locals { n C }
+  { C prim seq-int.len n prim <
+    [ n C -1 prim seq-int.push neg1s ]
+    [ C ] if };
+
+\ Canonical codes: level lv, next is the next code at this level, s scans symbols.
+: codes
+  (forall ρ; ρ L:Seq Int^many C:Seq Int^many lv:Int^many maxlen:Int^many next:Int^many s:Int^many -- ρ C2:Seq Int^many)
+  locals { L C lv maxlen next s }
+  { s L prim seq-int.len prim <
+    [ L s prim seq-int.at lv prim =
+      [ C s next prim seq-int.set next 1 prim + ]
+      [ C next ] if
+      locals { C2 n2 } { L C2 lv maxlen n2 s 1 prim + codes } ]
+    [ lv maxlen prim >=
+      [ C ]
+      [ L C lv 1 prim + maxlen next 2 prim * 0 codes ] if ] if };
+
+\ Position of the first message value that is out of range or has no code, else -1.
+: firstbad
+  (forall ρ; ρ L:Seq Int^many msg:Seq Int^many i:Int^many -- ρ r:Int^many)
+  locals { L msg i }
+  { i msg prim seq-int.len prim <
+    [ msg i prim seq-int.at
+      locals { v }
+      { v 0 prim <
+        [ i ]
+        [ v L prim seq-int.len prim >=
+          [ i ]
+          [ L v prim seq-int.at 0 prim =
+            [ i ] [ L msg i 1 prim + firstbad ] if ] if ] if } ]
+    [ -1 ] if };
+
+\ Appends the low len bits of code, most significant first.
+: emit
+  (forall ρ; ρ bits:Seq Int^many code:Int^many len:Int^many -- ρ bits2:Seq Int^many)
+  locals { bits code len }
+  { len 0 prim >
+    [ bits code 2 prim div len 1 prim - emit
+      code 2 prim mod prim seq-int.push ]
+    [ bits ] if };
+
+: encode
+  (forall ρ; ρ L:Seq Int^many C:Seq Int^many msg:Seq Int^many i:Int^many bits:Seq Int^many -- ρ bits2:Seq Int^many)
+  locals { L C msg i bits }
+  { i msg prim seq-int.len prim <
+    [ msg i prim seq-int.at
+      locals { v }
+      { bits C v prim seq-int.at L v prim seq-int.at emit
+        locals { b2 } { L C msg i 1 prim + b2 encode } } ]
+    [ bits ] if };
+
+: main
+  (forall ρ; ρ freqs:Seq Int^many msg:Seq Int^many -- ρ lengths:Seq Int^many codes:Seq Int^many bits:Seq Int^many bad:Int^many)
+  locals { freqs msg }
+  { freqs prim seq-int.empty prim seq-int.empty prim seq-int.empty 0 build
+    locals { A G L0 }
+    { freqs A G L0 huff
+      locals { L }
+      { freqs prim seq-int.len prim seq-int.empty neg1s
+        locals { C0 }
+        { L C0 1 L 0 0 maxl 0 0 codes
+          locals { C }
+          { L msg 0 firstbad
+            locals { bad }
+            { L C
+              bad 0 prim <
+              [ L C msg 0 prim seq-int.empty encode ]
+              [ prim seq-int.empty ] if
+              bad } } } } } };

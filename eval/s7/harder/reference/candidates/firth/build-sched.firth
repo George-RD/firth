@@ -1,0 +1,127 @@
+\ Priority list scheduler. fin holds finish times (1000000 = not started);
+\ wf holds the time each worker becomes free.
+
+: fill-go
+  (forall ρ; ρ s:Seq Int^many n:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { s n v }
+  { s prim seq-int.len n prim <
+    [ s v prim seq-int.push n v fill-go ]
+    [ s ] if };
+
+\ Marks in bl every task that has an unfinished dependency at time t.
+: block-go
+  (forall ρ; ρ bl:Seq Int^many bef:Seq Int^many aft:Seq Int^many fin:Seq Int^many t:Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { bl bef aft fin t k }
+  { k bef prim seq-int.len prim <
+    [ fin bef k prim seq-int.at prim seq-int.at t prim <=
+      [ bl ]
+      [ bl aft k prim seq-int.at 1 prim seq-int.set ] if
+      bef aft fin t k 1 prim + block-go ]
+    [ bl ] if };
+
+: find-worker-go
+  (forall ρ; ρ wf:Seq Int^many t:Int^many w:Int^many -- ρ r:Int^many)
+  locals { wf t w }
+  { w wf prim seq-int.len prim <
+    [ wf w prim seq-int.at t prim <=
+      [ w ]
+      [ wf t w 1 prim + find-worker-go ] if ]
+    [ -1 ] if };
+
+: pick-go
+  (forall ρ; ρ best:Int^many st:Seq Int^many bl:Seq Int^many prio:Seq Int^many dur:Seq Int^many i:Int^many -- ρ r:Int^many)
+  locals { best st bl prio dur i }
+  { i st prim seq-int.len prim <
+    [ st i prim seq-int.at -1 prim =
+      bl i prim seq-int.at 0 prim = prim and
+      [ best -1 prim =
+        [ i ]
+        [ prio i prim seq-int.at prio best prim seq-int.at prim >
+          prio i prim seq-int.at prio best prim seq-int.at prim =
+          dur i prim seq-int.at dur best prim seq-int.at prim > prim and
+          prim or
+          [ i ] [ best ] if ] if ]
+      [ best ] if
+      st bl prio dur i 1 prim + pick-go ]
+    [ best ] if };
+
+: assign-go
+  (forall ρ; ρ bl:Seq Int^many st:Seq Int^many wk:Seq Int^many fin:Seq Int^many wf:Seq Int^many dur:Seq Int^many prio:Seq Int^many t:Int^many -- ρ st2:Seq Int^many wk2:Seq Int^many fin2:Seq Int^many wf2:Seq Int^many)
+  locals { bl st wk fin wf dur prio t }
+  { wf t 0 find-worker-go
+    -1 st bl prio dur 0 pick-go
+    locals { w i }
+    { w 0 prim >= i 0 prim >= prim and
+      [ bl st i t prim seq-int.set wk i w prim seq-int.set
+        fin i t dur i prim seq-int.at prim + prim seq-int.set
+        wf w t dur i prim seq-int.at prim + prim seq-int.set
+        dur prio t assign-go ]
+      [ st wk fin wf ] if } };
+
+: next-go
+  (forall ρ; ρ wf:Seq Int^many t:Int^many w:Int^many best:Int^many -- ρ r:Int^many)
+  locals { wf t w best }
+  { w wf prim seq-int.len prim <
+    [ wf w prim seq-int.at
+      locals { v }
+      { v t prim >  best -1 prim =  v best prim < prim or  prim and
+        [ wf t w 1 prim + v next-go ]
+        [ wf t w 1 prim + best next-go ] if } ]
+    [ best ] if };
+
+: sim-go
+  (forall ρ; ρ st:Seq Int^many wk:Seq Int^many fin:Seq Int^many wf:Seq Int^many dur:Seq Int^many prio:Seq Int^many bef:Seq Int^many aft:Seq Int^many t:Int^many -- ρ st2:Seq Int^many wk2:Seq Int^many fin2:Seq Int^many wf2:Seq Int^many)
+  locals { st wk fin wf dur prio bef aft t }
+  { prim seq-int.empty dur prim seq-int.len 0 fill-go bef aft fin t 0 block-go
+    st wk fin wf dur prio t assign-go
+    locals { st2 wk2 fin2 wf2 }
+    { wf2 t 0 -1 next-go
+      locals { next }
+      { next -1 prim =
+        [ st2 wk2 fin2 wf2 ]
+        [ st2 wk2 fin2 wf2 dur prio bef aft next sim-go ] if } } };
+
+: max-go
+  (forall ρ; ρ s:Seq Int^many i:Int^many m:Int^many -- ρ r:Int^many)
+  locals { s i m }
+  { i s prim seq-int.len prim <
+    [ s i 1 prim +
+      s i prim seq-int.at m prim >
+      [ s i prim seq-int.at ] [ m ] if
+      max-go ]
+    [ m ] if };
+
+: busy-go
+  (forall ρ; ρ st:Seq Int^many dur:Seq Int^many i:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { st dur i acc }
+  { i st prim seq-int.len prim <
+    [ st dur i 1 prim +
+      st i prim seq-int.at -1 prim =
+      [ acc ] [ acc dur i prim seq-int.at prim + ] if
+      busy-go ]
+    [ acc ] if };
+
+: count-go
+  (forall ρ; ρ st:Seq Int^many i:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { st i acc }
+  { i st prim seq-int.len prim <
+    [ st i 1 prim +
+      st i prim seq-int.at -1 prim =
+      [ acc 1 prim + ] [ acc ] if
+      count-go ]
+    [ acc ] if };
+
+: main
+  (forall ρ; ρ dur:Seq Int^many bef:Seq Int^many aft:Seq Int^many prio:Seq Int^many w:Int^many -- ρ st:Seq Int^many wk:Seq Int^many ms:Int^many idle:Int^many unrun:Int^many)
+  locals { dur bef aft prio w }
+  { prim seq-int.empty dur prim seq-int.len -1 fill-go
+    prim seq-int.empty dur prim seq-int.len -1 fill-go
+    prim seq-int.empty dur prim seq-int.len 1000000 fill-go
+    prim seq-int.empty w 0 fill-go
+    dur prio bef aft 0 sim-go
+    locals { st wk fin wf }
+    { wf 0 0 max-go
+      locals { ms }
+      { st wk ms
+        w ms prim * st dur 0 0 busy-go prim -
+        st 0 0 count-go } } };

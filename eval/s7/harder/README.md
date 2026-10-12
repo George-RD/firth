@@ -72,8 +72,9 @@ in and reads back.
 
 ## Files
 
-- `calibration.py`, `calibration2.py` and `calibration3.py`: the pools, and
-  `scored.py`: the scored set. Each task's `ref` is its meaning, in plain
+- `calibration.py`, `calibration2.py` and `calibration3.py`: the pools,
+  `scored.py`: the scored set, and `candidates.py`: the candidates for the
+  next scored set (below, "The candidate set"). Each task's `ref` is its meaning, in plain
   Python written independently of any Firth code.
 - `reference/<pool>/firth/<id>.firth` and `reference/<pool>/python/<id>.py`:
   a Firth and a Python reference solution per task. The Python ones are
@@ -747,6 +748,89 @@ order from another. In `checkers`, taking a jumped piece off at once
 cannot be told apart from taking it off at the end of the capture, since
 a jump never lands on a square a jumped piece stood on; the rule that the
 moving piece's own square is empty during the capture is tested.
+
+## The candidate set
+
+`candidates.py`: nine tasks for the next scored set, none of them yet sent
+to a model. The 11 October scored set is not reused, because the checker's
+fix hints that followed it were built and tested on that run's programs.
+Three candidates are of the rule-dense genre that has sat at Sonnet's Python
+ceiling in every pool (`go-game`, Go with captures, suicide, ko and area
+scoring; `tennis`, scoring with tiebreaks, no-ad games and serve order;
+`kalah`, sowing with captures, extra moves and the end sweep). Six are hard
+in another way: `josephus` and `perm-rank` need an algorithm, since direct
+simulation or enumeration is too slow at the stated sizes in either
+language; `huffman` (a code built in a stated merge order, then made
+canonical), `avl-tree` (inserts and deletes with rotations, deleting by the
+successor) and `build-sched` (list scheduling by priority on several
+workers) are exact procedures with tie-breaks and edge cases; and
+`wire-decode` is edge cases in a binary format. Which six become the scored
+set, and whether a scored run starts at all, is fixed before any of them is
+run, in `next-run/calibration.md`.
+
+Review of the first draft (commit `a6dcf7f`) dropped four candidates under
+the close-relative rule (`next-run/calibration.md`): `order-match`,
+`stack-vm`, `expr-eval` and `timetable`, each a close relative of an
+earlier task Sonnet passed in Python every time. They were replaced by
+`huffman`, `avl-tree`, `kalah` and `build-sched`, chosen to need neither
+values beyond 64 bits nor compute heavy enough for the Firth step budget to
+shape them (`bigint` and a best-rational-approximation task were ruled out
+for that reason).
+
+Sonnet workers wrote both references from each task's prompt text alone:
+the Python ones (24 to 103 lines, 542 in all, `wc -l`) without access to
+the repository, the Firth ones (49 to 211 lines, 1,204) with the docs,
+stdlib and examples but not `candidates.py`, the tests or each other's
+code. Where a worker's reading differed from the meaning and the
+description allowed it, the sentence was made explicit (`tennis`: a match
+tiebreak, finished or not, is given as its points so far). The Python
+references agree with the meanings on every hidden test and on 3,000
+seeded random inputs per task (`test_harder.py`,
+`candidates_random_agreement`, with a planted `tennis` reference that
+disagrees). Each example has its result worked out by hand; each input
+keeps to its description's bounds, with a planted bad input for each kind
+of constraint; each task has a Python mutant of its meaning that passes the
+example and fails a hidden test; eleven sentences a careful reader could
+take two ways are each kept as a reading the hidden tests tell apart
+(`candidates_readings`); and a Firth `wire-decode` reference that accepts
+field number 0 fails the hidden tests.
+
+Each task's last hidden test is its costliest input for the Firth
+reference among a fixed list (`costliest.py --candidates`): every hand case,
+20 to 40 seeded random inputs at the largest sizes each description allows,
+and inputs built to be slow (circles near 10^12 counting by 12, every digit
+twice, the longest records, 400 alternating points, Fibonacci weights with
+the longest code repeated, ascending inserts followed by deletes, a long
+chain of dependencies). The record is `costliest-candidates.tsv`, where
+every result also agreed with the meaning, and `candidates_costliest`
+checks that each last hidden test is the recorded costliest and costs at
+most a quarter of the 1,000,000-step budget, with a planted record for
+each. The most kernel steps on such an input are 74,975 (`go-game`),
+207,883 (`josephus`), 36,355 (`perm-rank`, on one of its hand cases, which
+the first draft's search left out and so reported 30,421), 47,341
+(`wire-decode`), 56,746 (`tennis`), 194,148 (`huffman`), 98,368
+(`avl-tree`), 58,192 (`kalah`) and 89,832 (`build-sched`). That is a
+measured figure over these inputs, not a bound.
+
+Bounds were cut where the Firth reference ran past a quarter of the
+budget on inputs within the drafted ones: `josephus` from 4 questions
+counting by up to 20 to 3 counting by up to 12 (459,865 steps near 10^12)
+and `huffman` from 40 symbols to 20 (416,163 for the committed reference
+with frequencies `s % 7 + 1` and message `s * 13 % 40` for `s` below
+40 and 100). Two candidates dropped later under the close-relative
+rule had been cut the same way: `order-match` from 40 orders to 30 and
+`stack-vm` from a step limit of 2,000 to 800. Making only the
+reference faster was rejected: a straightforward Firth answer would then
+have had less room than the tier allows, a cost the Python arm never
+pays. A tenth candidate, `chess-moves` (count the legal moves in a
+position, with castling, en passant and promotions), was dropped for the
+same reason. Its first Firth reference took up to 564,839 steps on the
+known 218-move positions; a second, which tests a move for check only
+when the move could change it, still took 246,739 to 266,812 on those
+and up to 264,653 on positions searched for cost with no more than the
+starting material and 12 pieces on the board, so no natural bound kept
+it within a quarter. The positions, both references, the script and its
+output are in `runs/2026-10-11-chess-moves-dropped/`.
 
 ## DeepSeek
 

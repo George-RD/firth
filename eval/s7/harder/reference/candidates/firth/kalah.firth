@@ -1,0 +1,170 @@
+\ Kalah. Board: Seq Int of 2p+2 cells. Meta: Seq Int
+\ { toMove illegal read took0 took1 ended }.
+
+: seq-add
+  (forall ρ; ρ s:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { s i d } { s i s i prim seq-int.at d prim + prim seq-int.set };
+
+: fill
+  (forall ρ; ρ s:Seq Int^many v:Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { s v k }
+  { k 0 prim > [ s v prim seq-int.push v k 1 prim - fill ] [ s ] if };
+
+: init-board
+  (forall ρ; ρ p:Int^many s:Int^many -- ρ b:Seq Int^many)
+  locals { p s }
+  { prim seq-int.empty s p fill 0 prim seq-int.push s p fill 0 prim seq-int.push };
+
+: skip-over
+  (forall ρ; ρ c:Int^many skip:Int^many nn:Int^many -- ρ r:Int^many)
+  locals { c skip nn }
+  { c skip prim = [ c 1 prim + nn prim mod ] [ c ] if };
+
+: next-pos
+  (forall ρ; ρ cur:Int^many skip:Int^many nn:Int^many -- ρ r:Int^many)
+  locals { cur skip nn }
+  { cur 1 prim + nn prim mod skip nn skip-over };
+
+: sow
+  (forall ρ; ρ b:Seq Int^many cur:Int^many n:Int^many skip:Int^many nn:Int^many -- ρ r:Seq Int^many last:Int^many)
+  locals { b cur n skip nn }
+  { n 0 prim >
+    [ cur skip nn next-pos
+      locals { c } { b c 1 seq-add c n 1 prim - skip nn sow } ]
+    [ b cur ] if };
+
+: pos-of
+  (forall ρ; ρ player:Int^many p:Int^many m:Int^many -- ρ r:Int^many)
+  locals { player p m }
+  { player 0 prim = [ m ] [ p 1 prim + m prim + ] if };
+
+: store-of
+  (forall ρ; ρ player:Int^many p:Int^many -- ρ r:Int^many)
+  locals { player p }
+  { player 0 prim = [ p ] [ 2 p prim * 1 prim + ] if };
+
+: legal
+  (forall ρ; ρ b:Seq Int^many p:Int^many m:Int^many player:Int^many -- ρ ok:Bool^many)
+  locals { b p m player }
+  { m 0 prim >=
+    [ m p prim <
+      [ b player p m pos-of prim seq-int.at 0 prim > ]
+      [ false ] if ]
+    [ false ] if };
+
+: own-pit
+  (forall ρ; ρ last:Int^many player:Int^many p:Int^many -- ρ ok:Bool^many)
+  locals { last player p }
+  { player 0 prim =
+    [ last p prim < ]
+    [ last p prim > last 2 p prim * prim <= prim and ] if };
+
+: capture-ok
+  (forall ρ; ρ b:Seq Int^many p:Int^many player:Int^many last:Int^many -- ρ ok:Bool^many)
+  locals { b p player last }
+  { last player p own-pit
+    [ b last prim seq-int.at 1 prim =
+      [ b 2 p prim * last prim - prim seq-int.at 0 prim > ]
+      [ false ] if ]
+    [ false ] if };
+
+: capture
+  (forall ρ; ρ b:Seq Int^many meta:Seq Int^many p:Int^many player:Int^many last:Int^many -- ρ r:Seq Int^many m:Seq Int^many)
+  locals { b meta p player last }
+  { 2 p prim * last prim -
+    locals { opp }
+    { b opp prim seq-int.at 1 prim +
+      locals { amt }
+      { b last 0 prim seq-int.set opp 0 prim seq-int.set
+        player p store-of amt seq-add
+        meta 3 player prim + amt seq-add } } };
+
+: do-capture
+  (forall ρ; ρ b:Seq Int^many meta:Seq Int^many p:Int^many player:Int^many last:Int^many -- ρ r:Seq Int^many m:Seq Int^many)
+  locals { b meta p player last }
+  { b p player last capture-ok
+    [ b meta p player last capture ]
+    [ b meta ] if };
+
+: side-empty
+  (forall ρ; ρ b:Seq Int^many from:Int^many to:Int^many -- ρ r:Bool^many)
+  locals { b from to }
+  { from to prim <
+    [ b from prim seq-int.at 0 prim =
+      [ b from 1 prim + to side-empty ]
+      [ false ] if ]
+    [ true ] if };
+
+: sweep-range
+  (forall ρ; ρ b:Seq Int^many from:Int^many to:Int^many store:Int^many -- ρ r:Seq Int^many)
+  locals { b from to store }
+  { from to prim <
+    [ b from 0 prim seq-int.set store b from prim seq-int.at seq-add
+      from 1 prim + to store sweep-range ]
+    [ b ] if };
+
+: sweep
+  (forall ρ; ρ b:Seq Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { b p }
+  { b 0 p p sweep-range
+    p 1 prim + 2 p prim * 1 prim + 2 p prim * 1 prim + sweep-range };
+
+: finish
+  (forall ρ; ρ b:Seq Int^many meta:Seq Int^many p:Int^many player:Int^many last:Int^many -- ρ r:Seq Int^many m:Seq Int^many)
+  locals { b meta p player last }
+  { b 0 p side-empty b p 1 prim + 2 p prim * 1 prim + side-empty prim or
+    [ b p sweep meta 5 1 prim seq-int.set 0 -1 prim seq-int.set ]
+    [ b meta 0
+      last player p store-of prim = [ player ] [ 1 player prim - ] if
+      prim seq-int.set ] if };
+
+: play
+  (forall ρ; ρ b:Seq Int^many meta:Seq Int^many p:Int^many player:Int^many pos:Int^many -- ρ r:Seq Int^many m:Seq Int^many)
+  locals { b meta p player pos }
+  { b pos prim seq-int.at
+    locals { n }
+    { b pos 0 prim seq-int.set pos n 1 player prim - p store-of 2 p prim * 2 prim + sow
+      locals { b2 last }
+      { b2 meta p player last do-capture p player last finish } } };
+
+: step
+  (forall ρ; ρ b:Seq Int^many meta:Seq Int^many p:Int^many m:Int^many -- ρ r:Seq Int^many mt:Seq Int^many)
+  locals { b meta p m }
+  { meta 2 1 seq-add
+    locals { mt }
+    { mt 0 prim seq-int.at
+      locals { player }
+      { b p m player legal
+        [ b mt p player player p m pos-of play ]
+        [ b mt 1 1 seq-add ] if } } };
+
+: run
+  (forall ρ; ρ b:Seq Int^many meta:Seq Int^many p:Int^many moves:Seq Int^many k:Int^many -- ρ r:Seq Int^many m:Seq Int^many)
+  locals { b meta p moves k }
+  { k moves prim seq-int.len prim < meta 5 prim seq-int.at 0 prim = prim and
+    [ b meta p moves k prim seq-int.at step p moves k 1 prim + run ]
+    [ b meta ] if };
+
+: cmp3
+  (forall ρ; ρ a:Int^many c:Int^many -- ρ r:Int^many)
+  locals { a c }
+  { a c prim > [ 0 ] [ a c prim < [ 1 ] [ 2 ] if ] if };
+
+: winner
+  (forall ρ; ρ b:Seq Int^many meta:Seq Int^many p:Int^many -- ρ r:Int^many)
+  locals { b meta p }
+  { meta 5 prim seq-int.at 1 prim =
+    [ b p prim seq-int.at b 2 p prim * 1 prim + prim seq-int.at cmp3 ]
+    [ -1 ] if };
+
+: main
+  (forall ρ; ρ pits:Int^many seeds:Int^many moves:Seq Int^many -- ρ board:Seq Int^many toMove:Int^many illegal:Int^many read:Int^many took:Seq Int^many winner:Int^many)
+  locals { pits seeds moves }
+  { pits seeds init-board { 0 0 0 0 0 0 } pits moves 0 run
+    locals { b meta }
+    { b
+      meta 0 prim seq-int.at
+      meta 1 prim seq-int.at
+      meta 2 prim seq-int.at
+      prim seq-int.empty meta 3 prim seq-int.at prim seq-int.push meta 4 prim seq-int.at prim seq-int.push
+      b meta pits winner } };

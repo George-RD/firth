@@ -1,0 +1,85 @@
+\ Wire decode: records of (tag varint, payload).
+
+\ Reads a varint at pos (byte index j, running value val, place value mult).
+\ Gives value, next position, error (0, 1, 2 or 3).
+: varint
+  (forall ρ; ρ data:Seq Int^many pos:Int^many j:Int^many val:Int^many mult:Int^many -- ρ v:Int^many p:Int^many e:Int^many)
+  locals { data pos j val mult }
+  { pos data prim seq-int.len prim >=
+    [ 0 0 1 ]
+    [ data pos prim seq-int.at
+      locals { b }
+      { b 128 prim >=
+        [ j 7 prim =
+          [ 0 0 3 ]
+          [ data pos 1 prim + j 1 prim +
+            val b 128 prim mod mult prim * prim +
+            mult 128 prim * varint ] if ]
+        [ b 0 prim = j 0 prim > prim and
+          [ 0 0 2 ]
+          [ val b mult prim * prim + pos 1 prim + 0 ] if ] if } ] if };
+
+\ Payload of wire type wt at p1: value, next position, error.
+: payload
+  (forall ρ; ρ data:Seq Int^many p1:Int^many wt:Int^many -- ρ v:Int^many p:Int^many e:Int^many)
+  locals { data p1 wt }
+  { wt 0 prim =
+    [ data p1 0 0 1 varint ]
+    [ wt 1 prim =
+      [ data p1 0 0 1 varint
+        locals { u p e }
+        { u 2 prim mod 0 prim =
+          [ u 2 prim div p e ]
+          [ 0 u 1 prim + 2 prim div prim - p e ] if } ]
+      [ wt 2 prim =
+        [ data p1 0 0 1 varint
+          locals { l p e }
+          { e 0 prim =
+            [ p l prim + data prim seq-int.len prim >
+              [ 0 0 1 ]
+              [ l p l prim + 0 ] if ]
+            [ 0 0 e ] if } ]
+        [ p1 4 prim + data prim seq-int.len prim >
+          [ 0 0 1 ]
+          [ data p1 prim seq-int.at
+            data p1 1 prim + prim seq-int.at 256 prim * prim +
+            data p1 2 prim + prim seq-int.at 65536 prim * prim +
+            data p1 3 prim + prim seq-int.at 16777216 prim * prim +
+            p1 4 prim + 0 ] if ] if ] if ] if };
+
+\ Records the field and wire type, then reads the rest.
+: finish
+  (forall ρ; ρ data:Seq Int^many pos:Int^many f:Seq Int^many w:Seq Int^many v:Seq Int^many tag:Int^many wt:Int^many val:Int^many p2:Int^many e:Int^many -- ρ rf:Seq Int^many rw:Seq Int^many rv:Seq Int^many err:Int^many at:Int^many)
+  locals { data pos f w v tag wt val p2 e }
+  { e 0 prim =
+    [ data p2 f tag 8 prim div prim seq-int.push
+      w wt prim seq-int.push v val prim seq-int.push rec ]
+    [ f w v e pos ] if };
+
+\ Checks the tag, then reads the payload.
+: rec2
+  (forall ρ; ρ data:Seq Int^many pos:Int^many f:Seq Int^many w:Seq Int^many v:Seq Int^many tag:Int^many p1:Int^many -- ρ rf:Seq Int^many rw:Seq Int^many rv:Seq Int^many err:Int^many at:Int^many)
+  locals { data pos f w v tag p1 }
+  { tag 8 prim div 0 prim =
+    [ f w v 4 pos ]
+    [ tag 8 prim mod
+      locals { wt }
+      { wt 0 prim = wt 1 prim = prim or wt 2 prim = prim or wt 5 prim = prim or
+        [ data pos f w v tag wt data p1 wt payload finish ]
+        [ f w v 5 pos ] if } ] if };
+
+\ Reads the record at pos.
+: rec
+  (forall ρ; ρ data:Seq Int^many pos:Int^many f:Seq Int^many w:Seq Int^many v:Seq Int^many -- ρ rf:Seq Int^many rw:Seq Int^many rv:Seq Int^many err:Int^many at:Int^many)
+  locals { data pos f w v }
+  { pos data prim seq-int.len prim >=
+    [ f w v 0 -1 ]
+    [ data pos 0 0 1 varint
+      locals { tag p1 e }
+      { e 0 prim =
+        [ data pos f w v tag p1 rec2 ]
+        [ f w v e pos ] if } ] if };
+
+: main
+  (forall ρ; ρ data:Seq Int^many -- ρ f:Seq Int^many w:Seq Int^many v:Seq Int^many err:Int^many at:Int^many)
+  0 prim seq-int.empty prim seq-int.empty prim seq-int.empty rec;
