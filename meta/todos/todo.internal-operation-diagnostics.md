@@ -45,9 +45,12 @@ the checker wrote, not the author:
   the values without an edit. A refused `if` keeps its own account even
   when an operation in a branch is handed values of the wrong type.
 - A branch-mismatch report whose operation is inside a quotation in the
-  branch ("inside a quotation in that branch") points `at:` the outer `if`
-  and does not say which inner quotation holds the operation (keep-positive
-  19:5 and longest-run 23:15 in the #164 review).
+  branch points `at:` the outer `if`. It now says which quotation holds the
+  operation where one path leads there: "in the true branch of the `if` on
+  line 72", or the quotation run by `call` or `dip` on a line. Where the
+  two paths of an inner `if` reach the same operation, it still says only
+  "inside a quotation in that branch" (keep-positive 19:5 and longest-run
+  23:15 in the #164 review).
 - The branch account (`Account.lean`) compares values by label. In the
   branch-mismatch hint, a value a branch takes and one it leaves with the
   same label ("the result of `prim +`") count as one value put back, which
@@ -58,7 +61,14 @@ the checker wrote, not the author:
   refused `if`'s branch first reach below differently (7 of the recorded
   reports in the #166 review: keep-positive, count-distinct twice,
   longest-run-loop twice, allocate-batch, 470c6d0 longest-run answer 3).
-  The report could name both paths' operations instead.
+  Where one path takes a value that is not there and the other does not,
+  the report now names that path's operation (fillb, and 21 other
+  reports over the eval corpus). It still falls back where both paths
+  reach below, differently, with every value there; the report could name
+  both paths' operations instead. Before the refused `if`, such an `if`
+  still makes the report fall back, since the values the refused `if`'s
+  branches find would be one path's (run-loop, 8ea4a1d haiku-firth-1
+  answer 2).
 - An `if` before the refused one whose paths leave stacks of different
   lengths in the walk makes the report fall back, even where the checker
   sees the same depth. `take` pads a stack short of a value with "a value

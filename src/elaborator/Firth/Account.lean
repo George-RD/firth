@@ -79,6 +79,9 @@ structure Walk where
   missing : Nat := 0
   /-- How many quotations deep the walk is inside the branch it accounts for. -/
   nesting : Nat := 0
+  /-- The innermost quotation the walk is in inside that branch, as a report
+  says it (`BranchReach.within`). -/
+  within : Option String := none
   /-- After an operation was handed values of the wrong known type (see
   `misreads`), the reach the walk had then, that operation's own if it
   became the reach. The counts still follow the program, but which value
@@ -205,6 +208,7 @@ private def take (walk : Walk) (operation : String) (inputs : List String) (coun
       missing := count - taken.length
       inLocals := walk.inLocals
       nested := walk.nesting > 0
+      within := if walk.nesting > 0 then walk.within else none
       span
       ownOrigins := (taken.takeWhile (·.own)).reverse.map (·.origin)
       scope := walk.locals.map fun name => (name, walk.localTypes.lookup name)
@@ -313,9 +317,9 @@ mutual
   quotation sees the locals of the block it is written in. The types of
   those locals are the ones in `scope`, recorded where it was written. -/
   partial def runQuotation (context : Context) (walk : Walk) (body : List Item)
-      (scope : List (String × String)) : Outcome :=
-    match walkItems context { walk with nesting := walk.nesting + 1, localTypes := scope } body with
-    | .next after => .next { after with nesting := walk.nesting, localTypes := walk.localTypes }
+      (scope : List (String × String)) (within : String) : Outcome :=
+    match walkItems context { walk with nesting := walk.nesting + 1, localTypes := scope, within := some within } body with
+    | .next after => .next { after with nesting := walk.nesting, localTypes := walk.localTypes, within := walk.within }
     | other => other
 
   partial def step (context : Context) (walk : Walk) : Item → Outcome
@@ -386,16 +390,17 @@ mutual
         match taken with
         | [top, second] => .next { walk with stack := { second with own := true } :: { top with own := true } :: walk.stack }
         | _ => .lost
-    | .atom "call" _ =>
+    | .atom "call" span =>
         let (taken, walk) := take walk "`call`" [] 1
         match taken with
-        | [{ quotation := some (body, _), scope, .. }] => runQuotation context walk body scope
+        | [{ quotation := some (body, _), scope, .. }] =>
+            runQuotation context walk body scope s!"the quotation run by `call` on line {span.start.line}"
         | _ => .lost
-    | .atom "dip" _ =>
+    | .atom "dip" span =>
         let (taken, walk) := take walk "`dip`" [] 2
         match taken with
         | [{ quotation := some (body, _), scope, .. }, kept] =>
-            match runQuotation context walk body scope with
+            match runQuotation context walk body scope s!"the quotation run by `dip` on line {span.start.line}" with
             | .next after => .next { after with stack := { kept with own := true, origin := none } :: after.stack }
             | other => other
         | _ => .lost
@@ -439,10 +444,26 @@ mutual
                            onTrue := onTrueAccount, onFalse := onFalseAccount }
               | _, _ => .lost
             else
-              match runQuotation context below onTrue trueScope, runQuotation context below onFalse falseScope with
+              match runQuotation context below onTrue trueScope s!"the true branch of the `if` on line {span.start.line}",
+                  runQuotation context below onFalse falseScope s!"the false branch of the `if` on line {span.start.line}" with
               | .found account, _ | _, .found account => .found account
               | .called account, _ | _, .called account => .called account
               | .next afterTrue, .next afterFalse =>
+                  -- Inside the refused `if`'s branch, a path that takes a
+                  -- value that is not there, where the other path does not,
+                  -- is the mistake: the checker accepted this `if` by giving
+                  -- it that value from below, which the other path leaves in
+                  -- place, and that is why the branch takes a value from
+                  -- below the refused `if`. Its reach is the first that takes
+                  -- a value that is not there, which `take` never replaces,
+                  -- and a report of such a reach says nothing the path does
+                  -- after it, so the walk goes on along that path alone.
+                  -- Before the refused `if`, the values its branches find
+                  -- would be that path's, which may not run.
+                  let short (after : Walk) := after.reach.any (·.missing > 0)
+                  if walk.inBranch && short afterTrue != short afterFalse then
+                    .next (if short afterTrue then afterTrue else afterFalse)
+                  else
                   -- Either path may run, so the walk goes on only where
                   -- both first reached below the refused `if` the same way
                   -- and leave the same number of values, each pushed by the
@@ -472,8 +493,9 @@ mutual
                         -- values is kept only where they agree.
                         if { onTrue with own := onFalse.own, ownTypes := onFalse.ownTypes, span := onFalse.span
                                          ownOrigins := onFalse.ownOrigins, ownSources := onFalse.ownSources
-                                         scope := onFalse.scope } == onFalse then
+                                         scope := onFalse.scope, within := onFalse.within } == onFalse then
                           some (some { onTrue with
+                            within := if onTrue.within == onFalse.within then onTrue.within else none
                             own := (onTrue.own.zip onFalse.own).map fun (a, b) =>
                               if a == b then a else s!"{a} or {b}"
                             ownTypes := (onTrue.ownTypes.zip onFalse.ownTypes).map fun (a, b) =>
