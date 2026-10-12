@@ -1603,6 +1603,12 @@ private def runExtraValueTests : IO Unit := do
   -- removing the second `m` is the one removal that checks, and it is named.
   extraReport "a sequence literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1 } drop undo4 } ;")
     ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24: write `e { 1 } drop` in place of `m e { 1 } drop` on line 5. With that edit `u` checks."] []
+  -- Both texts of the rewrite are as written, so wider space inside a
+  -- literal or between the items leaves the value alone.
+  extraReport "wider space inside a literal between" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m e { 1  2 } drop undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+  extraReport "wider space between the items" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m  e undo4 } ;")
+    ["Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
   -- A comment between two `i`s: removing either leaves the same program,
   -- so it is one removal, and it is named.
   extraReport "a comment between the same values" "firth.type.word-input-mismatch"
@@ -1623,6 +1629,21 @@ private def runExtraValueTests : IO Unit := do
     (budgetWord (Firth.Elaborator.extraValueBudget / 2)) ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
   extraReport "within the search budget" "firth.type.word-input-mismatch"
     (budgetWord (Firth.Elaborator.extraValueBudget / 2 - 2)) ["One value too many is pushed before it.", "Remove the `i`"] []
+  -- A long file: the same word, after a long comment, costs more than
+  -- `extraValueCost` to search, so no removal is named.
+  let comment := "(* " ++ String.mk (List.replicate 12000 'x') ++ " *)\n"
+  extraReport "past the search cost" "firth.type.word-input-mismatch"
+    (comment ++ budgetWord 100) ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "within the search cost" "firth.type.word-input-mismatch"
+    (budgetWord 100) ["One value too many is pushed before it.", "Remove the `i`"] []
+  -- A value is named as written: a sequence literal over two lines is not
+  -- named, and one with more space inside keeps it.
+  let seqWord (literal : String) :=
+    s!": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals \{ m i } \{ m i {literal} gt } ;"
+  extraReport "a value over two lines" "firth.type.word-input-mismatch" (seqWord "{ 1\n 2 }")
+    ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  extraReport "a value with more space inside" "firth.type.word-input-mismatch" (seqWord "{ 1  2 }")
+    ["Remove the `{ 1  2 }` written at line 3, column 24. With that edit `f` checks."] []
   -- The text from the value to the operation crosses a line, so it is not
   -- written out in place: the hint names the value alone.
   extraReport "a removal across lines" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m\n  e undo4 } ;")

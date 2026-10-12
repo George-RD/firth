@@ -22,10 +22,19 @@ the hint says "write `m e e` in place of `e m e` on line 4", but line 4 has
 only `e`, and `m e` is on line 5. The removal hint added in #254 avoids
 this by naming the value alone when its text crosses a line.
 
+The same collapsing misquotes text on one line with wider space, between
+the values or inside a literal. For `g ( m:Seq Int i:Int -- v:Int )` and
+`0 { 1  2 } g`, main 35c73c1 says "write `{ 1 2 } 0` in place of
+`0 { 1 2 }` on line 2", and `0 { 1 2 }` is not in the source. The removal
+hint names the value alone unless its text is the items with one space
+between them.
+
 ## Acceptance criteria
 
 - A reordering whose text crosses a line gets a hint that, applied
   literally to the source as written, makes the word check: either each
   line's text is named, or the edit is described without quoting the
   collapsed text.
-- A Lean case for the example above, with a plant of the current wording.
+- The same for text with wider space between the values or inside a
+  literal: `Y` is quoted as written.
+- A Lean case for each example above, with a plant of the current wording.

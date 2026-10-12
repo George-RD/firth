@@ -670,6 +670,11 @@ private partial def sameRun (candidate operation : Nat) (items : List Item) : Bo
 removes in turn, each removal a check of the whole source. -/
 def extraValueBudget : Nat := 256
 
+/-- The most that `extraValueEdit` checks for one report, counted as the
+items it removes in turn times the bytes of the source each check reads:
+the search for one word costs no more than this, however long the file. -/
+def extraValueCost : Nat := 2 ^ 21
+
 /-- For a word or primitive handed values it does not take, where no other
 edit was found: the edit that removes one value written before it, in the
 same run of items, as the extra `m` in `m e m m e 16 prim div dlt undo4`
@@ -690,10 +695,10 @@ private def extraValueEdit (config : PipelineConfig) (source : String) (word : W
     | .word name _ => if bound.contains name then some span.start.offset else none
     | _ => none
   -- Each removal that lets the word check. Each is a check of the whole
-  -- source, so past `extraValueBudget` items before the operation the
-  -- search is not made and no removal is named.
+  -- source, so past `extraValueBudget` items before the operation, or
+  -- `extraValueCost` in all, the search is not made and no removal is named.
   let before := (everyItem word.body).filter fun (_, span) => span.stop.offset ≤ opStart
-  if before.length > extraValueBudget then none else
+  if before.length > extraValueBudget || before.length * source.utf8ByteSize > extraValueCost then none else
   let checking := before.filterMap fun (item, span) =>
     let start := span.start.offset
     let stop := span.stop.offset
@@ -713,15 +718,17 @@ private def extraValueEdit (config : PipelineConfig) (source : String) (word : W
   | [_] =>
       -- Named only as a local or a literal in the same run of items as the
       -- operation (`sameRun`): no quotation or `locals` block between them.
+      -- Named as written, so only a value written on one line.
       let named := checking.filter fun (_, item, span) =>
         let value := match item with
           | .literal _ _ => true
           | .word _ _ => locals.contains span.start.offset
           | _ => false
-        value && sameRun span.start.offset opStart word.body
+        value && sameRun span.start.offset opStart word.body &&
+          !(bytesText source span.start.offset span.stop.offset).contains '\n'
       named.getLast?.bind fun (_, _, span) =>
         let start := span.start.offset
-        let removed := collapseSpace (bytesText source start span.stop.offset)
+        let removed := bytesText source start span.stop.offset
         let (line, column) := lineColumn source start
         -- The items from the value to the operation: in the same run, so
         -- none is a quotation or `locals` block.
@@ -729,11 +736,12 @@ private def extraValueEdit (config : PipelineConfig) (source : String) (word : W
           if item.start.offset ≥ start && item.stop.offset ≤ opStart then some item else none
         let last := (run.map (·.stop.offset)).foldl max span.stop.offset
         -- Written out in place, as for a reordering, only when that text is
-        -- those items alone (no comment among them) on one line; otherwise
-        -- the value alone.
-        let alone := (bytesText source start last).contains '\n' ||
-          collapseSpace (bytesText source start last) !=
-            " ".intercalate (run.map fun item => collapseSpace (bytesText source item.start.offset item.stop.offset))
+        -- exactly those items with one space between them: no line break,
+        -- comment or wider space, inside a literal too, so both texts in the
+        -- hint are as written. Otherwise the value alone.
+        let text := bytesText source start last
+        let alone := collapseSpace text != text ||
+          text != " ".intercalate (run.map fun item => bytesText source item.start.offset item.stop.offset)
         let stop := if alone then span.stop.offset else last
         let replacement := collapseSpace (bytesText source span.stop.offset stop)
         -- The same items as the removal that checks, so this checks too.
