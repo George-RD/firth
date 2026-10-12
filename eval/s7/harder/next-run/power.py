@@ -132,13 +132,16 @@ def main() -> None:
     problems = self_check()
     assert not problems, problems
     assert self_check(planted_one_sided), "self_check accepted the planted one-sided p"
-    rng = random.Random(SEED)
     print(f"replicates {REPLICATES}, bootstrap {BOOT}, seed {SEED}")
     print("true means (higher arm vs lower arm) | n per arm | power")
     for n in (8, 12):
         # The last pair is the 11 October run's Sonnet round-1 means (Python
         # 5.75, Firth 4.38), the gap this run is powered for.
         for mean_lo, mean_hi in ((4.5, 5.5), (4.0, 5.5), (3.5, 5.5), (4.38, 5.75)):
+            # Each cell has its own stream, seeded from the seed and the cell
+            # (a str seed is hashed the same way in every run), so adding a
+            # row cannot move a number already cited.
+            rng = random.Random(f"{SEED} {n} {mean_hi} {mean_lo}")
             p = power(n, mean_hi, mean_lo, rng)
             print(f"{mean_hi} vs {mean_lo} | {n} | {p:.2f}")
 

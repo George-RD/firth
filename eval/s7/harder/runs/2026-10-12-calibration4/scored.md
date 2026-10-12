@@ -179,19 +179,20 @@ subject, with these sample sizes:
   holds for a non-Anthropic model.
 
 **Sample size.** `power.py` next to this file simulates the rule
-(binomial tasks, 2,000 replicates, seed 0; `power-output.txt`):
+(binomial tasks, 2,000 replicates, each cell seeded on its own from seed 0
+and the cell; `power-output.txt`):
 
 | True means (higher arm vs lower) | 8 per arm (DeepSeek) | 12 per arm (Sonnet) |
 | --- | --- | --- |
 | 5.5 vs 4.5 (1 task) | 0.40 | 0.54 |
-| 5.5 vs 4.0 (1.5 tasks) | 0.76 | 0.90 |
+| 5.5 vs 4.0 (1.5 tasks) | 0.76 | 0.91 |
 | 5.5 vs 3.5 (2 tasks) | 0.93 | 0.99 |
-| 5.75 vs 4.38 (1.37 tasks) | 0.74 | 0.90 |
+| 5.75 vs 4.38 (1.37 tasks) | 0.77 | 0.88 |
 
 **The effect size this run is powered for** is the gap the 11 October run
 measured for Sonnet on the first attempt, Python 5.75 against Firth 4.38
 (`runs/2026-10-11-scored/results.md`): at 12 per arm the rule finds a
-true gap of that size with power 0.90. It is underpowered for a gap of one
+true gap of that size with power 0.88. It is underpowered for a gap of one
 task, the smallest material one (0.54 at 12 per arm, 0.40 at 8). So a
 result that is not material, where the true gap may be near one task, is
 not evidence of parity. Calibration is there to
