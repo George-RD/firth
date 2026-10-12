@@ -72,9 +72,12 @@ def passed(state_path: Path, call: dict) -> tuple[int, str]:
     """A call that is not an author's: let it run, and record that the hook saw it."""
     try:
         inp = call.get("tool_input") or {}
+        # Only the runner's `session.py` calls are kept, which is all the
+        # registration check reads; other commands may carry secrets.
+        cmd = str(inp.get("command", ""))
         entry = {"at": datetime.now(timezone.utc).isoformat(), "tool_name": call.get("tool_name"),
                  "agent_type": call.get("agent_type"),
-                 "command": str(inp.get("command"))[:300] if "command" in inp else None}
+                 "command": cmd[:300] if "session.py " in cmd else None}
         state_path.parent.mkdir(parents=True, exist_ok=True)
         with open(state_path.parent / "seen.jsonl", "a") as f:
             f.write(json.dumps(entry) + "\n")
@@ -198,7 +201,8 @@ def self_test() -> None:
         only = ["--state", str(sf), "--only", "s7-author"]
         seen = t / "seen.jsonl"
         for tool, inp, agent, want in [("Glob", {"pattern": "**/*"}, None, (0, "")),
-                                       ("Bash", {"command": "ls /tmp"}, None, (0, "")),
+                                       ("Bash", {"command": "ls /tmp; echo TOKEN=abc"}, None, (0, "")),
+                                       ("Bash", {"command": "R14_SHARED=/x python3 /y/session.py next s2"}, None, (0, "")),
                                        ("Glob", {"pattern": "*"}, "Explore", (0, "")),
                                        ("Glob", {"pattern": "*"}, "s7-author", (2, REASON)),
                                        ("Bash", {"command": check}, "s7-author", (0, ""))]:
@@ -208,7 +212,10 @@ def self_test() -> None:
             assert main(only, json.dumps(call)) == want, ("--only", tool, agent)
         rows = [json.loads(l) for l in seen.read_text().splitlines()]
         assert [(r["tool_name"], r["agent_type"], r["command"]) for r in rows] == [
-            ("Glob", None, None), ("Bash", None, "ls /tmp"), ("Glob", "Explore", None)], rows
+            ("Glob", None, None), ("Bash", None, None),
+            ("Bash", None, "R14_SHARED=/x python3 /y/session.py next s2"),
+            ("Glob", "Explore", None)], rows
+        assert "TOKEN" not in seen.read_text()
         # With no state file, a runner's call still passes; an author's is denied.
         gone = ["--state", str(t / "later" / "state.json"), "--only", "s7-author"]
         assert main(gone, json.dumps({"tool_name": "Bash", "tool_input": {"command": "x"}})) == (0, "")

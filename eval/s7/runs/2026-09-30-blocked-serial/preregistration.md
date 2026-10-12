@@ -84,7 +84,8 @@ outcomes and how they are read.
 - **Registered, or no author.** A hook that is not registered would let
   every call run, so `session.py` checks it before any author starts. The
   hook records each call it passes as not an author's in `seen.jsonl`
-  beside STATE, and `hookcheck` and `next` stop (`STOP:`) unless that file
+  beside STATE (the command text only for a `session.py` call; any other
+  command is recorded as null), and `hookcheck` and `next` stop (`STOP:`) unless that file
   records the very Bash call that is running them: a record of that
   command from the last 30 seconds, newer than the record the session's
   previous check used (kept in the session's `state.json`), so an earlier
