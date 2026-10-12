@@ -13,13 +13,17 @@ for path in glob.glob(f"{repo}/examples/**/*.firth", recursive=True) + glob.glob
     src = open(path).read()
     sources.setdefault(src, os.path.relpath(path, repo))
 def run(binary, src):
-    o = subprocess.run([binary], input=json.dumps({"request_id": "c", "source_path": "a.firth",
+    # A binary that crashes or prints no result must not count as a report,
+    # or two crashes would compare equal: stop instead.
+    done = subprocess.run([binary], input=json.dumps({"request_id": "c", "source_path": "a.firth",
         "source_text": src, "language_version": "0.1", "gamma_version": "0.8"}),
-        capture_output=True, text=True).stdout
+        capture_output=True, text=True)
     try:
-        o = json.loads(o)
+        o = json.loads(done.stdout)
     except ValueError:
-        return {"raw": o[:500]}
+        o = None
+    if not isinstance(o, dict) or o.get("status") not in ("success", "failure"):
+        raise SystemExit(f"{binary} gave no result (exit {done.returncode}): {done.stderr[:500]}")
     if o.get("status") == "success":
         return {"ok": True}
     reports = []
@@ -35,8 +39,20 @@ def both(item):
 with ThreadPoolExecutor(16) as pool:
     results = list(pool.map(both, sources.items()))
 changed = [(l, a, b) for l, a, b in results if a != b]
+rows = []
+for label, a, b in sorted(changed, key=lambda t: t[0]):
+    if a.get("status") != b.get("status") or len(a.get("reports", [])) != len(b.get("reports", [])):
+        rows.append({"source": label, "main": a, "branch": b})
+        continue
+    for x, y in zip(a["reports"], b["reports"]):
+        if x != y:
+            rows.append({"source": label, "code": x["code"], "at": x["line"],
+                         "main": {"message": x["message"], "hint": x["hint"]},
+                         "branch": {"message": y["message"], "hint": y["hint"]}}
+                        if (x["code"], x["line"]) == (y["code"], y["line"]) else
+                        {"source": label, "main": x, "branch": y})
 with open(out, "w") as f:
-    f.write(f"sources {len(results)}, reports changed {len(changed)}\n")
-    for l, a, b in sorted(changed, key=lambda t: t[0]):
-        f.write(json.dumps({"source": l, "main": a, "branch": b}) + "\n")
-print(len(results), len(changed))
+    f.write(f"sources {len(results)}, reports changed {len(rows)}\n")
+    for row in rows:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+print(len(results), len(rows))
