@@ -1091,8 +1091,9 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
         | _, none => ""
       match edit.removed with
       | some (removed, line, column) =>
-          -- Found by removing each value written before the operation in
-          -- turn: this one alone lets the word check, or get past it.
+          -- Found by removing each item written before the operation in
+          -- turn: this one alone lets the word check. Written out in place
+          -- only when the text replaced is on one line.
           let rewrite := if edit.replacement.isEmpty then ""
             else s!": write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}"
           pure (s!"{message} One value too many is pushed before it.",

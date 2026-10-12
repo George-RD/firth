@@ -619,53 +619,80 @@ private partial def leafItems (bound : List String) : List Item → List (Item �
   | item@(.atom _ span) :: rest => (item, span, bound) :: leafItems bound rest
   | item@(.primitive _ span) :: rest => (item, span, bound) :: leafItems bound rest
 
+/-- Every item of a body, at every depth, with its span: quotations and
+`locals` blocks as well as the items inside them. -/
+private partial def everyItem : List Item → List (Item × Span)
+  | [] => []
+  | item@(.quotation inner span) :: rest => (item, span) :: everyItem inner ++ everyItem rest
+  | item@(.locals _ inner span) :: rest => (item, span) :: everyItem inner ++ everyItem rest
+  | item@(.literal _ span) :: rest => (item, span) :: everyItem rest
+  | item@(.word _ span) :: rest => (item, span) :: everyItem rest
+  | item@(.atom _ span) :: rest => (item, span) :: everyItem rest
+  | item@(.primitive _ span) :: rest => (item, span) :: everyItem rest
+
 /-- For a word or primitive handed values it does not take, where no other
 edit was found: the edit that removes one value written before it, in the
 same run of items, as the extra `m` in `m e m m e 16 prim div dlt undo4`
-for `undo4 ( m:Seq Int e:Int d:Int -- ... )`. Each local and literal written
-before the operation, with no bracket between them, is removed in turn and
-the word checked again (`checkCallEdit`); the edit is kept only when exactly
-one edited source lets the word check, so removing either of two adjacent
-`m`s, which leaves one text, counts once. It never changes what is
+for `undo4 ( m:Seq Int e:Int d:Int -- ... )`. Every item written before the
+operation, at any depth and of any kind (a word, a primitive, a quotation, a
+value inside brackets), is removed in turn and the word checked again
+(`checkCallEdit`). An edit is named only when exactly one edited source lets
+the word check, so removing either of two adjacent `m`s, which leaves one
+text, counts once, and only when that removal is of a local or a literal
+with no bracket between it and the operation. It never changes what is
 accepted. -/
 private def extraValueEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
     (operation : Span) : Option CallEdit :=
   if !config.checkEdits then none else
   let opStart := operation.start.offset
-  let bound := (leafItems [] word.body).filterMap fun (item, span, bound) =>
+  let locals := (leafItems [] word.body).filterMap fun (item, span, bound) =>
+    match item with
+    | .word name _ => if bound.contains name then some span.start.offset else none
+    | _ => none
+  -- Each removal that lets the word check, compared as items: removing the
+  -- last of two `m`s just before the operation leaves a space more than
+  -- removing the first.
+  let checking := (everyItem word.body).filterMap fun (item, span) =>
     if span.stop.offset > opStart then none else
-    let removable := match item with
-      | .literal _ _ => true
-      | .word name _ => bound.contains name
-      | _ => false
-    if !removable then none else
-    -- In the same run of items as the operation: no bracket between them.
-    let between := (collapseSpace (bytesText source span.stop.offset opStart)).splitOn " "
-    if between.any (fun token => token == "[" || token == "]" || token == "{" || token == "}") then none else
-    some span
-  -- Up to the last item before the operation, as for a reordering.
-  let found := bound.filterMap fun span =>
     let start := span.start.offset
-    let stop := start + (bytesText source start opStart).trimAsciiEnd.toString.utf8ByteSize
-    let replacement := collapseSpace (bytesText source span.stop.offset stop)
-    let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
-    let removed := bytesText source start span.stop.offset
-    let (line, column) := lineColumn source start
+    let stop := span.stop.offset
+    let edited := bytesText source 0 start ++ bytesText source stop source.utf8ByteSize
     -- Only a removal after which the word checks: one that gets past the
     -- operation to a later error is not shown to be the fix.
-    (checkCallEdit config source word start stop replacement
-        (replacement.utf8ByteSize + (opStart - stop))).bind fun edit =>
-      if edit.after.isSome then none else
-      -- Compared as items: removing the last of two `m`s just before the
-      -- operation leaves a space more than removing the first.
-      some (collapseSpace edited, { edit with removed := some (removed, line, column) })
-  match (found.map (·.1)).eraseDups, found.getLast? with
-  | [_], some (_, edit) => some edit
-  | _, _ => none
+    (checkCallEdit config source word start stop "" (opStart - stop)).bind fun edit =>
+      if edit.after.isSome then none else some (collapseSpace edited, item, span)
+  match (checking.map (·.1)).eraseDups with
+  | [_] =>
+      -- Named only as a local or a literal in the same run of items as the
+      -- operation: no bracket between them, whether or not it touches the
+      -- items beside it (`[i]`, `{x}`).
+      let named := checking.filter fun (_, item, span) =>
+        let value := match item with
+          | .literal _ _ => true
+          | .word _ _ => locals.contains span.start.offset
+          | _ => false
+        value && !(bytesText source span.stop.offset opStart).any
+          (fun c => c == '[' || c == ']' || c == '{' || c == '}')
+      named.getLast?.bind fun (_, _, span) =>
+        let start := span.start.offset
+        let removed := bytesText source start span.stop.offset
+        let (line, column) := lineColumn source start
+        -- Up to the last item before the operation, as for a reordering,
+        -- when that is on one line; otherwise the value alone.
+        let last := start + (bytesText source start opStart).trimAsciiEnd.toString.utf8ByteSize
+        let stop := if (bytesText source start last).contains '\n' then span.stop.offset else last
+        let replacement := collapseSpace (bytesText source span.stop.offset stop)
+        (checkCallEdit config source word start stop replacement
+            (replacement.utf8ByteSize + (opStart - stop))).bind fun edit =>
+          if edit.after.isSome then none else
+          some { edit with removed := some (removed, line, column) }
+  | _ => none
 
 /-- `extraValueEdit` for a word or primitive the checker refused because the
 values it was handed are not the ones it takes, when `withCallAccount`
-found no reordering and the order is not open. -/
+found no reordering and the order is not open. A value missing needs no
+guard: removing a value leaves the operation one value fewer, so the word
+cannot then check. -/
 private def withExtraValue (config : PipelineConfig) (source : String) (word : WordDefinition) :
     PipelineDiagnostic → PipelineDiagnostic
   | .stackEffect diagnostic =>
@@ -673,15 +700,11 @@ private def withExtraValue (config : PipelineConfig) (source : String) (word : W
           diagnostic.code != "firth.type.primitive-input-mismatch" then .stackEffect diagnostic else
       match diagnostic.callAccount with
       | some account =>
-          if account.edit.isSome || !account.assignment.isEmpty || account.missing > 0 then .stackEffect diagnostic else
-          -- Only where the report lists a value for each input, as the
-          -- hint naming the removal does.
-          let listed := match diagnostic.expected, diagnostic.actual with
-            | some expected, some actual =>
-                let wanted := (stackValues expected).1.length
-                account.values.length == wanted && (stackValues actual).1.length ≥ wanted
-            | _, _ => false
-          if !listed then .stackEffect diagnostic else
+          -- Where the order is open (values of one type that could fill
+          -- several inputs), a removal that checks may still leave a value
+          -- in the wrong input, as removing the second `xs` in
+          -- `xs k xs k 0 count-loop` gives `k` for the start index.
+          if account.edit.isSome || !account.assignment.isEmpty then .stackEffect diagnostic else
           match extraValueEdit config source word diagnostic.primary with
           | some edit => .stackEffect { diagnostic with callAccount := some { account with edit := some edit } }
           | none => .stackEffect diagnostic

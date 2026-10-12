@@ -1550,6 +1550,57 @@ private def runCallAccountTests : IO Unit := do
     ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i i gt 1 gt } ;"
     ["is not what `gt` takes there"] ["Remove the", "One value too many"]
 
+/-- Where removing one value before an operation would not be shown to be
+the fix, no removal is named (`extraValueEdit`). -/
+private def runExtraValueTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-call" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let extraReport (label code source : String) (needles absent : List String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label code emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        for needle in absent do
+          if emitted.contains needle then
+            fail s!"{label}: the report says {needle}: {emitted}"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
+  -- Every removal before the operation is counted, of any kind and at any
+  -- depth: in each of these, removing an `e` lets `u` check, and so does
+  -- removing something else, so no removal is named.
+  let undo4 := ": undo4 (forall ρ; ρ m:Seq Int^many e:Int^many d:Int^many -- ρ r:Seq Int^many) prim seq-int.set ;\n: zero (forall ρ; ρ -- ρ v:Int^many) 0 ;\n: mk (forall ρ; ρ -- ρ s:Seq Int^many) prim seq-int.empty ;\n: u (forall ρ; ρ m:Seq Int^many e:Int^many -- ρ r:Seq Int^many)\n  locals { m e } "
+  for (name, body) in [("an atom", "{ m e dup e undo4 } ;"), ("a word", "{ m zero e e undo4 } ;"),
+      ("an atom just before the operation", "{ m e e dup undo4 } ;"),
+      ("a value with a bracket between", "{ m e [ e ] drop e e undo4 } ;")] do
+    extraReport s!"another removal checks: {name}" "firth.type.word-input-mismatch" (undo4 ++ body)
+      ["`undo4` in `u` takes m:Seq Int, e:Int, d:Int"] ["Remove the", "One value too many"]
+  -- The only removal that checks is of `mk`, a word and not a value written
+  -- as a local or a literal, so none is named.
+  extraReport "the removal of a word" "firth.type.word-input-mismatch" (undo4 ++ "{ m e e mk undo4 } ;")
+    ["`undo4` in `u` takes m:Seq Int, e:Int, d:Int"] ["Remove the", "One value too many"]
+  -- The only removal that checks is of an `i` before `[ ]` (either `i`,
+  -- leaving one text), not in the same run of items as `gt`, so none is
+  -- named; nor where the bracket is written against the items beside it.
+  for body in ["{ m i i [ ] call gt } ;", "{ m i i [] call gt } ;"] do
+    extraReport s!"a bracket between: {body}" "firth.type.word-input-mismatch"
+      (": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } " ++ body)
+      ["`gt` in `f` takes m:Seq Int, i:Int"] ["Remove the", "One value too many"]
+  -- The order is open: `count-loop` takes `xs k i cnt`, and `main` pushes
+  -- `xs k xs k 0`. Removing the second `xs` lets `main` check, but gives `k`
+  -- for the start index `i` (the author meant `xs k 0 0`), so it is not
+  -- named (haiku-firth-7, check-tool run of 2026-09-30, with `count-loop`'s
+  -- body cut to `cnt`).
+  extraReport "the order is open" "firth.type.word-input-mismatch"
+    ": count-loop (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many cnt:Int^many -- ρ count:Int^many)\n  locals { xs k i cnt } { cnt } ;\n: main (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { xs k xs k 0 count-loop } ;"
+    ["`count-loop` in `main`"] ["Remove the", "One value too many"]
+  -- The text from the value to the operation crosses a line, so it is not
+  -- written out in place: the hint names the value alone.
+  extraReport "a removal across lines" "firth.type.word-input-mismatch" (undo4 ++ "{ m e m\n  e undo4 } ;")
+    ["One value too many is pushed before it.", "Remove the `m` written at line 5, column 24. With that edit `u` checks."] ["in place of"]
+
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
   | .snoc rest type => stackTypes rest ++ [type]
   | _ => []
@@ -3149,6 +3200,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   runClosedCalleeTests
   runDeclaredInputsTests
   runCallAccountTests
+  runExtraValueTests
   runPrimitiveRolesTests
   runSourceTypeTests
   runEveryErrorTests
