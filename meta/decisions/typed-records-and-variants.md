@@ -275,9 +275,12 @@ exported types change gets a new content and dependency identity and its
 cached consumers stop matching. Proof evidence is separate: a covered-word
 record in `records.json` stores only `bodyDigest` and `erasedType`
 (`src/proofs/README.md`), which an `A.pack` to `B.pack` change leaves
-identical, so the implementation PR also adds the word's resolved nominal
-signature to each covered-word record, and a record whose signature differs
-stops making the word `contract_verified`. A nominal type reference in an exported word's signature, or in a member of
+identical, and so does a reorder of two same-typed fields of `R` under a
+word that builds an `R`. The implementation PR therefore adds a digest of the
+word's resolved nominal signature and of the declaration closure of every
+declared type its body or signature mentions (ordered member names, member
+types and case order) to each covered-word record, and a record whose digest
+differs stops making the word `contract_verified`. A nominal type reference in an exported word's signature, or in a member of
 an exported type declaration, also adds the owning layer's manifest to the
 dependency profile, transitively through member types, so when the type
 lives in a different vocabulary (and so a different layer) from the word or
@@ -288,9 +291,10 @@ that must fail without it. Four concern the profiles: renaming a field, reorderi
 flat type, changing an exported word's result from one same-layout type
 to another each change the profile, and reordering the fields of a type owned
 by another layer changes the dependency profile of a word that names it and
-of a type that holds it as a member. A fifth planted case changes only an
-exported word's nominal result type between two same-layout types and must
-make its record stop counting as `contract_verified`:
+of a type that holds it as a member. Two more planted cases concern proof records. A fifth
+changes only an exported word's nominal result type between two same-layout types, and a
+sixth reorders two same-typed fields of a type that a covered word builds;
+each must make the record stop counting as `contract_verified`:
 
 - `R.pack` : `ρ f1 ... fk -- ρ r:R`. Emits nothing; it changes the surface
   type of the top `width(R)` values to `R`. `R.unpack` is its inverse and

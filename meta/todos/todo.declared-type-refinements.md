@@ -24,5 +24,5 @@ over a whole record.
 ## Progress
 
 - 13 October 2026: gap named in `dec.typed-records-and-variants`. Until it
-  lands, authors state the predicate on the scalar fields at a word whose
-  signature takes them separately.
+  lands, a program that needs a predicate over a whole declared record at a
+  word boundary is blocked on this todo.
