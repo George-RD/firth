@@ -147,7 +147,10 @@ of the declarations visible in the file, so an unknown name is still
 `firth.type.unknown-type`.
 
 Imports and exports carry types: `export Request Outcome;` lists a type and
-its generated operations; `import` brings them in under the visibility rules
+its generated operations, and every declared type that appears in its member
+types, directly or through other declarations, must be exported by the same
+file too (`firth.name.export-incomplete`, naming the missing type), so an
+importer always has the layout and the operations of every type it can reach; `import` brings them in under the visibility rules
 of `dec.multi-file-imports`; `firth.name.not-exported` applies to types. A
 type's canonical key, like a word's, does not depend on who imports it.
 
