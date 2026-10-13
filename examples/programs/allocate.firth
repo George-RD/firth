@@ -1,3 +1,5 @@
+import "../../stdlib/core.firth";
+
 \ One step of the ordered stock allocation in specs/inventory-allocation.md:
 \ given the remaining stock and one request, return the new remaining stock,
 \ the quantity allocated and the reason code. Reason codes: 0 fulfilled,
@@ -8,14 +10,11 @@
   (forall ρ; ρ a:Int^many b:Int^many -- ρ a:Int^many b:Int^many c:Int^many)
   [ dup ] dip swap;
 
-: min
-  (forall ρ; ρ a:Int^many b:Int^many -- ρ m:Int^many)
-  over over prim < [ drop ] [ swap drop ] if;
-
-\ Partial policy: allocate min(remaining, requested).
+\ Partial policy: allocate the smaller of remaining and requested, using
+\ `core.min-int` from the standard library.
 : allocate-partial
   (forall ρ; ρ remaining:Int^many requested:Int^many -- ρ left:Int^many allocated:Int^many)
-  over min dup [ prim - ] dip;
+  over core.min-int dup [ prim - ] dip;
 
 \ All-or-nothing policy: allocate the whole request only when it fits.
 : allocate-whole

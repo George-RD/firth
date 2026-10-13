@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-10-11
 ---
 
@@ -25,3 +25,15 @@ and `m2` and `m3` are in scope too.
 - The report for `fillb` names `addto` on line 72, in the inner `if`, as
   the operation that takes the value from below the outer `if`.
 - The report main gave at 35c73c1 is planted in the test and fails it.
+
+## Done
+
+Met by the inner-reach change: the `fillb` case in
+`src/agent/Firth/Agent/ElaboratorDiagnosticsTest.lean` (`runInnerReachTests`)
+checks that the report names `addto` "in the true branch of the `if` at line
+72, column 39", with its missing values, and plants the message main gave at
+35c73c1 as a report that must fail the case. The effect on real answers is in
+`eval/s7/report-changes/inner-reach/` (54 of 6,959 reports change, none
+changes status, code or location). The case where both paths of the inner
+`if` reach below the branch still falls back to the older wording; that is
+recorded in `todo.internal-operation-diagnostics`.
