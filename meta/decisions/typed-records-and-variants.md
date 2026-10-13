@@ -232,7 +232,17 @@ A linear slot in `w` still makes `dup` and `drop` refuse, by the kernel's
 usage rule. Width 1 reduces each rule to the kernel atom itself.
 
 Operations. Each is a macro in the elaborator that emits only kernel atoms;
-none is a dictionary word, so no digest, key or call graph changes:
+none is a dictionary word, so no word digest, key or call graph changes. The
+generated operations still have meaning that the erased words do not carry
+(renaming or reordering two `Int` fields leaves every erased word the same
+while `Pair.left` changes meaning), so the declarations themselves join the
+layer identity: the implementation PR adds each exported type declaration
+(canonical type key, ordered member names and their declared types, case
+order) to the layer's `content_profile` of `syntax.md`, so a provider whose
+exported types change gets a new content and dependency identity and cached
+consumers and proof evidence stop matching. That PR plants the two cases
+that must fail without it: renaming a field and reordering two fields of one
+flat type each change the profile:
 
 - `R.pack` : `ρ f1 ... fk -- ρ r:R`. Emits nothing; it changes the surface
   type of the top `width(R)` values to `R`. `R.unpack` is its inverse and
@@ -349,8 +359,13 @@ changes nothing in the language: `todo.host-record-values` records it.
 
 Erasure emits straight-line code of length linear in the width of the
 types involved: a constructor or field read costs `O(width)` steps, a
-`match` `O(cases + total payload width)`, a `T.seq.at` `O(columns)` with
-a handful of atoms per column. These are measured per run, and proved only
+`match` `O(cases + total payload width)` executed steps, a `T.seq.at`
+`O(columns)` with a handful of atoms per column. Static code size is a
+separate figure: each of the `n` arms of a `match` drops the other payloads
+and the remaining tags, so the emitted program is `O(n^2)` in the number of
+cases for one-slot payloads even though one path runs. The implementation PR
+measures the size on the examples and does not claim the linear bound for it;
+a shared-tail strategy is a later optimisation, not a requirement here. These are measured per run, and proved only
 where a Lean contract exists, as for any word (`AGENTS.md` rule 8); they are
 not a claim of this record. Erased code is the code one would write by hand
 for the flat stack; the implementation PRs measure it on the examples.
