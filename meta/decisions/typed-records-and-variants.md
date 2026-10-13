@@ -100,8 +100,10 @@ A member type carries no refinement: a `{ predicate }` after it is refused
     variant Outcome { filled:Int short:Int empty }
 
 `record`, `variant` and `match` are contextual keywords, not reserved words:
-`record` and `variant` are keywords only at the start of an item when the
-next two tokens are a type name and `{`, and `match` only when it is followed by `{`, a
+`record` and `variant` are keywords only where a declaration may stand (the top
+level of a file or of a `vocab`, never inside a word body) and only when the
+next two tokens are a type name and `{`, so in a body `record Foo { 1 }` still
+calls words `record` and `Foo`. `match` is a keyword only inside a body, and only when it is followed by `{`, a
 name and `[`, a shape a sequence literal never has (it holds only integer and
 boolean literals, `syntax.md`), so `match { 1 }` still calls a word `match`. Anywhere else they are ordinary names, so retained programs that define
 and call words named `record` or `match` (`eval/s7/harder/reference/scored/firth/sokoban.firth`,
