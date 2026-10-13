@@ -25,5 +25,5 @@ as it can for a base type, instead of refusing the application with
 ## Progress
 
 - 13 October 2026: gap named in `dec.typed-records-and-variants`. Until it
-  lands, authors move composite handling into a word with a typed signature
-  or use `locals`.
+  lands, a program that needs `call`, `dip` or `if` through a quotation over a
+  composite stack position is blocked on this todo.

@@ -256,9 +256,11 @@ of the value it touches in the body's own typing: a value the body did not
 build is taken to have width 1, and the quotation's recorded surface effect
 says so. Applying such a quotation (`call`, `dip`, `if`, or through a word)
 where that stack position holds a composite value is refused
-(`firth.type.composite-in-quotation`), naming the atom and the type; the
-author moves the composite handling into a word with a typed signature, which
-is erased with its types known, or uses `locals`. This is a limit of erasing a quotation body before its stack is known, and it is tracked as `todo.composite-quotations`.
+(`firth.type.composite-in-quotation`), naming the atom and the type; a
+program that needs such a quotation is blocked on `todo.composite-quotations`,
+and nothing in this design is a substitute for it. (Words with typed
+signatures and `locals` handle composites directly and are ordinary uses, not
+a way round the refusal.) This is a limit of erasing a quotation body before its stack is known, and it is tracked as `todo.composite-quotations`.
 A linear slot in `w` still makes `dup` and `drop` refuse, by the kernel's
 usage rule. Width 1 reduces each rule to the kernel atom itself.
 
