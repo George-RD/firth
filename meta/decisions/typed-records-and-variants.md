@@ -226,8 +226,10 @@ every value, and the kernel atoms written in source act on whole surface
 values, not on the top flat slot. For a top value of width `w` (a record,
 variant, or the columns of a `Seq T`): `dup` emits `pick (w-1)` `w` times;
 `drop` emits `drop` `w` times; `swap` of a value of width `a` below one of
-width `b` emits `roll (a+b-1)` `a` times; `[q] dip` emits `w` nested dips
-(`[ [ ... [q] dip ] dip ] dip`), so `q` runs beneath all `w` slots; `quote` of
+width `b` emits `roll (a+b-1)` `a` times; `dip` of any quotation, written or built at run time, emits `quote [dip]
+compose` `w-1` times and then `dip` (`[q]` becomes `[[q] dip]`, then
+`[[[q] dip] dip]`), so `q` runs beneath all `w` slots without needing the
+body at elaboration; `quote` of
 a composite emits `quote` then `swap quote swap compose` `w-1` times, which
 builds one quotation that pushes all `w` slots in flat order (for `a b`:
 `a [b]`, then `[a] [b]`, then `[a b]`). Each slot is consumed once, so linear
