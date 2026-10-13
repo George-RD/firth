@@ -470,7 +470,8 @@ calibration pin PR to merge.
   with four `Int`s per ID): no names, no checking, and an off-by-stride
   error is a wrong answer, not a refusal.
 - **A `Seq` of records that hold sequences.** Out of scope: erasure cannot
-  express `Seq (Seq Int)`, so it needs the `Γ` change above and George.
+  express `Seq (Seq Int)`, so it needs the `Γ` change above and George. Filed as
+  `todo.seq-of-seq-records`.
 
 ## Consequences
 
