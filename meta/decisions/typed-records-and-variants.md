@@ -94,7 +94,13 @@ for expressiveness (see Rejected alternatives).
 level of a file or inside a `vocab`, in the same place a word definition may,
 and its canonical key is built the same way (`Request`, `inv.Request`). Type
 names and word names are different kinds: a type and a word may not share a
-canonical key (`firth.name.duplicate-canonical`). A type name starts with an
+canonical key (`firth.name.duplicate-canonical`), and neither may a type and
+a vocabulary. Every operation a declaration generates has a canonical key
+too (`R.pack`, `R.unpack`, `R.f`, `R.set-f`, the `R.seq.*` operations of a
+scalar-flat `R`, and `V.c`), reserved in the same table: a word, vocabulary
+or type, in this file or an imported one, whose canonical key equals a
+generated key is `firth.name.duplicate-canonical`, naming both
+declarations, so no spelling has two meanings. A type name starts with an
 upper-case letter, which `word-name` allows already; `firth.type.type-name-case`
 refuses a record or variant name that does not, so a type name never reads as
 a word.
@@ -191,13 +197,15 @@ none is a dictionary word, so no digest, key or call graph changes:
   local with a linear field must have each linear field selected exactly once,
   as any linear local.
 - `V.c` (a case constructor) : `ρ p:Pc -- ρ v:V` (no `p` for a case without a
-  payload). With payload width `w` and `d` the total width of the defaults
-  of all other cases, it emits those defaults (cases before c, then cases
-  after c) above the payload, then `roll (d + w - 1)` `w` times, which moves
-  the whole payload back to the top in order (`dip` protects only one slot,
-  so it is not used), then the tags, all `false` except the one for case c (case 1
-  has no tag). Defaults: `0` for `Int`, `false` for `Bool`,
-  `prim seq-int.empty` or `prim seq-bool.empty` for a sequence, the defaults of
+  payload). With payload width `w` and `b` the total width of the defaults
+  of the cases before c, it emits those defaults above the payload, then
+  `roll (b + w - 1)` `w` times, which moves the whole payload back to the top
+  in order and leaves the earlier defaults beneath it (`dip` protects only one
+  slot, so it is not used), then the defaults of the cases after c, then the
+  tags, all `false` except the one for case c (case 1 has no tag). With `b`
+  zero no `roll` is emitted. Defaults: `0` for `Int`, `false` for `Bool`, one
+  `prim seq-int.empty` or `prim seq-bool.empty` per column for a `Seq` (a
+  `Seq Pair` with an `Int` and a `Bool` field gets both), the defaults of
   its fields for a record, and for a variant the defaults of every payload
   and `false` for every tag.
 - `match`, in a body: `V match { c1 [ body1 ] ... cn [ bodyn ] }`, or with
@@ -253,12 +261,13 @@ is its payload slots then its tags. The input and output stacks of
 `firth_run.py run` are flat, unchanged; nothing in the compiler envelope or
 the VM changes.
 
-Two things the host must keep, stated in each contract that mentions the
-type and not proved by Firth:
-
-- **Equal column lengths** of a `Seq T` supplied by the host.
-- Nothing else: a `Bool` tag cannot be out of range, which is why tags are
-  `Bool`s (see Rejected alternatives).
+One thing the host must keep, stated in each contract that mentions the
+type and not proved by Firth: **equal column lengths** of a `Seq T` it
+supplies. Nothing else is required. A `Bool` tag cannot be out of range,
+which is why tags are `Bool`s (see Rejected alternatives), and the slots of
+the cases not taken may hold anything: `match` drops them without reading
+them, so a contract speaks only of the selected payload and no canonical form
+of the inactive slots is required or checked.
 
 Ownership, bounds and termination as the todo asks: a record has the
 ownership of its fields (a linear field makes it linear); every type has a
@@ -283,10 +292,11 @@ for the flat stack; the implementation PRs measure it on the examples.
 Contracts and proofs are stated over the erased words and the flat stack
 (`WordContract`, `.Holds`), as for locals. Nothing in `src/proofs/` needs to
 change for this decision. A contract about a word over a record states its
-fields as flat values; a word over a variant states that the unused payload
-slots hold defaults and that its behaviour does not depend on them, which is
-a property of the word (a theorem about `match`'s erasure is not needed:
-after the `if` the other slots are dropped). The imports lemma
+fields as flat values; a word over a variant states its result in terms of the selected case and
+its payload only. Words built by the constructors and `match` never read the
+inactive slots (the `if` chain drops them), and a word that only passes a
+variant on returns whatever slots it was given, so no contract may speak of
+them. The imports lemma
 `WordContract.Holds.extend` carries over because erased words keep
 file-independent keys and digests.
 
