@@ -185,6 +185,15 @@ width `b` emits `roll (a+b-1)` `a` times; `[q] dip` emits `w` nested dips
 a composite is refused (`firth.type.composite-quote`), since a quotation holds
 one kernel value; use `locals`, which captures slot by slot. `call`, `compose`
 and `if` act on quotations and `Bool`s, which have width 1, and are unchanged.
+Quotation bodies are erased on their own, before the stack they will run on
+is known (syntax.md section 5.1), so a structural atom there acts on the width
+of the value it touches in the body's own typing: a value the body did not
+build is taken to have width 1, and the quotation's recorded surface effect
+says so. Applying such a quotation (`call`, `dip`, `if`, or through a word)
+where that stack position holds a composite value is refused
+(`firth.type.composite-in-quotation`), naming the atom and the type; the
+author moves the composite handling into a word with a typed signature, which
+is erased with its types known, or uses `locals`.
 A linear slot in `w` still makes `dup` and `drop` refuse, by the kernel's
 usage rule. Width 1 reduces each rule to the kernel atom itself.
 
@@ -204,8 +213,9 @@ none is a dictionary word, so no digest, key or call graph changes:
 - `R.set-f` : `ρ r:R v:Tf -- ρ r:R`. Replaces the field, dropping the old
   value (`many`; `firth.type.record-drop-linear` otherwise). With `s`, `w`,
   `a` as above it emits `roll (a + w - 1)` `a` times, which moves the slots
-  after the field above the new value, then `roll (a + w)` followed by `drop`
-  `w` times, which removes the old field's slots.
+  after the field above the new value, then the pair `roll (a + w)`, `drop` repeated `w` times, one
+  pair per old slot (each pair removes the topmost remaining old slot, which
+  stays at depth `a + w`), which removes the old field's slots.
 - In a `locals { r }` block a record local `r` is bound as its fields
   `r.f1 ... r.fk`, one local per flat slot, in order. `r.f` selects one
   field, and `r` alone selects all of them in order, i.e. `r` rebuilds the
