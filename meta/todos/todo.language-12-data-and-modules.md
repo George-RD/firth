@@ -34,6 +34,10 @@ Make bounded application data and reusable vocabularies practical.
   `todo.host-record-values`); core library examples; malformed-data tests;
   and differential coverage (VM against reference interpreter). The
   multi-file criterion is met by the import work above.
+- Known gap from the design: a record or variant with an imported member type
+  cannot be exported, because exports are non-transitive and the design adds
+  no type re-export (`firth.name.export-imported-member`). Re-export of types
+  is a follow-up once a consumer needs it.
 
 ## Traceability
 

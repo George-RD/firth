@@ -148,9 +148,17 @@ of the declarations visible in the file, so an unknown name is still
 
 Imports and exports carry types: `export Request Outcome;` lists a type and
 its generated operations, and every declared type that appears in its member
-types, directly or through other declarations, must be exported by the same
-file too (`firth.name.export-incomplete`, naming the missing type), so an
-importer always has the layout and the operations of every type it can reach; `import` brings them in under the visibility rules
+types, directly or through other declarations, must be declared in the same
+file and exported by it too (`firth.name.export-incomplete`, naming the
+missing type). A file may use an imported type in its own declarations, but a
+type with an imported type among its members cannot be exported
+(`firth.name.export-imported-member`, naming the imported type): exports list
+only what the file owns and imports are not transitive
+(`spec/surface/syntax.md`), and this decision adds no re-export. A library
+that needs such a composition declares the member types in the one file. This
+is a deliberate limit, recorded as a gap in `todo.language-12-data-and-modules`
+(type re-export). An importer therefore always has the layout and the
+operations of every type it can reach; `import` brings them in under the visibility rules
 of `dec.multi-file-imports`; `firth.name.not-exported` applies to types. A
 type's canonical key, like a word's, does not depend on who imports it.
 
