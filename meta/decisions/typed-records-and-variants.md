@@ -120,7 +120,9 @@ name or a vocabulary prefix of a generated key either
 types), since resolution expands a leading alias first. A type name starts with an
 upper-case letter, which `word-name` allows already; `firth.type.type-name-case`
 refuses a record or variant name that does not, so a type name never reads as
-a word.
+a word. A declared name may not be a built-in type name: `Int`, `Bool`, `Seq`,
+`World`, `Handle` or `Bytes`, or any other name `sourceTypes` lists
+(`firth.type.reserved-type-name`), so `x:Int` has one meaning.
 
 Generated operation names must not collide: a field or case may not be named
 `pack`, `unpack` or `seq`, and a field may not begin with `set-`
@@ -171,7 +173,12 @@ only what the file owns and imports are not transitive
 (`spec/surface/syntax.md`), and this decision adds no re-export. A library
 that needs such a composition declares the member types in the one file. This
 is a deliberate limit, recorded as a gap in `todo.language-12-data-and-modules`
-(type re-export). An importer therefore always has the layout and the
+(type re-export). The same closure covers exported words: every declared
+type in the input or output of an exported word's signature, with its member
+closure, must be declared in the exporting file and exported by it
+(`firth.name.export-incomplete`, naming the word and the type), and a
+signature naming an imported type cannot be exported
+(`firth.name.export-imported-member`). An importer therefore always has the layout and the
 operations of every type it can reach; `import` brings them in under the visibility rules
 of `dec.multi-file-imports`; `firth.name.not-exported` applies to types. A
 type's canonical key, like a word's, does not depend on who imports it.
