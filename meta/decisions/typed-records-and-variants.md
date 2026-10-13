@@ -217,7 +217,7 @@ slots are legal, and the result is a kernel quotation whose recorded surface
 effect is `[ -> R ]`; `call` on it puts the composite back, with its type. The
 easier option, refusing composite `quote` and sending authors to `locals`,
 was rejected: it would leave a hole in the erasure for a case that has a
-total lowering, at the cost of `3(w-1)+1` kernel atoms per quote. `call`, `compose`
+total lowering, at the cost of `4w-3` kernel atoms per quote. `call`, `compose`
 and `if` act on quotations and `Bool`s, which have width 1, and are unchanged.
 Quotation bodies are erased on their own, before the stack they will run on
 is known (syntax.md section 5.1), so a structural atom there acts on the width
