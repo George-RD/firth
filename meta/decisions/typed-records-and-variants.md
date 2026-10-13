@@ -287,9 +287,10 @@ of a type that holds it as a member:
   emits nothing.
 - `R.f` (a field read) : `ρ r:R -- ρ v:Tf`. Consumes the record. Let the field
   occupy `w` flat slots with `s` slots before it and `a` after. It emits
-  `drop` `a` times (the slots after the field are on top), then `roll w`
-  followed by `drop` `s` times, each pair removing the topmost slot below the
-  field. All dropped slots are `many` (`firth.type.record-drop-linear`
+  `drop` `a` times (the slots after the field are on top), then the pair
+  `roll w`, `drop` repeated `s` times, one pair per preceding slot (each pair
+  removes the topmost slot below the field, which stays at depth `w`). For
+  `record R { a:Int b:Int c:Int }`, `R.c` is `roll 1 drop roll 1 drop`. All dropped slots are `many` (`firth.type.record-drop-linear`
   otherwise), and a field of width `w > 1` (a nested record) moves whole.
   A word that reads two fields of one record uses `locals`.
 - `R.set-f` : `ρ r:R v:Tf -- ρ r:R`. Replaces the field, dropping the old
@@ -319,7 +320,8 @@ of a type that holds it as a member:
   only way into a variant; `v.c` is `firth.type.variant-local-selector`, and
   `xs.f` on a sequence of records is `firth.type.seq-local-selector`). The usage rules
   of its slots are those of its declaration, as for a record. A record local whose name is also the leading segment
-  of a visible qualified name (a vocabulary, or an alias from `use`) is
+  of a visible qualified name (a vocabulary, an alias from `use`, or a
+  visible declared type, whose generated operations are `R.x`) is
   refused at the binder (`firth.name.local-shadows-prefix`, naming the local
   and the prefix), so `r.f` never has two readings and qualified lookup in
   `syntax.md` keeps its meaning.
