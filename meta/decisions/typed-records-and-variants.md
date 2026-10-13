@@ -100,7 +100,10 @@ too (`R.pack`, `R.unpack`, `R.f`, `R.set-f`, the `R.seq.*` operations of a
 scalar-flat `R`, and `V.c`), reserved in the same table: a word, vocabulary
 or type, in this file or an imported one, whose canonical key equals a
 generated key is `firth.name.duplicate-canonical`, naming both
-declarations, so no spelling has two meanings. A type name starts with an
+declarations, so no spelling has two meanings. A `use ... as` alias may not equal a type
+name or a vocabulary prefix of a generated key either
+(`firth.name.duplicate-alias`, the existing code, now also against declared
+types), since resolution expands a leading alias first. A type name starts with an
 upper-case letter, which `word-name` allows already; `firth.type.type-name-case`
 refuses a record or variant name that does not, so a type name never reads as
 a word.
@@ -147,7 +150,10 @@ Widths. The **flat form** of a type is a list of kernel types:
 | `variant V {c1:P1 ... cn:Pn}` | flat(P1) ... flat(Pn) (a case with no payload adds nothing), then `Bool`s `u2 ... un` |
 | `Seq T`, T scalar-flat with m scalars | m sequences, `Seq Int` for an `Int` scalar and `Seq Bool` for a `Bool`, in flat order |
 
-A type is **scalar-flat** when its flat form is only `Int` and `Bool`.
+A type is **scalar-flat** when its flat form is only `Int` and `Bool`, all
+`many` (a record with an `Int^linear` field is not: the `seq-int` and
+`seq-bool` primitives take and give `many` values only, so a `Seq` of it would
+either fail to check or lose the field's ownership).
 `World`, `Handle` and `Bytes` are never scalar-flat, so a `Seq` of them is
 refused (`firth.type.seq-element`), and a `Seq Int` field makes its record
 not scalar-flat. A usage `^linear` on a record field makes the record
