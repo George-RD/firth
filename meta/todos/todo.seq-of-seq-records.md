@@ -19,8 +19,9 @@ to the current flat columns.
   with the same operations; today `Seq V` is refused because `V` is not
   scalar-flat.
 - The representation is chosen in an accepted decision. `dec.typed-records-and-variants`
-  notes that it needs a `Γ` change, so it needs the maintainer (AGENTS.md
-  rule 7) before any build.
+  notes that it needs a `Γ` change. AGENTS.md rule 7 requires an accepted
+  decision that keeps the metatheory complete, and the change needs the
+  maintainer's approval before any build.
 - Planted-bug tests cover the new representation, and the VM and reference
   interpreter agree on every example.
 
