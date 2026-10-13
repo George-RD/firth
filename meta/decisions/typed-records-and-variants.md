@@ -263,15 +263,18 @@ layer identity: the implementation PR adds each exported type declaration
 order), and each exported word's resolved nominal input and output signature
 (an `A.pack` and a `B.pack` erase to the same program), to the layer's `content_profile` of `syntax.md`, so a provider whose
 exported types change gets a new content and dependency identity and cached
-consumers and proof evidence stop matching. A nominal type reference in an exported word's signature also adds the
-owning layer's manifest to the word's dependency profile, so when the type
-lives in a different vocabulary (and so a different layer) from the word,
+consumers and proof evidence stop matching. A nominal type reference in an exported word's signature, or in a member of
+an exported type declaration, also adds the owning layer's manifest to the
+dependency profile, transitively through member types, so when the type
+lives in a different vocabulary (and so a different layer) from the word or
+type that names it,
 changing the type's layout still invalidates the word's cached consumers and
 proof evidence. That PR plants the four cases
 that must fail without it: renaming a field, reordering two fields of one
 flat type, changing an exported word's result from one same-layout type
 to another each change the profile, and reordering the fields of a type owned
-by another layer changes the dependent word's dependency profile:
+by another layer changes the dependency profile of a word that names it and
+of a type that holds it as a member:
 
 - `R.pack` : `ρ f1 ... fk -- ρ r:R`. Emits nothing; it changes the surface
   type of the top `width(R)` values to `R`. `R.unpack` is its inverse and
