@@ -97,7 +97,14 @@ A member type carries no refinement: a `{ predicate }` after it is refused
     record Request { id:Int qty:Int }
     variant Outcome { filled:Int short:Int empty }
 
-`record` and `variant` become reserved words. A declaration sits at the top
+`record`, `variant` and `match` are contextual keywords, not reserved words:
+`record` and `variant` are keywords only at the start of an item when the
+next two tokens are a type name and `{`, and `match` only when the next token
+is `{`. Anywhere else they are ordinary names, so retained programs that define
+and call words named `record` or `match` (`eval/s7/harder/reference/scored/firth/sokoban.firth`,
+`eval/s7/harder/reference/calibration2/firth/order-book.firth`) keep checking
+and running unchanged; the implementation PR runs both as regression cases.
+A declaration sits at the top
 level of a file or inside a `vocab`, in the same place a word definition may,
 and its canonical key is built the same way (`Request`, `inv.Request`). Type
 names and word names are different kinds: a type and a word may not share a
@@ -115,11 +122,13 @@ upper-case letter, which `word-name` allows already; `firth.type.type-name-case`
 refuses a record or variant name that does not, so a type name never reads as
 a word.
 
-Generated operation names must not collide: a field may not be named
-`pack`, `unpack` or `seq`, nor begin with `set-` (`firth.type.reserved-field-name`),
-so `R.pack`, `R.unpack`, `R.f` and `R.set-f` are distinct for every field.
-(Case constructors are `V.c`; `match` is reserved, so a case cannot take
-that name.)
+Generated operation names must not collide: a field or case may not be named
+`pack`, `unpack` or `seq`, and a field may not begin with `set-`
+(`firth.type.reserved-field-name`, which covers case names too for `seq`), so
+`R.pack`, `R.unpack`, `R.f` and `R.set-f` are distinct for every field, and a
+case constructor `V.c` never meets the `V.seq.*` namespace. A case may be
+named `match`: constructors are always written `V.match`, so the contextual
+keyword cannot meet it.
 
 A record has at least one field. A variant has at least two cases, which is
 what makes it a choice; a case has zero or one payload type. A result is a
