@@ -99,6 +99,12 @@ upper-case letter, which `word-name` allows already; `firth.type.type-name-case`
 refuses a record or variant name that does not, so a type name never reads as
 a word.
 
+Generated operation names must not collide: a field may not be named
+`pack`, `unpack` or `seq`, nor begin with `set-` (`firth.type.reserved-field-name`),
+so `R.pack`, `R.unpack`, `R.f` and `R.set-f` are distinct for every field.
+(Case constructors are `V.c`; `match` is reserved, so a case cannot take
+that name.)
+
 A record has at least one field. A variant has at least two cases, which is
 what makes it a choice; a case has zero or one payload type. A result is a
 two-case variant:
@@ -150,6 +156,19 @@ over `r.id:Int r.qty:Int ok:Bool -- Int Int ... Bool`, and its names for
 diagnostics are the field paths. A call to the word needs no code beyond
 what the flat stack already holds.
 
+Structural atoms on composite values. The surface layer tracks the width of
+every value, and the kernel atoms written in source act on whole surface
+values, not on the top flat slot. For a top value of width `w` (a record,
+variant, or the columns of a `Seq T`): `dup` emits `pick (w-1)` `w` times;
+`drop` emits `drop` `w` times; `swap` of a value of width `a` below one of
+width `b` emits `roll (a+b-1)` `a` times; `[q] dip` emits `w` nested dips
+(`[ [ ... [q] dip ] dip ] dip`), so `q` runs beneath all `w` slots; `quote` of
+a composite is refused (`firth.type.composite-quote`), since a quotation holds
+one kernel value; use `locals`, which captures slot by slot. `call`, `compose`
+and `if` act on quotations and `Bool`s, which have width 1, and are unchanged.
+A linear slot in `w` still makes `dup` and `drop` refuse, by the kernel's
+usage rule. Width 1 reduces each rule to the kernel atom itself.
+
 Operations. Each is a macro in the elaborator that emits only kernel atoms;
 none is a dictionary word, so no digest, key or call graph changes:
 
@@ -172,8 +191,11 @@ none is a dictionary word, so no digest, key or call graph changes:
   local with a linear field must have each linear field selected exactly once,
   as any linear local.
 - `V.c` (a case constructor) : `ρ p:Pc -- ρ v:V` (no `p` for a case without a
-  payload). Emits `[ defaults for cases before c ] dip`, then the defaults for
-  cases after c, then the tags, all `false` except the one for case c (case 1
+  payload). With payload width `w` and `d` the total width of the defaults
+  of all other cases, it emits those defaults (cases before c, then cases
+  after c) above the payload, then `roll (d + w - 1)` `w` times, which moves
+  the whole payload back to the top in order (`dip` protects only one slot,
+  so it is not used), then the tags, all `false` except the one for case c (case 1
   has no tag). Defaults: `0` for `Int`, `false` for `Bool`,
   `prim seq-int.empty` or `prim seq-bool.empty` for a sequence, the defaults of
   its fields for a record, and for a variant the defaults of every payload
