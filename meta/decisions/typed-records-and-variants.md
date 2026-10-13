@@ -93,7 +93,8 @@ A member type carries no refinement: a `{ predicate }` after it is refused
 (`firth.syntax.refinement-in-type`), as refinements stay at word boundaries
 (syntax.md section 3). Refinements on a stack item of a declared type
 (`r:Request{...}`) are not defined here; the checker refuses them
-(`firth.syntax.refinement-in-type`) until a decision gives them a meaning.
+(`firth.syntax.refinement-in-type`) until a decision gives them a meaning. Filed as
+`todo.declared-type-refinements`.
 
     record Request { id:Int qty:Int }
     variant Outcome { filled:Int short:Int empty }

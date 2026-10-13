@@ -22,4 +22,5 @@ the typed-records design cannot erase to the current flat columns.
 ## Progress
 
 - 13 October 2026: gap named in `dec.typed-records-and-variants`. Until it
-  lands, authors keep one `Seq` per field or use a stride encoding.
+  lands, a program that needs it is blocked on this todo; the design rejects
+  the stride encoding because it loses names and checking.
