@@ -132,7 +132,12 @@ Field and case names are unique within their declaration
 (`firth.type.duplicate-field`, `firth.type.duplicate-case`). A field or
 payload type is any type a stack effect may name (`dec.source-type-names`)
 plus declared records and variants, `Seq` of a scalar-flat type (below), and
-may carry `^linear` only on a record field. A type may not contain itself,
+may carry `^linear` only on a record field of a base type (`Int`, `Bool`,
+`Seq` of those, or a world type), never on a field of a declared record or
+variant type (`firth.type.linear-composite-field`): a composite field is
+linear exactly when some slot of its own flat form is, as each of its slots
+keeps the usage its own declaration gave it, so `Pair.pack` and `Pair.unpack`
+have the same effect wherever the pair sits. A type may not contain itself,
 directly or through other declarations (`firth.type.recursive-type`): an
 erased value has a fixed width, and a recursive type has none.
 
