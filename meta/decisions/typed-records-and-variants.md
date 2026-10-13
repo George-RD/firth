@@ -145,6 +145,11 @@ erased value has a fixed width, and a recursive type has none.
 `sourceTypes` stays the list of base types and now also accepts the names
 of the declarations visible in the file, so an unknown name is still
 `firth.type.unknown-type`.
+A usage suffix is refused on a declared name (`r:Request^linear`,
+`firth.type.composite-usage`): the usage of a composite value is always the
+one derived from its slots, as above, so there is one meaning for `dup` and
+for `pack` and `unpack` whatever the use site writes. The suffix keeps its
+meaning on base types.
 
 Imports and exports carry types: `export Request Outcome;` lists a type and
 its generated operations, and every declared type that appears in its member
