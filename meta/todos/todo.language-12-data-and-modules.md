@@ -23,7 +23,14 @@ Make bounded application data and reusable vocabularies practical.
   deterministic load order and stable `firth.name.*` errors
   (`dec.multi-file-imports`). `examples/inventory/policy-change/` clients
   import `allocator.firth`.
-- Still open: typed records/results and the other criteria above.
+- 13 October 2026: design for typed records and results in
+  `dec.typed-records-and-variants`. No kernel change: `record` and `variant`
+  types erase to flat stack values, sequences of scalar-flat records to
+  columns. Planned PRs: records, variants with `match`, sequences of records,
+  then the agent guide and S7 inputs.
+- Still open: all of the above except imports; the other criteria above
+  (library examples, malformed-data tests, differential coverage) go with
+  those PRs.
 
 ## Traceability
 
