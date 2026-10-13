@@ -210,8 +210,14 @@ variant, or the columns of a `Seq T`): `dup` emits `pick (w-1)` `w` times;
 `drop` emits `drop` `w` times; `swap` of a value of width `a` below one of
 width `b` emits `roll (a+b-1)` `a` times; `[q] dip` emits `w` nested dips
 (`[ [ ... [q] dip ] dip ] dip`), so `q` runs beneath all `w` slots; `quote` of
-a composite is refused (`firth.type.composite-quote`), since a quotation holds
-one kernel value; use `locals`, which captures slot by slot. `call`, `compose`
+a composite emits `quote` then `swap quote swap compose` `w-1` times, which
+builds one quotation that pushes all `w` slots in flat order (for `a b`:
+`a [b]`, then `[a] [b]`, then `[a b]`). Each slot is consumed once, so linear
+slots are legal, and the result is a kernel quotation whose recorded surface
+effect is `[ -> R ]`; `call` on it puts the composite back, with its type. The
+easier option, refusing composite `quote` and sending authors to `locals`,
+was rejected: it would leave a hole in the erasure for a case that has a
+total lowering, at the cost of `3(w-1)+1` kernel atoms per quote. `call`, `compose`
 and `if` act on quotations and `Bool`s, which have width 1, and are unchanged.
 Quotation bodies are erased on their own, before the stack they will run on
 is known (syntax.md section 5.1), so a structural atom there acts on the width
