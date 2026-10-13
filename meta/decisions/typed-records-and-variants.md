@@ -285,7 +285,11 @@ flat type each change the profile:
   `r.qty` once copies `id` once and moves everything else), and unused fields
   are dropped at the end of the block as unused locals are today. A record
   local with a linear field must have each linear field selected exactly once,
-  as any linear local.
+  as any linear local. A record local whose name is also the leading segment
+  of a visible qualified name (a vocabulary, or an alias from `use`) is
+  refused at the binder (`firth.name.local-shadows-prefix`, naming the local
+  and the prefix), so `r.f` never has two readings and qualified lookup in
+  `syntax.md` keeps its meaning.
 - `V.c` (a case constructor) : `ρ p:Pc -- ρ v:V` (no `p` for a case without a
   payload). With payload width `w` and `b` the total width of the defaults
   of the cases before c, it emits those defaults above the payload, then
