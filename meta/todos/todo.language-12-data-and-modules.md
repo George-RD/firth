@@ -28,9 +28,12 @@ Make bounded application data and reusable vocabularies practical.
   types erase to flat stack values, sequences of scalar-flat records to
   columns. Planned PRs: records, variants with `match`, sequences of records,
   then the agent guide and S7 inputs.
-- Still open: all of the above except imports; the other criteria above
-  (library examples, malformed-data tests, differential coverage) go with
-  those PRs.
+- Still open: typed records and results (the first criterion) and bounded
+  sequences of records, both through the planned PRs; the host-boundary
+  definition of ownership, bounds, termination and serialization (partly
+  `todo.host-record-values`); core library examples; malformed-data tests;
+  and differential coverage (VM against reference interpreter). The
+  multi-file criterion is met by the import work above.
 
 ## Traceability
 
