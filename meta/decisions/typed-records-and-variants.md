@@ -82,12 +82,12 @@ for expressiveness (see Rejected alternatives).
 
 ### Declarations
 
-    record-declaration  = "record" , type-name , "{" , field , { field } , "}" ;
+    record-declaration  = "record" , declared-type-name , "{" , field , { field } , "}" ;
     field               = word-name , ":" , member-type ;
-    variant-declaration = "variant" , type-name , "{" , case , case , { case } , "}" ;
+    variant-declaration = "variant" , declared-type-name , "{" , case , case , { case } , "}" ;
     case                = word-name , [ ":" , member-type ] ;
     member-type         = type-expression without its refinement part ;
-    type-name           = word-name ;  (* local and unqualified; must start upper-case *)
+    declared-type-name  = word-name ;  (* local and unqualified; must start upper-case *)
 
 A member type carries no refinement: a `{ predicate }` after it is refused
 (`firth.syntax.refinement-in-type`), as refinements stay at word boundaries
@@ -182,7 +182,13 @@ type in the input or output of an exported word's signature, with its member
 closure, must be declared in the exporting file and exported by it
 (`firth.name.export-incomplete`, naming the word and the type), and a
 signature naming an imported type cannot be exported
-(`firth.name.export-imported-member`). An importer therefore always has the layout and the
+(`firth.name.export-imported-member`). A type reference keeps `syntax.md`'s `type-name` production, so
+`r:inv.Request` names an imported type through its vocabulary; only the
+declaration site is restricted to a local name. A vocabulary that exports only
+types (no dictionary words) is still eligible for `use` and contributes its
+types and their operations to lookup, which this decision's implementation PR
+states in `syntax.md` section 2.1 together with the rest of the surface edits.
+An importer therefore always has the layout and the
 operations of every type it can reach; `import` brings them in under the visibility rules
 of `dec.multi-file-imports`; `firth.name.not-exported` applies to types. A
 type's canonical key, like a word's, does not depend on who imports it.
