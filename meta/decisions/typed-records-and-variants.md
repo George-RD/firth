@@ -319,7 +319,8 @@ of a type that holds it as a member:
   the variant or the sequence, and no case, payload or column selector exists on it (`match` is the
   only way into a variant; `v.c` is `firth.type.variant-local-selector`, and
   `xs.f` on a sequence of records is `firth.type.seq-local-selector`). The usage rules
-  of its slots are those of its declaration, as for a record. A record local whose name is also the leading segment
+  of its slots are those of its declaration, as for a record. A composite local (a record, a variant or a sequence of a declared type)
+  whose name is also the leading segment
   of a visible qualified name (a vocabulary, an alias from `use`, or a
   visible declared type, whose generated operations are `R.x`) is
   refused at the binder (`firth.name.local-shadows-prefix`, naming the local
