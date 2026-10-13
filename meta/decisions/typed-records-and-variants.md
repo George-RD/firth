@@ -310,8 +310,9 @@ of a type that holds it as a member:
   are dropped at the end of the block as unused locals are today. A record
   local with a linear field must have each linear field selected exactly once,
   as any linear local. A variant-valued local `v`, a variant-typed field
-  such as `b.result`, a sequence-of-record field such as `b.items` of
-  `Batch { items:Seq Pair }`, and a direct sequence-of-record local `xs:Seq Pair`
+  such as `b.result`, a field or direct local that is a sequence of any
+  declared type, record or variant (`b.items` of `Batch { items:Seq Pair }`,
+  `xs:Seq V` for a scalar-flat variant `V`), and a direct sequence-of-record local `xs:Seq Pair`
   (whose erasure is one column slot per scalar of `Pair`) bind its flat slots under opaque names the program
   cannot write; the bare name selects all of them in order and so rebuilds
   the variant or the sequence, and no case, payload or column selector exists on it (`match` is the
