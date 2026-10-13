@@ -87,6 +87,7 @@ for expressiveness (see Rejected alternatives).
     variant-declaration = "variant" , type-name , "{" , case , case , { case } , "}" ;
     case                = word-name , [ ":" , member-type ] ;
     member-type         = type-expression without its refinement part ;
+    type-name           = word-name ;  (* local and unqualified; must start upper-case *)
 
 A member type carries no refinement: a `{ predicate }` after it is refused
 (`firth.syntax.refinement-in-type`), as refinements stay at word boundaries
@@ -338,8 +339,9 @@ safety. The surface layer adds what the kernel cannot see:
 
 - **Nominal types.** `Request` and an `Item` with the same fields are
   different types. The kernel would accept one for the other; the surface
-  layer refuses (`firth.type.mismatch`, naming both types and the field
-  that differs when they have the same width).
+  layer refuses (`firth.type.mismatch`, naming both types, and the first field
+  or case whose declared type differs when one exists; two types with the
+  same structure and different names are reported by name alone).
 - **Field and case names**: unknown field or case (`firth.type.unknown-field`,
   `firth.type.unknown-case`), with the declared names in the report.
 - **Reports in record terms.** A stack mismatch involving flat slots of a
