@@ -6,14 +6,16 @@ fillb (`eval/s7/harder/runs/2026-10-11-scored/sonnet-firth-3`, warehouse).
 
 `compare.py` sends every unique source (each `solutions-*.json` answer under
 `eval/s7`, every `.firth` file under `examples/` and `stdlib/`) to two
-`firthElaborate` binaries and records every report that differs:
+`firthElaborate` binaries and records every report that differs. A file on
+disk is sent under its repository path together with the files it imports
+(three of them import), so its imports resolve; an S7 answer is one file.
 
 ```sh
 python3 eval/s7/report-changes/inner-reach/compare.py . <main>/firthElaborate \
   .lake/build/bin/firthElaborate changes.jsonl
 ```
 
-Run on 12 October 2026, main at f02c355 (with #254) against this change. Of 6,959
+Run on 13 October 2026, main at 9193783 (with #254 and #241) against this change. Of 6,959
 sources, 54 get a different report (`changes.jsonl`, one line each). None
 changes between accepted and refused, or in its code or location. In 32 the
 message changes only where it said "inside a quotation in that branch": it

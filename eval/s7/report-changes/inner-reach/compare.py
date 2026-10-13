@@ -1,8 +1,9 @@
 """Compare first checker reports between two firthElaborate binaries."""
-import json, subprocess, sys, glob, os, hashlib
+import json, re, subprocess, sys, glob, os, hashlib
 from concurrent.futures import ThreadPoolExecutor
 repo, main_bin, branch_bin, out = sys.argv[1:5]
 sources = {}
+paths = {}  # source text -> repo-relative path, for files on disk
 for path in glob.glob(f"{repo}/eval/s7/**/solutions-*.json", recursive=True):
     data = json.load(open(path))
     for task, value in data.items():
@@ -12,12 +13,29 @@ for path in glob.glob(f"{repo}/eval/s7/**/solutions-*.json", recursive=True):
 for path in glob.glob(f"{repo}/examples/**/*.firth", recursive=True) + glob.glob(f"{repo}/stdlib/**/*.firth", recursive=True):
     src = open(path).read()
     sources.setdefault(src, os.path.relpath(path, repo))
+    paths.setdefault(src, os.path.relpath(path, repo))
+def imports_of(rel):
+    """The repo-relative paths a file on disk imports, transitively."""
+    seen, todo = [], [rel]
+    while todo:
+        here = todo.pop()
+        for name in re.findall(r'^import "([^"]+)";', open(f"{repo}/{here}").read(), re.M):
+            target = os.path.normpath(os.path.join(os.path.dirname(here), name))
+            if target not in seen:
+                seen.append(target)
+                todo.append(target)
+    return seen
 def run(binary, src):
     # A binary that exits non-zero or prints no result must not count as a
     # report, or two crashes would compare equal: stop instead. A refused
     # program is a "failure" result with exit 0.
-    done = subprocess.run([binary], input=json.dumps({"request_id": "c", "source_path": "a.firth",
-        "source_text": src, "language_version": "0.1", "gamma_version": "0.8"}),
+    # A file on disk keeps its repo-relative path and brings the files it
+    # imports; an S7 answer is a single file.
+    rel = paths.get(src, "a.firth")
+    files = [{"source_path": f, "source_text": open(f"{repo}/{f}").read()}
+             for f in (imports_of(rel) if rel in paths.values() else [])]
+    done = subprocess.run([binary], input=json.dumps({"request_id": "c", "source_path": rel,
+        "source_text": src, "files": files, "language_version": "0.1", "gamma_version": "0.8"}),
         capture_output=True, text=True)
     try:
         o = json.loads(done.stdout)
