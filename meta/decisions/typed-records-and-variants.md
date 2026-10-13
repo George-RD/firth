@@ -255,11 +255,13 @@ generated operations still have meaning that the erased words do not carry
 while `Pair.left` changes meaning), so the declarations themselves join the
 layer identity: the implementation PR adds each exported type declaration
 (canonical type key, ordered member names and their declared types, case
-order) to the layer's `content_profile` of `syntax.md`, so a provider whose
+order), and each exported word's resolved nominal input and output signature
+(an `A.pack` and a `B.pack` erase to the same program), to the layer's `content_profile` of `syntax.md`, so a provider whose
 exported types change gets a new content and dependency identity and cached
-consumers and proof evidence stop matching. That PR plants the two cases
-that must fail without it: renaming a field and reordering two fields of one
-flat type each change the profile:
+consumers and proof evidence stop matching. That PR plants the three cases
+that must fail without it: renaming a field, reordering two fields of one
+flat type, and changing an exported word's result from one same-layout type
+to another each change the profile:
 
 - `R.pack` : `ρ f1 ... fk -- ρ r:R`. Emits nothing; it changes the surface
   type of the top `width(R)` values to `R`. `R.unpack` is its inverse and
