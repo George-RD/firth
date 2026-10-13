@@ -90,8 +90,9 @@ for expressiveness (see Rejected alternatives).
 
 A member type carries no refinement: a `{ predicate }` after it is refused
 (`firth.syntax.refinement-in-type`), as refinements stay at word boundaries
-(syntax.md section 3). A word that needs a bound on a field states it in its
-own stack effect on the record's fields.
+(syntax.md section 3). Refinements on a stack item of a declared type
+(`r:Request{...}`) are not defined here; the checker refuses them
+(`firth.syntax.refinement-in-type`) until a decision gives them a meaning.
 
     record Request { id:Int qty:Int }
     variant Outcome { filled:Int short:Int empty }
