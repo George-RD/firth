@@ -83,9 +83,15 @@ for expressiveness (see Rejected alternatives).
 ### Declarations
 
     record-declaration  = "record" , type-name , "{" , field , { field } , "}" ;
-    field               = word-name , ":" , type-expression ;
+    field               = word-name , ":" , member-type ;
     variant-declaration = "variant" , type-name , "{" , case , case , { case } , "}" ;
-    case                = word-name , [ ":" , type-expression ] ;
+    case                = word-name , [ ":" , member-type ] ;
+    member-type         = type-expression without its refinement part ;
+
+A member type carries no refinement: a `{ predicate }` after it is refused
+(`firth.syntax.refinement-in-type`), as refinements stay at word boundaries
+(syntax.md section 3). A word that needs a bound on a field states it in its
+own stack effect on the record's fields.
 
     record Request { id:Int qty:Int }
     variant Outcome { filled:Int short:Int empty }
