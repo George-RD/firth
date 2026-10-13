@@ -7,7 +7,7 @@ created: 2026-10-13
 ## Goal
 
 Give a refinement on a stack item of a declared record or variant type
-(`r:Request{ valid r }`) a meaning, so a word boundary can state a predicate
+(`r:Request{ valid r }`), or on a `Seq` of one (`xs:Seq Request{ valid xs }`), a meaning, so a word boundary can state a predicate
 over a whole record.
 
 ## Acceptance criteria
