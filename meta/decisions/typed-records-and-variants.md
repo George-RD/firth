@@ -293,11 +293,13 @@ to another each change the profile:
   `r.qty` once copies `id` once and moves everything else), and unused fields
   are dropped at the end of the block as unused locals are today. A record
   local with a linear field must have each linear field selected exactly once,
-  as any linear local. A variant-valued local `v`, and a variant-typed field
-  such as `b.result`, binds its flat slots under opaque names the program
+  as any linear local. A variant-valued local `v`, a variant-typed field
+  such as `b.result`, and a direct sequence-of-record local `xs:Seq Pair`
+  (whose erasure is one column slot per scalar of `Pair`) bind its flat slots under opaque names the program
   cannot write; the bare name selects all of them in order and so rebuilds
-  the variant, and no case or payload selector exists on it (`match` is the
-  only way in; `v.c` is `firth.type.variant-local-selector`). The usage rules
+  the variant or the sequence, and no case, payload or column selector exists on it (`match` is the
+  only way into a variant; `v.c` is `firth.type.variant-local-selector`, and
+  `xs.f` on a sequence of records is `firth.type.seq-local-selector`). The usage rules
   of its slots are those of its declaration, as for a record. A record local whose name is also the leading segment
   of a visible qualified name (a vocabulary, or an alias from `use`) is
   refused at the binder (`firth.name.local-shadows-prefix`, naming the local
