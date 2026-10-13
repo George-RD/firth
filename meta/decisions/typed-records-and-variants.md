@@ -187,12 +187,18 @@ none is a dictionary word, so no digest, key or call graph changes:
 - `R.pack` : `ρ f1 ... fk -- ρ r:R`. Emits nothing; it changes the surface
   type of the top `width(R)` values to `R`. `R.unpack` is its inverse and
   emits nothing.
-- `R.f` (a field read) : `ρ r:R -- ρ v:Tf`. Consumes the record. Emits a
-  `roll` to bring the field to the top and a `drop` for every other flat
-  slot, which are all `many` (`firth.type.record-drop-linear` otherwise).
+- `R.f` (a field read) : `ρ r:R -- ρ v:Tf`. Consumes the record. Let the field
+  occupy `w` flat slots with `s` slots before it and `a` after. It emits
+  `drop` `a` times (the slots after the field are on top), then `roll w`
+  followed by `drop` `s` times, each pair removing the topmost slot below the
+  field. All dropped slots are `many` (`firth.type.record-drop-linear`
+  otherwise), and a field of width `w > 1` (a nested record) moves whole.
   A word that reads two fields of one record uses `locals`.
 - `R.set-f` : `ρ r:R v:Tf -- ρ r:R`. Replaces the field, dropping the old
-  value (`many`; `firth.type.record-drop-linear` otherwise).
+  value (`many`; `firth.type.record-drop-linear` otherwise). With `s`, `w`,
+  `a` as above it emits `roll (a + w - 1)` `a` times, which moves the slots
+  after the field above the new value, then `roll (a + w)` followed by `drop`
+  `w` times, which removes the old field's slots.
 - In a `locals { r }` block a record local `r` is bound as its fields
   `r.f1 ... r.fk`, one local per flat slot, in order. `r.f` selects one
   field, and `r` alone selects all of them in order, i.e. `r` rebuilds the
@@ -217,8 +223,13 @@ none is a dictionary word, so no digest, key or call graph changes:
 - `match`, in a body: `V match { c1 [ body1 ] ... cn [ bodyn ] }`, or with
   the cases of `V` written in any order. An arm for a case with a payload
   runs with the payload on top of the stack; an arm for a case without one
-  with nothing added. All arms must have the same stack effect, as the
-  branches of `if` must, because the erasure is a chain of `if`s on the tags,
+  with nothing added. The arms are compared after their payloads are supplied: an arm
+  for case c is checked as a body from `ρ Pc` (or `ρ`), and all arms must
+  leave the same stack `Σ'` above the stack `ρ` below the scrutinee, so the
+  match as a whole has the effect `ρ V -- Σ'` and arms of different payload
+  widths may differ in their own effects (`some [ drop 1 ]` and `none [ 1 ]`
+  agree). This is the kernel's `if` rule applied to the erasure, a chain of
+  `if`s on the tags,
   the top tag first (case n), down to case 2, with case 1 as the last `else`.
   In each branch the other cases' payload slots and the remaining tags are
   dropped before the arm's body. The match must name every case exactly once
