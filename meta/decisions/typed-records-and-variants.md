@@ -165,9 +165,13 @@ either fail to check or lose the field's ownership).
 refused (`firth.type.seq-element`), and a `Seq Int` field makes its record
 not scalar-flat. A usage `^linear` on a record field makes the record
 linear, by the kernel's meet; `dup` and `drop` of the record are refused as
-for any linear value. A variant payload may not be linear
-(`firth.type.variant-linear-payload`): the cases not taken need a default,
-and a replayable literal cannot be linear (kernel spec section 3).
+for any linear value. A variant payload must have a default for
+every flat slot, so its flat form may contain only `Int`, `Bool`, `Seq Int`
+and `Seq Bool` (`firth.type.variant-payload-no-default`, whatever usage is
+written): the cases not taken need a default, a replayable literal cannot be
+linear (kernel spec section 3), and `World`, `Handle` and `Bytes` have no
+literal at all. A record containing any of them is refused as a payload for
+the same reason. Records themselves may hold them.
 
 A word's stack effect is flattened when the dictionary entry is built:
 `(forall ρ; ρ r:Request ok:Bool -- ρ s:Outcome)` becomes the kernel type
@@ -175,7 +179,10 @@ over `r.id:Int r.qty:Int ok:Bool -- Int Int ... Bool`, and its names for
 diagnostics are the field paths. A call to the word needs no code beyond
 what the flat stack already holds.
 
-Structural atoms on composite values. The surface layer tracks the width of
+Structural atoms on composite values. `pick n` and `roll n` are not source
+syntax (syntax.md section 4: named locals erase to them, and a word may not
+be named for them), so they need no composite semantics: a program reaches
+them only through `locals`, which works slot by slot. The surface layer tracks the width of
 every value, and the kernel atoms written in source act on whole surface
 values, not on the top flat slot. For a top value of width `w` (a record,
 variant, or the columns of a `Seq T`): `dup` emits `pick (w-1)` `w` times;
