@@ -281,8 +281,11 @@ to another each change the profile:
   pair per old slot (each pair removes the topmost remaining old slot, which
   stays at depth `a + w`), which removes the old field's slots.
 - In a `locals { r }` block a record local `r` is bound as its fields
-  `r.f1 ... r.fk`, one local per flat slot, in order. `r.f` selects one
-  field, and `r` alone selects all of them in order, i.e. `r` rebuilds the
+  `r.f1 ... r.fk`, one local per flat slot, in order; a field that is itself
+  a record or a `Seq` of scalars expands recursively to leaf names (`b.p.x`,
+  `b.p.y`, `b.z` for `Box { p:Pair z:Int }`), one per flat slot. `r.f` selects one
+  field (all the leaf slots of a composite field, in order, so `b.p` rebuilds a
+  `Pair`), and `r` alone selects all of them in order, i.e. `r` rebuilds the
   record. This reuses section 5.1's erasure unchanged: the algorithm's slots
   are flat slots, its usage counting is per slot (so reading `r.id` twice and
   `r.qty` once copies `id` once and moves everything else), and unused fields
