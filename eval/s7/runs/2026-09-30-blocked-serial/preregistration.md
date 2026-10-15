@@ -242,16 +242,19 @@ As run 13, with these changes:
     Haiku-named cases give the same exit code, report and text apart from
     a new `sample_names` field on each flagged item, and the script's
     planted cases (a Sonnet-named item, an extra field, a changed `names`)
-    differ. A log that names `sonnet-firth-4`, `deepseek-firth-4` or
-    `haiku-python-4` for author `haiku-firth-4` and nothing else exited 0
-    and now exits 1 (a `context` void, and a `cross_sample` item also
-    writes the STOP file). So run 14's context results change only for a
-    log whose sole mention of another sample is a sonnet-, deepseek- or
-    haiku-python- name that carries the author's own number. A name with
-    another number (`haiku-python-7` for author `haiku-firth-4`) was
-    flagged before and still is. Run 14's authors
-    are Haiku and write Firth, and nothing in a session should name such
-    a sample.
+    differ. On a log with one `<system-reminder>` naming a sample, for
+    author `haiku-firth-4` (checked at 7d82348 and at 39ee45f, run13 arm
+    set), the exit code went from 0 to 1 for `sonnet-firth-4`,
+    `deepseek-firth-4`, `haiku-python-4`, `sonnet-firth-7`,
+    `deepseek-firth-7` and `sonnet-firth-4/answer-1.md`, and stayed 1 for
+    `haiku-python-7`. So run 14's context results change for any log that
+    names a sonnet- or deepseek- sample, whatever its number, and for a
+    `haiku-python-` name that carries the author's own number (a `context`
+    void, and a `cross_sample` item also writes the STOP file). A
+    `haiku-python-` name with another number was flagged before and still
+    is. Logs that name only Haiku-Firth samples are unchanged (the 32
+    cases). Run 14's authors are Haiku and write Firth, and nothing in a
+    session should name a sonnet-, deepseek- or haiku-python- sample.
 - **Edit replay.** The rule exists so that the scored answer is tied to
   the author's own calls: the audit replays an author's writes and edits
   and requires the result to be the kept copy that was scored. Arm A has
