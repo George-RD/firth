@@ -29,4 +29,6 @@ variant values by field and case name instead of as the flat stack that
 ## Traceability
 
 Split out of `dec.typed-records-and-variants` (Host boundary). The language
-works without it; the flat stack is the stable interface.
+works without it; the flat stack is the interface for as long as erasure stands, and a later
+switch to `Γ` values would change it (see the decision's "What would need
+George").

@@ -75,7 +75,10 @@ VM registry and target semantics proofs, i.e. the shape of
 approved the last Γ change on a card. Nothing in the first consumer needs it,
 and erasure can be replaced by a `Γ` representation later without changing
 any source program, because source programs name fields and cases, never
-slots. So the easier option of adding `Γ` types now is rejected for cost, not
+slots. That is not a cheap switch: it re-keys the erased `WordType`, word
+digest and `records.json` entry of every word over a declared type, the
+`WordContract` statements about them, and the host stack that
+`firth_run.py run` and the inventory host read and write. A later switch to `Γ` values keeps every source program but re-keys the digests, proof records, contracts and host layout of each word that mentions a declared type, so the cost of deferring grows with the number of such words and is paid in evidence, not in source. So the easier option of adding `Γ` types now is rejected for cost, not
 for expressiveness (see Rejected alternatives).
 
 ## Decision
@@ -491,7 +494,7 @@ calibration pin PR to merge.
   runtime values and a place for `Seq` of anything, but it touches the
   interpreter, linearity contract, compiler, VM and target semantics, needs a
   decision that George approves, and buys nothing the first consumer uses.
-  Erasure leaves the way open: source names fields, never slots.
+  Erasure leaves the source open, not the evidence: A later switch to `Γ` values keeps every source program but re-keys the digests, proof records, contracts and host layout of each word that mentions a declared type, so the cost of deferring grows with the number of such words and is paid in evidence, not in source.
 - **`Int` tags for variants.** One slot and a short `match`, but a value
   from the host can be out of range, and then `match` either needs a trap
   case or silently takes the last arm. With `Bool` tags every bit pattern
