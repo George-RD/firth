@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f /home/user/firth-r14/eval/s7/author_hook.py ] && python3 /home/user/firth-r14/eval/s7/author_hook.py --state /home/user/r14-hook/state.json --only s7-author",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
