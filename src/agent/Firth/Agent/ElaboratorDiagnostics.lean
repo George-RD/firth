@@ -441,7 +441,10 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
             | none => s!"{order}, in the place of the first {count pushed} ({", ".intercalate (reach.inputs.take pushed)}): {keep}. Then push the last {count lacking} ({", ".intercalate (reach.inputs.drop pushed)}) after {them}, {locals}. {tail}"
           else
             s!"{order}: keep {if one then "it" else "each"} in its place where it is one of these and replace it where it is not, and push the other {count lacking} in {if lacking == 1 then "its place" else "their places"}, {locals}. {tail}"
-      let inside := if reach.nested then " (inside a quotation in that branch)" else ""
+      let inside := match reach.within, reach.nested with
+        | some within, true => s!" (in {within}, inside that branch)"
+        | _, true => " (inside a quotation in that branch)"
+        | _, false => ""
       some (s!"{place name}, {reach.operation}{inside} {needs}, but the branch {own}. {below}", hint)
   | none =>
       let taken (branch : Firth.Elaborator.BranchAccount) := branch.took.length + branch.missing
