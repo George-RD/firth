@@ -199,12 +199,14 @@ outcome, computed by a script committed with it from the kept results only.
 
 - [x] The maintainer chooses calibrate-then-select (coordinator's card):
   "Calibrate first", 12 October 2026.
-- [ ] The hints PR has merged and the coordinator says the S7 inputs are
-  settled.
+- [x] The hints PR has merged (#254, with #241, #255, #257 and #205) and the
+  coordinator has frozen the S7 inputs and `src/` and `stdlib/` until this
+  PR merges (16 October 2026, main `814b61f`).
 - [x] #251 (the tool-probe notes) has merged (`d837ac2`).
 - [x] `candidates.py` merged with Python and Firth references, hand values,
   bounds, mutants and costliest inputs (#253, `2acf715`).
 - [x] The scored run's pre-registration written before calibration
   (`scored.md`).
-- [ ] The prompts built at the pin and committed with `commit.txt` and this
-  file in the run directory.
+- [x] The prompts built at the pin and committed with `commit.txt` and this
+  file in the run directory: `runs/2026-10-12-calibration4/`, built at main
+  `814b61f` (this PR).

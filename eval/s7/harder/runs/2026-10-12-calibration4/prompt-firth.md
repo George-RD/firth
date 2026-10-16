@@ -279,7 +279,7 @@ execution-trace equivalence.
 | Source refinement annotations `{...}` | Rejected with `firth.refinement.unsupported-source` until source predicates and bodies are translated and checked, even when the annotation happens to be true | `check_trust_boundaries.py` (`firth.refinement.unsupported-source`) |
 | Linear effects and pushed linear quotation values | Not supported by the portable compiler; unsupported ownership is rejected rather than erased | `check_compiler_admission.py` (linear kernel cases and a forged linear quotation push) |
 | Multi-file programs | `import "path.firth";` first in a file, then `export name ...;` to offer words; paths are relative to the importing file and stay inside the source root; an importer sees the exported words of its direct imports only; one program is one dictionary, so two files defining one name are refused; files load imports first, the root last, and cycles are refused | `FirthImportsTest.lean` (load order, a known-bad program for each import refusal, the loader's source-root refusals, the compiler's binding of imported files); `examples/inventory/policy_change.py` (both clients import `allocator.firth`); `test_firth_run.py` (`test_a_suite_source_resolves_its_imports_under_the_given_root`); `test_mvp_agent_gate.py` (`test_rebuild_passes_imported_files_to_elaborate_and_compile`) |
-| Core vocabulary | `stdlib/core.firth` exports its words (`export core.identity ...`); a program imports it by a relative path and then writes `use core;`. It is not automatically imported | `FirthPipelineTest.lean` (elaborates `stdlib/core.firth` and checks each word's lowered body); `refused/core-not-imported.firth`; the `use` and `use as` cases in `FirthImportsTest.lean` import a vocabulary of the same shape, not `stdlib/core.firth` itself |
+| Core vocabulary | `stdlib/core.firth` exports its words (`export core.identity ...`); a program imports it by a relative path and then writes `use core;`. It is not automatically imported. `core.min-int` and `core.max-int` leave the smaller and the larger of two integers | `core.min-int` and `core.max-int` cases in `cases.json`, with contracts proved in `src/proofs/Stdlib/Core.lean`; `FirthPipelineTest.lean` (elaborates `stdlib/core.firth` and checks each word's lowered body); `refused/core-not-imported.firth`; the `use` and `use as` cases in `FirthImportsTest.lean` import a vocabulary of the same shape, not `stdlib/core.firth` itself |
 | General-purpose standard library, package manager, editor language server | Future work | Not applicable: nothing is offered |
 
 In the "Checked by" column, a `.firth` name, unless another check is named
@@ -968,6 +968,19 @@ from the word's signature:
 python3 tools/loop/firth_run.py run examples/programs/sequences.firth --entry sum --stack '[[4, 5, 6]]'
 ```
 
+## Standard library
+
+`stdlib/core.firth` offers `core.min-int` and `core.max-int`
+(`Int Int -- Int`), the smaller and the larger of two integers. Their
+contracts are proved for every pair of integers
+(`src/proofs/Stdlib/Core.lean`). `allocate.firth` imports the file with
+`import "../../stdlib/core.firth";` and calls `core.min-int`. That path
+leaves `examples/programs/`, so name the repository as the source root:
+
+```sh
+python3 tools/loop/firth_run.py run examples/programs/allocate.firth --root . --entry allocate --stack '[5, 7, false]'
+```
+
 ## Limits
 
 - `allocate.firth` is one step of `specs/inventory-allocation.md`; the whole
@@ -981,7 +994,8 @@ python3 tools/loop/firth_run.py run examples/programs/sequences.firth --entry su
 The standard library is next to every answer when it runs. To use the words a library file exports (its `export` line), put its import line at the top of the answer: `import "stdlib/core.firth";`. An import is not transitive, and an answer may import no other file. The library's files follow.
 
 <document path="stdlib/core.firth">
-export core.identity core.duplicate-int core.discard-int core.exchange-int core.example;
+export core.identity core.duplicate-int core.discard-int core.exchange-int core.example
+  core.min-int core.max-int;
 
 vocab core {
   : identity
@@ -1003,6 +1017,17 @@ vocab core {
   : example
     ( -- result:Int^many )
     7 duplicate-int discard-int identity;
+
+  \ The smaller of two integers; when they are equal, that value. Only `<` is
+  \ used, so no arithmetic can overflow.
+  : min-int
+    ( forall ρ; ρ first:Int^many second:Int^many -- ρ smaller:Int^many )
+    locals { first second } { first second prim < [ first ] [ second ] if };
+
+  \ The larger of two integers; when they are equal, that value.
+  : max-int
+    ( forall ρ; ρ first:Int^many second:Int^many -- ρ larger:Int^many )
+    locals { first second } { first second prim < [ second ] [ first ] if };
 }
 
 </document>
