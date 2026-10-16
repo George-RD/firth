@@ -18,7 +18,10 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1] / "tools" / "loop"))
+# Imports resolve against the repository root, so an example can import
+# `stdlib/core.firth` as `../../stdlib/core.firth`.
+ROOT = HERE.parents[1]
+sys.path.insert(0, str(ROOT / "tools" / "loop"))
 
 import mvp_agent_gate as gate  # noqa: E402
 
@@ -33,7 +36,8 @@ def main() -> int:
             try:
                 observation = gate.rebuild(
                     {"name": f"case-{index}", "entry": case["entry"],
-                     "source": str(HERE / case["source"]), "source_path": case["source"]},
+                     "source": str(HERE / case["source"]), "source_path": case["source"],
+                     "source_root": str(ROOT)},
                     Path(directory), stack=case["stack"],
                     expected_trap=case.get("expect_trap"),
                 )

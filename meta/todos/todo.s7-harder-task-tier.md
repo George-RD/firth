@@ -95,8 +95,10 @@ until the tasks get harder.
   the pool-3 scan ran without `--sample` and checked other authors' names
   with a grep (`runs/2026-10-10-calibration3/scan.sh`, `scan-output.txt`).
   Done in #230: Sonnet and DeepSeek names are compared whole, with planted
-  cases, and run 14's Haiku call pattern gives byte-for-byte the same
-  results (`eval/s7/runs/2026-10-10-context-seen-names/haiku_same.py`).
+  cases, and run 14's Haiku call pattern gives the same results apart from
+  the new `sample_names` field on flagged items
+  (`eval/s7/runs/2026-10-10-context-seen-names/haiku_same.py`, which drops
+  only that field before comparing).
 - Two wording gaps in pool 3's formula-sheet description (review on
   #223, checked against `calibration3.py`): "whose size is more than
   1,000,000,000" does not say size means absolute value, and "An operator

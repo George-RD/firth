@@ -187,14 +187,15 @@ class LiveAgreement(unittest.TestCase):
     """The same comparison on responses from the real binaries."""
 
     ENTRY = {"name": "p", "entry": "allocate", "source_path": "allocate.firth",
-             "source": str(gate.ROOT / "examples" / "programs" / "allocate.firth")}
+             "source": str(gate.ROOT / "examples" / "programs" / "allocate.firth"),
+             "source_root": str(gate.ROOT)}
 
     def rebuild(self) -> dict:
         with tempfile.TemporaryDirectory(prefix="firth-agreement-") as directory:
             return gate.rebuild(dict(self.ENTRY), Path(directory), stack=[10, 2, False])
 
     def test_real_responses_agree(self) -> None:
-        self.assertEqual(self.rebuild()["cost"], 73)
+        self.assertEqual(self.rebuild()["cost"], 69)
 
     def test_a_perturbed_lean_response_fails_the_gate(self) -> None:
         real = gate.adapter

@@ -66,6 +66,9 @@ structure BranchReach where
   /-- Whether the operation is inside a quotation within the branch, such as
   a branch of an inner `if`, rather than in the branch itself. -/
   nested : Bool := false
+  /-- For a nested operation, the quotation it is in, as a report says it:
+  "the true branch of the `if` at line 72, column 39". -/
+  within : Option String := none
   /-- Where the operation is, for a word or primitive. -/
   span : Option Span := none
   /-- For each of the branch's own values it takes, bottom to top, the byte
