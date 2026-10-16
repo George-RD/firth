@@ -3,15 +3,17 @@
 Written 11 October 2026, before any candidate task has been sent to a
 model. It fixes how the next scored set is chosen from the nine candidates
 in `eval/s7/harder/candidates.py`, and when the scored run does not start
-at all. The scored run's own pre-registration is written separately; it
-uses the set this file selects and fresh authors. Neither this file nor the
+at all. The scored run's own pre-registration is `scored.md`, next to this
+file, written before calibration; it uses the set this file selects and
+fresh authors. Neither this file nor the
 candidates change after the pin below; anything learnt in calibration is
 reported, not folded back in.
 
-**Status: draft. Not pinned. No author has run.** Calibration starts only
-when the maintainer has chosen calibrate-then-select over freezing an
-unrun set (the coordinator's card of 11 October 2026), and only after the
-conditions in "Before the pin" are met.
+**Status: draft. Not pinned. No author has run.** The maintainer chose
+calibrate-then-select over freezing an unrun set on the coordinator's card
+of 11 October 2026 ("Calibrate first", answered 12 October 2026).
+Calibration starts only after the other conditions in "Before the pin" are
+met.
 
 ## Why new tasks, and why calibrate
 
@@ -86,10 +88,13 @@ conditions in "Before the pin" are met.
   `cal-firth-3`; replacements at the end in the order the voids happened.
 - **Pin:** the prompts are built at one main commit, after the hints PR has
   merged, and committed with `commit.txt` and the stdlib version in the
-  run directory `runs/<date>-calibration4/`. The scored run uses the same
-  commit, so calibration and scoring see the same checker, docs and
-  stdlib. If any S7 input changes before the scored run is pinned, the
-  calibration result is reported as stale and the selection is not used.
+  run directory `runs/<date>-calibration4/`, with a copy of this file and
+  `scored.md`. The scored run is pinned later, at the merge of the PR that
+  makes the selected set nameable (`scored.md`, "The pin"), but with the
+  same checker, docs and stdlib: `src/`, `stdlib/` and the S7 inputs must
+  be identical at both commits. If any of them changes before the scored
+  run is pinned, the calibration result is reported as stale and the
+  selection is not used.
 
 ## Stop rules before and during calibration
 
@@ -192,11 +197,16 @@ outcome, computed by a script committed with it from the kept results only.
 
 ## Before the pin
 
-- [ ] The maintainer chooses calibrate-then-select (coordinator's card).
-- [ ] The hints PR has merged and the coordinator says the S7 inputs are
-  settled.
+- [x] The maintainer chooses calibrate-then-select (coordinator's card):
+  "Calibrate first", 12 October 2026.
+- [x] The hints PR has merged (#254, with #241, #255, #257 and #205) and the
+  coordinator has frozen the S7 inputs and `src/` and `stdlib/` until this
+  PR merges (16 October 2026, main `814b61f`).
 - [x] #251 (the tool-probe notes) has merged (`d837ac2`).
-- [ ] `candidates.py` merged with Python and Firth references, hand values,
-  bounds, mutants and costliest inputs (this PR).
-- [ ] The prompts built at the pin and committed with `commit.txt` and this
-  file in the run directory.
+- [x] `candidates.py` merged with Python and Firth references, hand values,
+  bounds, mutants and costliest inputs (#253, `2acf715`).
+- [x] The scored run's pre-registration written before calibration
+  (`scored.md`).
+- [x] The prompts built at the pin and committed with `commit.txt` and this
+  file in the run directory: `runs/2026-10-12-calibration4/`, built at main
+  `814b61f` (this PR).
