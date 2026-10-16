@@ -78,7 +78,7 @@ any source program, because source programs name fields and cases, never
 slots. That is not a cheap switch: it re-keys the erased `WordType`, word
 digest and `records.json` entry of every word over a declared type, the
 `WordContract` statements about them, and the host stack that
-`firth_run.py run` and the inventory host read and write. A later switch to `Γ` values keeps every source program but re-keys the digests, proof records, contracts and host layout of each word that mentions a declared type, so the cost of deferring grows with the number of such words and is paid in evidence, not in source. So the easier option of adding `Γ` types now is rejected for cost, not
+`firth_run.py run` and the inventory host read and write. A later switch to `Γ` values keeps every source program but re-keys the digests, proof records, contracts and host layout of each word that mentions a declared type, so the cost of deferring grows with the number of such words and is paid in evidence, not in source. The `Γ` change that `todo.seq-of-seq-records` would need adds nested sequence types only; it does not by itself replace the erasure of scalar-flat records, variants and sequences of them, so this cost arises only if a later decision makes records themselves `Γ` values. So the easier option of adding `Γ` types now is rejected for cost, not
 for expressiveness (see Rejected alternatives).
 
 ## Decision
