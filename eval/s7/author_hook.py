@@ -207,6 +207,8 @@ def self_test() -> None:
                                        ("Bash", {"command": "ls /tmp; echo TOKEN=abc"}, None, (0, "")),
                                        ("Bash", {"command": "R14_SHARED=/x python3 /y/session.py next s2"}, None, (0, "")),
                                        ("Glob", {"pattern": "*"}, "Explore", (0, "")),
+                                       ("Write", {"file_path": "/tmp/x", "content": ""}, "s7-harder-author", (0, "")),
+                                       ("Bash", {"command": "rm -rf /tmp/x"}, "s7-author-2", (0, "")),
                                        ("Glob", {"pattern": "*"}, "s7-author", (2, REASON)),
                                        ("Bash", {"command": check}, "s7-author", (0, ""))]:
             call = {"tool_name": tool, "tool_input": inp, "tool_use_id": "toolu_o"}
@@ -217,7 +219,8 @@ def self_test() -> None:
         assert [(r["tool_name"], r["agent_type"], r["command"]) for r in rows] == [
             ("Glob", None, None), ("Bash", None, None),
             ("Bash", None, "R14_SHARED=/x python3 /y/session.py next s2"),
-            ("Glob", "Explore", None)], rows
+            ("Glob", "Explore", None), ("Write", "s7-harder-author", None),
+            ("Bash", "s7-author-2", None)], rows
         assert "TOKEN" not in seen.read_text()
         # With no state file, a runner's call still passes; an author's is denied.
         gone = ["--state", str(t / "later" / "state.json"), "--only", "s7-author"]
