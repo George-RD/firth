@@ -230,8 +230,10 @@ def self_test() -> None:
         assert main(only, "not json") == (2, REASON)
         # The settings file's own command, run by a shell as Claude Code runs it, with
         # its two paths pointed here: exit 0 for the runner, 2 with the mark
-        # for an author's off-list call, and 1 (a non-blocking error, which
-        # `session.py` catches as an unregistered hook) with no script.
+        # for an author's off-list call, and 0 with no script, recording
+        # nothing (other sessions in the repository have no such worktree,
+        # and an error there would show on every tool call; `session.py`
+        # catches the missing record as an unregistered hook).
         settings = json.loads((HERE.parents[1] / ".claude" / "settings.json").read_text())
         (entry,) = settings["hooks"]["PreToolUse"]
         (hook,) = entry["hooks"]
@@ -247,8 +249,10 @@ def self_test() -> None:
         assert (p.returncode, p.stderr) == (0, ""), p
         p = shell(live, {"tool_name": "Glob", "tool_input": {"pattern": "*"}, "agent_type": "s7-author"})
         assert (p.returncode, p.stderr.strip()) == (2, REASON), p
+        before = seen.read_text()
         p = shell(live.replace(str(Path(__file__)), str(t / "missing.py")), {"tool_name": "Glob"})
-        assert p.returncode == 1, p
+        assert (p.returncode, p.stdout, p.stderr) == (0, "", ""), p
+        assert seen.read_text() == before
         from audit_subagent import HOOK_MARK
         assert HOOK_MARK == MARK
         # Exit 2 is the only code that blocks: the expectations above are the

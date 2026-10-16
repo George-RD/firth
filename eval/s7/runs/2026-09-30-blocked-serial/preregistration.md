@@ -60,7 +60,8 @@ outcomes and how they are read.
   and the same hook; the arms still differ only in their prompts.
   (Amended twice, before any author started; see "Amendment" below.)
 - The hook runs `eval/s7/author_hook.py --state STATE --only s7-author`,
-  guarded by a test that the script exists. The driver writes
+  exiting 0 at once when the script is absent, as in every other session in
+  the repository (an error exit would show on every tool call there). The driver writes
   STATE before it starts each author: the arm's prompt, the sample's
   directory, the rounds, the check command (arm B) or none (arm A), and the
   hook log's path.
@@ -93,8 +94,7 @@ outcomes and how they are read.
   call's record, such as that of a `next` that stopped and is retried,
   cannot stand in for this one. The hook fires before a call runs, so a
   new record is there if and only if the hook is registered for this call. If the script is missing the guarded
-  command exits 1, a non-blocking error, and records nothing, so this
-  check stops the session. The hook check (runbook step 2) then shows an
+  command exits 0 and records nothing, so this check stops the session. The hook check (runbook step 2) then shows an
   author's off-list call stopped. Planted in `session.py --self-test`: no
   record, one 45 seconds old, another session's, an author's own call, a
   missing file, and the record the previous check already used (5 seconds
@@ -104,7 +104,7 @@ outcomes and how they are read.
   an author's call with no STATE file is denied; the settings file's own command
   line, run by a shell with its paths pointed at a scratch directory,
   exits 0 for the runner, 2 with the mark for an author's off-list call,
-  and 1 with the script missing.
+  and 0 with nothing recorded when the script is missing.
 - **The settings file** is `.claude/settings.json`, and `setup` checks
   that the main checkout's copy is the pinned one. It holds only this
   hook; the hook decides only for `s7-author` calls, so it changes nothing
