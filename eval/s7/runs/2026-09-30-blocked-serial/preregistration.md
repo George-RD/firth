@@ -49,12 +49,17 @@ outcomes and how they are read.
 
 ### Blocking
 
-- An agent definition, `s7-author`, carries a `PreToolUse` hook in its
-  frontmatter. Hooks there run only while that sub-agent runs, so they
-  never touch the driving session's own calls. Both arms' authors are
-  started with that agent type, so they have the same tools available and
-  the same hook; the arms still differ only in their prompts.
-- The hook runs `eval/s7/author_hook.py --state STATE`. The driver writes
+- A project skill, `.claude/skills/s7-author-hook`, registers a
+  `PreToolUse` hook for the rest of the session once the runner invokes it
+  (runbook step 2). The hook sees every call in the session but decides
+  only for calls whose hook input has `agent_type` `s7-author`, the agent
+  definition every author is started with; every other call, the runner's
+  own included, passes untouched (exit 0, no output). Both arms' authors
+  are started with that agent type, so they have the same tools available
+  and the same hook; the arms still differ only in their prompts.
+  (Amended before any author started; see "Amendment" below.)
+- The hook runs `eval/s7/author_hook.py --state STATE --only s7-author`,
+  guarded by a test that the script exists. The driver writes
   STATE before it starts each author: the arm's prompt, the sample's
   directory, the rounds, the check command (arm B) or none (arm A), and the
   hook log's path.
@@ -76,6 +81,34 @@ outcomes and how they are read.
   Such failures grow with the number of calls, so they would fall mostly
   on arm B. The explicit timeout below is 30 seconds, and a decision takes
   under a second (0.6 seconds measured, including Python's start).
+- **Registered, or no author.** A hook that is not registered would let
+  every call run, so `session.py` checks it before any author starts. The
+  hook records each call it passes as not an author's in `seen.jsonl`
+  beside STATE (the command text only for a `session.py` call; any other
+  command is recorded as null), and `hookcheck` and `next` stop (`STOP:`) unless that file
+  records the very Bash call that is running them: a record of that
+  command from the last 30 seconds, newer than the record the session's
+  previous check used (kept in the session's `state.json`), so an earlier
+  call's record, such as that of a `next` that stopped and is retried,
+  cannot stand in for this one. The hook fires before a call runs, so a
+  new record is there if and only if the hook is registered for this call. If the script is missing the guarded
+  command exits 1, a non-blocking error, and records nothing, so this
+  check stops the session. The hook check (runbook step 2) then shows an
+  author's off-list call stopped. Planted in `session.py --self-test`: no
+  record, one 45 seconds old, another session's, an author's own call, a
+  missing file, and the record the previous check already used (5 seconds
+  old) each make `hookcheck` and `next` stop. Planted in
+  `author_hook.py --self-test`: the runner's calls and another sub-agent
+  type's pass and are recorded; an author's off-list call is denied, and
+  an author's call with no STATE file is denied; the skill's own command
+  line, run by a shell with its paths pointed at a scratch directory,
+  exits 0 for the runner, 2 with the mark for an author's off-list call,
+  and 1 with the script missing.
+- **The skill** is `.claude/skills/s7-author-hook/SKILL.md`, and `setup`
+  checks that the main checkout's copy is the pinned one. Authors may see
+  it in their session's skill list, beside the repository's `cairn-*`
+  skills; that is the same in both arms, and the hook denies an author's
+  `Skill` call, which is off the list.
 - **The agent file** is `.claude/agents/s7-author.md` in the pinned
   worktree, exactly as follows. It has no `tools` line, so the author has
   the tools a `general-purpose` author had in run 13. Its body replaces
@@ -87,13 +120,6 @@ outcomes and how they are read.
   name: s7-author
   description: An author in the S7 evaluation. Started only by the S7 eval driver.
   model: haiku
-  hooks:
-    PreToolUse:
-      - matcher: "*"
-        hooks:
-          - type: command
-            command: python3 /home/user/firth-r14/eval/s7/author_hook.py --state /home/user/r14-hook/state.json
-            timeout: 30
   ---
   You are an author in a programming evaluation. Follow the instructions
   you are given.
@@ -121,10 +147,28 @@ outcomes and how they are read.
 - **The maintainer's go-ahead.** The maintainer wrote "go ahead with the
   S7 author agent file and its PreToolUse hook" in the S7 thread at
   16:41Z on 30 September. The file is `.claude/agents/s7-author.md`,
-  byte for byte the text above.
-- **Open.** Whether a session started after the agent file exists picks
-  it up, and whether its cwd makes the project's or the user's agents
-  directory the one read, is checked in the smoke test before the pin.
+  byte for byte the text above. Those words named the agent file's hook;
+  the amendment moves the same hook, with the same decisions, into a skill.
+- **Amendment (30 September, 17:40Z, before any author started).** As
+  merged in #200, the hook was in the agent file's frontmatter. The first
+  hook-half smoke (below) showed it never ran: Claude Code does not use a
+  project sub-agent's frontmatter hooks in a session that has not accepted
+  workspace trust, and a `claude -p` or SDK session never shows the trust
+  dialog (`code.claude.com/docs/en/permissions`, "What runs before you
+  trust a folder", read 30 September; the same table says a project
+  skill's hooks are used there). A cloud session is such a session. The
+  hook's command, its decisions, its log and the audit are unchanged; what
+  changed is how it is registered (the skill), that it passes non-author
+  calls (`--only`), the registration check, and the frontmatter's `hooks`
+  block, removed so that nothing else decides an author's calls. The
+  easier option, dropping the hook and relying on the audit alone as run
+  13 did, was rejected: run 13's arm B lost 7 of its first 10 samples to
+  voids, and blocking before a call runs is this run's fix for the audit
+  half of that.
+- **Open.** Whether a skill's `PreToolUse` hook fires for a sub-agent's
+  tool calls with `agent_type` set is not stated in the documentation
+  read; the hook-half smoke checks it. If it does not, `hookcheck` stops
+  the session and no author is scored.
 
 ### One author at a time, in parallel sessions
 
@@ -186,6 +230,31 @@ As run 13, with these changes:
     B compacts, this is reported with the covariate, not as a void.
   - In the smoke, one arm B author compacted with no other author running,
     and the compaction carried no `task_status` line.
+  - **`context_seen.py` on `main` since this file was merged** (#230,
+    36b240c, and the change that followed it, which compares Haiku names
+    whole too). It compares whole sample names, so an injected item naming
+    a sample of another subject or language is flagged even when it has the
+    author's own number. Checked on 12 October with
+    `runs/2026-10-10-context-seen-names/haiku_same.py 7d82348`, which runs
+    `context_seen.py` at 7d82348 beside the current one with run 14's call
+    pattern (`LOG --arm-set ... --arm ... --sample haiku-firth-N --label
+    ...`; 7d82348 has no run14 arm set, so the script uses run13's): 32
+    Haiku-named cases give the same exit code, report and text apart from
+    a new `sample_names` field on each flagged item, and the script's
+    planted cases (a Sonnet-named item, an extra field, a changed `names`)
+    differ. On a log with one `<system-reminder>` naming a sample, for
+    author `haiku-firth-4` (checked at 7d82348 and at 39ee45f, run13 arm
+    set), the exit code went from 0 to 1 for `sonnet-firth-4`,
+    `deepseek-firth-4`, `haiku-python-4`, `sonnet-firth-7`,
+    `deepseek-firth-7` and `sonnet-firth-4/answer-1.md`, and stayed 1 for
+    `haiku-python-7`. So run 14's context results change for any log that
+    names a sonnet- or deepseek- sample, whatever its number, and for a
+    `haiku-python-` name that carries the author's own number (a `context`
+    void, and a `cross_sample` item also writes the STOP file). A
+    `haiku-python-` name with another number was flagged before and still
+    is. Logs that name only Haiku-Firth samples are unchanged (the 32
+    cases). Run 14's authors are Haiku and write Firth, and nothing in a
+    session should name a sonnet-, deepseek- or haiku-python- sample.
 - **Edit replay.** The rule exists so that the scored answer is tied to
   the author's own calls: the audit replays an author's writes and edits
   and requires the result to be the kept copy that was scored. Arm A has
@@ -242,7 +311,20 @@ and `PIN` the pinned commit, both given in the session's brief.
    running yet.
    - `git -C /home/user/firth fetch origin main`
    - `git -C /home/user/firth worktree add --detach /home/user/firth-r14 PIN`
+   - A fresh cloud container has no Lean toolchain, so install it for the
+     authors' default shell (as the driver's container has it):
+     `mkdir -p /tmp/r14-elan && curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/r14-elan/elan-init.sh && sh /tmp/r14-elan/elan-init.sh -y --default-toolchain none`,
+     then `/root/.elan/bin/elan toolchain install leanprover/lean4:v4.30.0`,
+     then `ln -s /root/.elan/bin/elan /root/.elan/bin/lake /root/.elan/bin/lean /usr/local/bin/`.
+   - `cd /home/user/firth-r14 && cargo --version`, which must print
+     `cargo 1.93.0`: the repository's `rust-toolchain.toml` pins Rust
+     1.93.0, and rustup installs it on first use in the worktree.
    - `python3 session.py setup SESSION --pin PIN`
+
+   `setup` records the versions in the authors' shell (`lake --version`,
+   `lean --version`, `cargo --version`) in `pinned.txt`, and stops unless
+   they are run 13's: Lake `5.0.0-src+d024af0`, Lean 4.30.0 at commit
+   `d024af09` and cargo 1.93.0.
 
    `setup` checks the pin, that the main checkout's `AGENTS.md`,
    `CLAUDE.md` and agent file are the pinned ones (authors see the main
@@ -250,7 +332,10 @@ and `PIN` the pinned commit, both given in the session's brief.
    check of a scratch answer prints `ok` in the authors' own shell
    environment, which builds the toolchain. It writes the session's
    `pinned.txt`.
-2. **Hook check.** `python3 session.py hookcheck SESSION` prints a test
+2. **Hook check.** Invoke the skill `s7-author-hook` with the Skill tool,
+   once; it registers the hook for the rest of the session. Then
+   `python3 session.py hookcheck SESSION`, which stops unless the hook
+   recorded that very call, prints a test
    author to start (an `s7-author` told to make one off-list call and the
    allowed check). Start it as printed; when it hands back, run
    `python3 session.py hookcheck SESSION <its agent id>`, which passes only
@@ -362,6 +447,20 @@ kept):
   `[handback-send-enforce]` reminder on their feedback turns, so it falls
   on both arms. Scores (smoke only, not a result): arm A 0, 7 and 9 of 20
   by `harness.py score` over its three answers (arm B: 14 on its third).
+- **Hook half, first attempt (17:06 to 17:23Z, 30 September; stopped,
+  no author scored).** A fresh Sonnet 5.5 session on `main` at the merge
+  commit `d1209ac` of #200. Its container had no Lean toolchain: `setup`
+  stopped with "lake is not on PATH". After the install now in runbook
+  step 1, `lake --version` in the authors' shell printed
+  `Lake version 5.0.0-src+d024af0 (Lean version 4.30.0)` and `setup`
+  passed. The hook-check author (agent type `s7-author`, confirmed by its
+  `meta.json`) then ran its Glob call unstopped: `hookcheck` stopped with
+  "the Glob call was not stopped by the hook", and the hook log held only
+  the dry run's two decisions, so the frontmatter hook had never run (see
+  "Amendment"). A logging-only probe of a skill's hook in that session was
+  refused by the session's permission check when it tried to write the
+  skill file, so it was dropped; the committed skill is tested in the
+  second attempt instead.
 - **Hook half (after this file merges).** In a fresh session started
   from `main` once this file and the agent file are on it, run by Sonnet
   5.5 as a runner would be and following the runbook above with
@@ -379,6 +478,8 @@ kept):
   author's log shows the hook's mark in the stopped call's result, as
   `hook_denials` expects, both for a denial and for the fail-closed path
   (a STATE file that cannot be read); and the audit with `--hook-log`
-  keeps the stopped calls unflagged. If the result's shape differs,
+  keeps the stopped calls unflagged. The skill is invoked as runbook
+  step 2 says, and `hookcheck` and `next` must find the hook registered.
+  If the result's shape differs,
   `hook_denials` and its plants are changed in the pin PR, with the
   smoke's evidence, before any author starts.
