@@ -49,17 +49,19 @@ outcomes and how they are read.
 
 ### Blocking
 
-- A project skill, `.claude/skills/s7-author-hook`, registers a
-  `PreToolUse` hook for the rest of the session once the runner invokes it
-  (runbook step 2). The hook sees every call in the session but decides
+- The project settings file `.claude/settings.json` registers a
+  `PreToolUse` hook for every session started in the repository (it takes
+  effect when the session starts, so the runner needs no step for it). The
+  hook sees every call in the session but decides
   only for calls whose hook input has `agent_type` `s7-author`, the agent
   definition every author is started with; every other call, the runner's
   own included, passes untouched (exit 0, no output). Both arms' authors
   are started with that agent type, so they have the same tools available
   and the same hook; the arms still differ only in their prompts.
-  (Amended before any author started; see "Amendment" below.)
+  (Amended twice, before any author started; see "Amendment" below.)
 - The hook runs `eval/s7/author_hook.py --state STATE --only s7-author`,
-  guarded by a test that the script exists. The driver writes
+  exiting 0 at once when the script is absent, as in every other session in
+  the repository (an error exit would show on every tool call there). The driver writes
   STATE before it starts each author: the arm's prompt, the sample's
   directory, the rounds, the check command (arm B) or none (arm A), and the
   hook log's path.
@@ -92,23 +94,21 @@ outcomes and how they are read.
   call's record, such as that of a `next` that stopped and is retried,
   cannot stand in for this one. The hook fires before a call runs, so a
   new record is there if and only if the hook is registered for this call. If the script is missing the guarded
-  command exits 1, a non-blocking error, and records nothing, so this
-  check stops the session. The hook check (runbook step 2) then shows an
+  command exits 0 and records nothing, so this check stops the session. The hook check (runbook step 2) then shows an
   author's off-list call stopped. Planted in `session.py --self-test`: no
   record, one 45 seconds old, another session's, an author's own call, a
   missing file, and the record the previous check already used (5 seconds
   old) each make `hookcheck` and `next` stop. Planted in
   `author_hook.py --self-test`: the runner's calls and another sub-agent
   type's pass and are recorded; an author's off-list call is denied, and
-  an author's call with no STATE file is denied; the skill's own command
+  an author's call with no STATE file is denied; the settings file's own command
   line, run by a shell with its paths pointed at a scratch directory,
   exits 0 for the runner, 2 with the mark for an author's off-list call,
-  and 1 with the script missing.
-- **The skill** is `.claude/skills/s7-author-hook/SKILL.md`, and `setup`
-  checks that the main checkout's copy is the pinned one. Authors may see
-  it in their session's skill list, beside the repository's `cairn-*`
-  skills; that is the same in both arms, and the hook denies an author's
-  `Skill` call, which is off the list.
+  and 0 with nothing recorded when the script is missing.
+- **The settings file** is `.claude/settings.json`, and `setup` checks
+  that the main checkout's copy is the pinned one. It holds only this
+  hook; the hook decides only for `s7-author` calls, so it changes nothing
+  for any other session in the repository.
 - **The agent file** is `.claude/agents/s7-author.md` in the pinned
   worktree, exactly as follows. It has no `tools` line, so the author has
   the tools a `general-purpose` author had in run 13. Its body replaces
@@ -165,10 +165,21 @@ outcomes and how they are read.
   13 did, was rejected: run 13's arm B lost 7 of its first 10 samples to
   voids, and blocking before a call runs is this run's fix for the audit
   half of that.
-- **Open.** Whether a skill's `PreToolUse` hook fires for a sub-agent's
-  tool calls with `agent_type` set is not stated in the documentation
-  read; the hook-half smoke checks it. If it does not, `hookcheck` stops
-  the session and no author is scored.
+- **Second amendment (16 October, before any author started).** The
+  skill route failed its smoke on `main` at aec5595 (the merge of #205; see
+  "Hook half, second attempt"): the skill's hook fired for the runner's
+  own calls and recorded none of the sub-agent's. The hooks documentation
+  (`code.claude.com/docs/en/hooks`, "Configuration", read 16 October)
+  says hooks from settings files, managed settings and plugins also run
+  inside subagents, with `agent_id` and `agent_type` in the input, and does
+  not say it of skills. So the same hook, command and decisions are
+  registered from `.claude/settings.json` instead, and the skill is
+  removed. The easier option, falling back to run 13's audit alone, was
+  rejected for the same reason as before (arm B voids).
+- **Open.** Whether the settings hook fires for a sub-agent's tool calls
+  with `agent_type` set is stated in the documentation but not yet seen
+  here; the re-smoke checks it. If it does not, `hookcheck` stops the
+  session and no author is scored.
 
 ### One author at a time, in parallel sessions
 
@@ -332,9 +343,10 @@ and `PIN` the pinned commit, both given in the session's brief.
    check of a scratch answer prints `ok` in the authors' own shell
    environment, which builds the toolchain. It writes the session's
    `pinned.txt`.
-2. **Hook check.** Invoke the skill `s7-author-hook` with the Skill tool,
-   once; it registers the hook for the rest of the session. Then
-   `python3 session.py hookcheck SESSION`, which stops unless the hook
+2. **Hook check.** The hook is registered by `.claude/settings.json` when
+   the session starts, so nothing is invoked first (a session started
+   before that file was on `main` has no hook, and `hookcheck` stops it).
+   Run `python3 session.py hookcheck SESSION`, which stops unless the hook
    recorded that very call, prints a test
    author to start (an `s7-author` told to make one off-list call and the
    allowed check). Start it as printed; when it hands back, run
@@ -461,6 +473,15 @@ kept):
   refused by the session's permission check when it tried to write the
   skill file, so it was dropped; the committed skill is tested in the
   second attempt instead.
+- **Hook half, second attempt (04:10 to 04:12Z, 16 October; stopped, no
+  author scored).** A fresh Sonnet 5.5 session on `main` at aec5595 (the
+  skill route). `setup` passed, the skill loaded, and the runner's own
+  `hookcheck` call was recorded, so the hook fired for the runner. The
+  hook-check author's Glob and Bash calls were not recorded at all
+  (`seen.jsonl` held only the runner's calls, `agent_type` null on every
+  line) and `hookcheck` stopped with "the Glob call was not stopped by the
+  hook". Evidence: `/mnt/project-files/s7-eval/run14-smoke/logs/`
+  (`seen.jsonl`, `hook-log.jsonl`, the author's `agent-*.jsonl`).
 - **Hook half (after this file merges).** In a fresh session started
   from `main` once this file and the agent file are on it, run by Sonnet
   5.5 as a runner would be and following the runbook above with
@@ -478,8 +499,9 @@ kept):
   author's log shows the hook's mark in the stopped call's result, as
   `hook_denials` expects, both for a denial and for the fail-closed path
   (a STATE file that cannot be read); and the audit with `--hook-log`
-  keeps the stopped calls unflagged. The skill is invoked as runbook
-  step 2 says, and `hookcheck` and `next` must find the hook registered.
+  keeps the stopped calls unflagged. The session is started after
+  `.claude/settings.json` is on `main`, and `hookcheck` and `next` must find
+  the hook registered.
   If the result's shape differs,
   `hook_denials` and its plants are changed in the pin PR, with the
   smoke's evidence, before any author starts.

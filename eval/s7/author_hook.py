@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """S7 run 14's author hook: stop an author's call that is not on its list, before it runs.
 
-The skill `.claude/skills/s7-author-hook` registers a PreToolUse hook that
-runs this for every tool call in the session, the runner's own included:
+The project settings file `.claude/settings.json` registers a PreToolUse hook
+that runs this for every tool call in the session, the runner's own included:
 
     python3 eval/s7/author_hook.py --state STATE --only s7-author < hook-input.json
 
@@ -15,7 +15,10 @@ starts an author. A project sub-agent's own frontmatter hooks would be the
 natural place, but Claude Code does not run them in a session that never
 accepts workspace trust, which a cloud session never does
 (`code.claude.com/docs/en/permissions`, "What runs before you trust a
-folder"); a project skill's hooks do run there. Without `--only`, every
+folder"); hooks in a project settings file are used there too, and the
+hooks documentation says settings hooks see a sub-agent's calls (the re-smoke
+checks it). A project skill's hooks run there as well, but run 14's smoke on
+aec5595 recorded only the runner's own calls and none of the sub-agent's. Without `--only`, every
 call is decided, as in the self-test's first half.
 
 STATE is a JSON file the driver writes before it starts an author (authors
@@ -39,7 +42,7 @@ mark whatever the cause. Any failure the script can catch, including one
 importing the audit (which imports the harness), denies the same way: the
 hook fails closed. A crash or timeout it cannot catch lets the call run;
 the audit then flags it, so it voids the sample and is reported as a hook
-failure. The skill gives the hook an explicit timeout.
+failure. The settings file gives the hook an explicit timeout.
 """
 import json
 import sys
@@ -195,7 +198,7 @@ def self_test() -> None:
         last = json.loads((t / "log.jsonl").read_text().splitlines()[-1])
         assert last["tool_use_id"] == "toolu_p3" and last["decision"] == "deny"
         assert "planted" in last["error"], last
-        # --only s7-author, as the skill runs it: the runner's own calls and
+        # --only s7-author, as the settings file runs it: the runner's own calls and
         # other sub-agents' pass untouched and are recorded in seen.jsonl;
         # an author's call is decided as above.
         only = ["--state", str(sf), "--only", "s7-author"]
@@ -204,6 +207,8 @@ def self_test() -> None:
                                        ("Bash", {"command": "ls /tmp; echo TOKEN=abc"}, None, (0, "")),
                                        ("Bash", {"command": "R14_SHARED=/x python3 /y/session.py next s2"}, None, (0, "")),
                                        ("Glob", {"pattern": "*"}, "Explore", (0, "")),
+                                       ("Write", {"file_path": "/tmp/x", "content": ""}, "s7-harder-author", (0, "")),
+                                       ("Bash", {"command": "rm -rf /tmp/x"}, "s7-author-2", (0, "")),
                                        ("Glob", {"pattern": "*"}, "s7-author", (2, REASON)),
                                        ("Bash", {"command": check}, "s7-author", (0, ""))]:
             call = {"tool_name": tool, "tool_input": inp, "tool_use_id": "toolu_o"}
@@ -214,7 +219,8 @@ def self_test() -> None:
         assert [(r["tool_name"], r["agent_type"], r["command"]) for r in rows] == [
             ("Glob", None, None), ("Bash", None, None),
             ("Bash", None, "R14_SHARED=/x python3 /y/session.py next s2"),
-            ("Glob", "Explore", None)], rows
+            ("Glob", "Explore", None), ("Write", "s7-harder-author", None),
+            ("Bash", "s7-author-2", None)], rows
         assert "TOKEN" not in seen.read_text()
         # With no state file, a runner's call still passes; an author's is denied.
         gone = ["--state", str(t / "later" / "state.json"), "--only", "s7-author"]
@@ -225,13 +231,17 @@ def self_test() -> None:
         # Planted: a bad option list, and input that cannot be read, deny.
         assert main(["--state", str(sf), "--only"], json.dumps({"tool_name": "Glob"})) == (2, REASON)
         assert main(only, "not json") == (2, REASON)
-        # The skill's own command, run by a shell as Claude Code runs it, with
+        # The settings file's own command, run by a shell as Claude Code runs it, with
         # its two paths pointed here: exit 0 for the runner, 2 with the mark
-        # for an author's off-list call, and 1 (a non-blocking error, which
-        # `session.py` catches as an unregistered hook) with no script.
-        import re
-        skill = (HERE.parents[1] / ".claude" / "skills" / "s7-author-hook" / "SKILL.md").read_text()
-        cmd = json.loads(re.search(r'^ +command: (".*")$', skill, re.M).group(1))
+        # for an author's off-list call, and 0 with no script, recording
+        # nothing (other sessions in the repository have no such worktree,
+        # and an error there would show on every tool call; `session.py`
+        # catches the missing record as an unregistered hook).
+        settings = json.loads((HERE.parents[1] / ".claude" / "settings.json").read_text())
+        (entry,) = settings["hooks"]["PreToolUse"]
+        (hook,) = entry["hooks"]
+        assert entry["matcher"] == "*" and hook["type"] == "command" and hook["timeout"] == 30, entry
+        cmd = hook["command"]
         assert "--only s7-author" in cmd and cmd.count("/home/user/firth-r14/eval/s7/author_hook.py") == 2
         live = cmd.replace("/home/user/firth-r14/eval/s7/author_hook.py", str(Path(__file__))) \
                   .replace("/home/user/r14-hook/state.json", str(sf))
@@ -242,8 +252,10 @@ def self_test() -> None:
         assert (p.returncode, p.stderr) == (0, ""), p
         p = shell(live, {"tool_name": "Glob", "tool_input": {"pattern": "*"}, "agent_type": "s7-author"})
         assert (p.returncode, p.stderr.strip()) == (2, REASON), p
+        before = seen.read_text()
         p = shell(live.replace(str(Path(__file__)), str(t / "missing.py")), {"tool_name": "Glob"})
-        assert p.returncode == 1, p
+        assert (p.returncode, p.stdout, p.stderr) == (0, "", ""), p
+        assert seen.read_text() == before
         from audit_subagent import HOOK_MARK
         assert HOOK_MARK == MARK
         # Exit 2 is the only code that blocks: the expectations above are the
