@@ -738,7 +738,7 @@ private partial def parseFields (p : Parser) (acc : List FieldDecl) :
         parseName p2 true >>= fun (typeName, typeSpan, p3) =>
           parseType p3 typeName typeSpan >>= fun (ty, p4) =>
             if !ty.refinements.isEmpty then
-              .error (err "firth.syntax.refinement-in-type" ty.span .validation)
+              .error (err "firth.syntax.refinement-in-type" ty.span .validation none (some ty.name))
             else parseFields p4 ({ name := { name := n, span := ns }, type := ty } :: acc)
 
 /-- The names of an `export` declaration, up to its `;`. -/

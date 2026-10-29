@@ -97,7 +97,7 @@ the same word lowers to something else. -/
 private def rejectsMutant (name text word expected : String) : IO Unit := do
   match loweredWith shifted text word with
   | .ok got => if got == expected then fail s!"{name}: the mutant lowers the same way"
-  | .error _ => pure ()
+  | .error code => fail s!"{name}: the mutant was refused with {code}, so nothing was compared"
 
 def main : IO Unit := do
   -- Lowerings, from the recipes of the decision.
@@ -184,6 +184,11 @@ def main : IO Unit := do
   refused "branches that leave different records"
     (stock ++ ": f (forall ρ; ρ b:Bool -- ρ s:Stock) [ 1 2 Stock.pack ] [ 1 2 Pair.pack ] if ;")
     ["firth.type.mismatch"]
+  refused "branches that build quotations of different records"
+    ("record A { x:Int }\nrecord B { x:Int }\n: f (forall ρ; ρ b:Bool -- ρ a:A) [ [ 1 A.pack ] ] [ [ 2 B.pack ] ] if call ;")
+    ["firth.type.mismatch"]
+  accepted "branches that build quotations of one record"
+    ("record A { x:Int }\n: f (forall ρ; ρ b:Bool -- ρ a:A) [ [ 1 A.pack ] ] [ [ 2 A.pack ] ] if call ;")
   refused "a record read inside a quotation"
     (stock ++ ": f (forall ρ; ρ s:Stock -- ρ n:Int) [ Stock.reserved ] call ;") ["firth.type.composite-in-quotation"]
   refused "a record passed through a quotation that takes it"

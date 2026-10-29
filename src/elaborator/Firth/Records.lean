@@ -251,9 +251,14 @@ private def popExpecting (ctx : Ctx) (span : Span) (expected : Shape) : SimM Uni
   | _, .record found => refuse "firth.type.mismatch" span (some found) (some expected.describe)
   | _, _ => pure ()
 
-private def sameShape : Shape → Shape → Bool
+/-- Whether two branches leave the same shape: records by name, and
+quotations by what they take and leave, recursively. -/
+private partial def sameShape : Shape → Shape → Bool
   | .record a, .record b => a == b
   | .record _, _ | _, .record _ => false
+  | .quote takes left, .quote takes' right =>
+      takes == takes' && left.length == right.length &&
+        (left.zip right).all fun (a, b) => sameShape a b
   | _, _ => true
 
 private def binders (prefixName : String) (count : Nat) : List String :=
