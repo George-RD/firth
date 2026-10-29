@@ -11,7 +11,7 @@ run is reported, not folded back in.
 **Status: draft. Not pinned. No author has run.** The run starts only when
 everything in "Before the pin" is met.
 
-Where this file says a section of `../scored-run/preregistration.md`
+Where this file says a section of `eval/s7/harder/scored-run/preregistration.md`
 applies, it means that section as pinned on 11 October 2026 in
 `runs/2026-10-11-scored/`, with the set's name and the sample counts
 replaced by this file's. That file is frozen, so its text cannot drift
@@ -75,7 +75,7 @@ the agent type `s7-harder-author` and nothing else, the working directory
 fixed before the first author, the tool probe (`author_tools.py --probe`
 must print `ok` before the first sample) and the per-author record
 (`author_tools.py --ids --cwd` after each author). The author is started
-with the text in `../scored-run/preregistration.md`, "How a sample runs",
+with the text in `eval/s7/harder/scored-run/preregistration.md`, "How a sample runs",
 and round 2 runs as that section says: `repair-1.md`, the same author, only
 the listed tasks taken. An author whose answers all passed their examples
 gets no round 2.
@@ -87,13 +87,13 @@ reviewed change. A tool-list void counts against its cell like any other
 void.
 
 **DeepSeek.** `deepseek_sample.py` as in
-`../scored-run/preregistration.md`, "How a sample runs", streamed as
+`eval/s7/harder/scored-run/preregistration.md`, "How a sample runs", streamed as
 merged in #246, with the same prompt file as the Firth or Python
 sub-agents. A round is asked once and never retried.
 
 ## Outcomes
 
-As in `../scored-run/preregistration.md`, "Outcomes": each task in each
+As in `eval/s7/harder/scored-run/preregistration.md`, "Outcomes": each task in each
 round passes (every hidden test passes) or fails, and a failure is
 reported under exactly one cause: no answer, a Firth answer the checker
 refuses, a wrong result, a runtime error, out of steps (the 1,000,000-step
@@ -109,7 +109,7 @@ hidden test while the meaning's results differ across them. In the
 ## Voids, crashes and replacement
 
 The causes of a void and of a crash are those of
-`../scored-run/preregistration.md`, "Voids, crashes and replacement", with
+`eval/s7/harder/scored-run/preregistration.md`, "Voids, crashes and replacement", with
 one more void cause, "tool list" (above), and with the known injected
 items of "Context" below. A crash caused by an author's answer is a harness
 bug and stops the run as that section says.
@@ -146,7 +146,7 @@ and on a toolchain failure (`ToolchainError`).
   Firth-minus-Python difference is not compared across subjects.
 
 Each sub-agent's raw log is scanned as in
-`../scored-run/preregistration.md`, "Context" (`context_seen.py --sample`
+`eval/s7/harder/scored-run/preregistration.md`, "Context" (`context_seen.py --sample`
 and the search for every other sample's name, agent id and directory).
 The known injected items are those listed in `calibration.md`, "Known
 injected items", recorded in `runs/2026-10-11-tool-probe/notes.md`. Any
@@ -155,14 +155,14 @@ voids the sample.
 
 ## A reading nobody listed
 
-As in `../scored-run/preregistration.md`, "A reading nobody listed":
+As in `eval/s7/harder/scored-run/preregistration.md`, "A reading nobody listed":
 every failed hidden test is traced to its rule, the independent reviewer
 rules on any other reading, and a task the ruling admits is left out only
 in a sensitivity result beside the headline, never in it.
 
 ## Analysis (fixed now)
 
-As in `../scored-run/preregistration.md`, "Analysis (fixed now)", for each
+As in `eval/s7/harder/scored-run/preregistration.md`, "Analysis (fixed now)", for each
 subject, with these sample sizes:
 - **Primary measure:** the difference in mean tasks passed per author
   within two rounds, Firth minus Python; round 1 is the secondary measure.
@@ -178,7 +178,7 @@ subject, with these sample sizes:
 - **S7 is judged on Sonnet.** DeepSeek's row shows whether the result
   holds for a non-Anthropic model.
 
-**Sample size.** `power.py` next to this file simulates the rule
+**Sample size.** `eval/s7/harder/next-run/power.py` simulates the rule
 (binomial tasks, 2,000 replicates, each cell seeded on its own from seed 0
 and the cell; `power-output.txt`):
 
@@ -208,7 +208,7 @@ crashes per arm and by cause, next to its difference, so a lopsided void
 pattern is visible where the result is read.
 
 **The guarantees, and sorting a case's error:** as in
-`../scored-run/preregistration.md`, with its table of diagnostic codes. If
+`eval/s7/harder/scored-run/preregistration.md`, with its table of diagnostic codes. If
 none of the six tasks has a Lean cost contract, the report says that no
 proved bound applies.
 
@@ -257,8 +257,8 @@ files under `eval/s7/harder/`; the checker, `stdlib/` and the S7 inputs
 (`docs/getting-started.md`, `docs/firth-agent-guide.md`,
 `examples/programs/README.md`, `AGENTS.md`) must be identical to the
 calibration pin, checked by `git diff --quiet` between the two commits on
-`src/`, `stdlib/`, those four files, `CLAUDE.md`, `.claude/agents/` and
-`.claude/settings.json` (the author's definition and every hook it runs
+`src/`, `stdlib/`, those four files, `CLAUDE.md`, `.claude/agents/`,
+`.claude/skills/` and `.claude/settings.json` (the author's definition and every hook it runs
 under), with the output in the run directory. If any of them differs, the calibration result is stale
 (`calibration.md`) and this run does not start from it.
 
@@ -269,7 +269,7 @@ under), with the output in the run directory. If any of them differs, the calibr
 - [ ] The selection PR merged: the selected set nameable by `tier.py`,
   `audit.py` and `deepseek_sample.py`, and the analysis script with its
   self-test.
-- [ ] The S7 inputs, `CLAUDE.md`, `.claude/agents/`, `.claude/settings.json`,
+- [ ] The S7 inputs, `CLAUDE.md`, `.claude/agents/`, `.claude/skills/`, `.claude/settings.json`,
   `src/` and `stdlib/` identical to the calibration pin (above).
 - [ ] The prompts built at the pin and committed with `commit.txt`, this
   file and the input check's output in the run directory.

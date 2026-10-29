@@ -94,7 +94,8 @@ met.
   `scored.md`. The scored run is pinned later, at the merge of the PR that
   makes the selected set nameable (`scored.md`, "The pin"), but with the
   same checker, docs and stdlib: `src/`, `stdlib/`, the S7 inputs,
-  `CLAUDE.md`, `.claude/agents/` and `.claude/settings.json` must
+  `CLAUDE.md`, `.claude/agents/`, `.claude/skills/` and
+  `.claude/settings.json` must
   be identical at both commits. If any of them changes before the scored
   run is pinned, the calibration result is reported as stale and the
   selection is not used.
