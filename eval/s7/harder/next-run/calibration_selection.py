@@ -110,10 +110,11 @@ def render(authors: dict, order: list[str], res: dict) -> str:
     out = ["# Calibration selection", "",
            "Computed by `calibration_selection.py` from the kept authors' score files: "
            + ", ".join(f"`{n}`" for n in names) + ".", "",
-           "| candidate | pass python | pass firth | pass (sum) | first (sum) | dropped | selected |",
-           "|---|---|---|---|---|---|---|"]
+           "| candidate | pass python | pass firth | first python | first firth | pass (sum) | first (sum) | dropped | selected |",
+           "|---|---|---|---|---|---|---|---|---|"]
     for t in order:
-        out.append(f"| {t} | {c[t]['python']}/{PER_ARM} | {c[t]['firth']}/{PER_ARM} | {c[t]['pass']} | "
+        out.append(f"| {t} | {c[t]['python']}/{PER_ARM} | {c[t]['firth']}/{PER_ARM} | "
+                   f"{c[t]['python_first']}/{PER_ARM} | {c[t]['firth_first']}/{PER_ARM} | {c[t]['pass']} | "
                    f"{c[t]['first']} | {'yes' if c[t]['pass'] == 0 else ''} | "
                    f"{'yes' if t in res['selected'] else ''} |")
     out += ["", "Ranking after the floor (lowest first): " + ", ".join(res["ranking"]) + ".",
@@ -179,6 +180,9 @@ def self_test() -> None:
     assert v["dropped"] == ["t8", "t9"]
     text = render(authors, order, v)
     assert "Selected, in `candidates.py` order: t2, t3, t4, t5, t6, t7." in text and "go:" in text
+    # Per-arm columns: t3 passed 3/3 (python) and 1/3 (firth) at the end, and 3/3 and 0/3 in round 1,
+    # which the summed columns (4, 3) alone could not show.
+    assert "| t3 | 3/3 | 1/3 | 3/3 | 0/3 | 4 | 3 |  | yes |" in text, text
 
     # Fewer than six remain after the floor: no scored run.
     few = dict([author(f"cal-{l}-{i}", ["t1", "t2"]) for l in ("python", "firth") for i in (1, 2, 3)])
