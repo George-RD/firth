@@ -142,6 +142,8 @@ a quotation with the number of values it takes from below and what it leaves,
 top first. -/
 inductive Shape where
   | val
+  /-- A scalar whose type is known: `Int` or `Bool`. -/
+  | scalar (name : String)
   | record (key : String)
   | quote (consumes : Nat) (produces : List Shape)
 
@@ -152,10 +154,13 @@ private def Shape.isRecord : Shape → Bool
 private def Shape.describe : Shape → String
   | .record key => key
   | .quote .. => "a quotation"
+  | .scalar name => name
   | .val => "a value"
 
 def shapeOfType (table : RecordTable) (type : TypeExpr) : Shape :=
-  if table.any (·.key == type.name) then .record type.name else .val
+  if table.any (·.key == type.name) then .record type.name
+  else if type.name == "Int" || type.name == "Bool" then .scalar type.name
+  else .val
 
 def Shape.width (table : RecordTable) : Shape → Nat
   | .record key => ((table.find? (·.key == key)).map fun record =>
@@ -249,6 +254,10 @@ private def popExpecting (ctx : Ctx) (span : Span) (expected : Shape) : SimM Uni
         refuse "firth.type.composite-in-quotation" span (some wanted)
       else refuse "firth.type.mismatch" span (some actual.describe) (some wanted)
   | _, .record found => refuse "firth.type.mismatch" span (some found) (some expected.describe)
+  -- Pack and unpack erase to nothing, so the kernel never sees a field's type:
+  -- a scalar of known type must match the field here.
+  | .scalar wanted, .scalar found =>
+      if wanted != found then refuse "firth.type.mismatch" span (some found) (some wanted)
   | _, _ => pure ()
 
 /-- Whether two branches leave the same shape: records by name, and
@@ -383,7 +392,12 @@ private partial def lowerItems (ctx : Ctx) : List Item → SimM (List Item)
       pure (lowered ++ (← lowerItems ctx rest))
 
 private partial def lowerItem (ctx : Ctx) : Item → SimM (List Item)
-  | .literal literal span => do push .val; pure [.literal literal span]
+  | .literal literal span => do
+      push (match literal.value with
+        | .integer _ => .scalar "Int"
+        | .boolean _ => .scalar "Bool"
+        | _ => .val)
+      pure [.literal literal span]
   | .primitive name span => do
       match ctx.primitive name with
       | none => pure [.primitive name span]

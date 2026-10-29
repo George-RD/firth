@@ -181,6 +181,16 @@ def main : IO Unit := do
     (stock ++ ": f (forall ρ; ρ n:Int m:Int -- ρ s:Stock) ;") ["firth.type.mismatch"]
   refused "packing the wrong members"
     (stock ++ ": f (forall ρ; ρ n:Int -- ρ s:Stock) Pair.pack ;") ["firth.type.mismatch"]
+  -- Pack and unpack erase to nothing, so the field types are checked here.
+  refused "a Bool packed into an Int field, then unpacked"
+    ("record R { x:Int }\n: f (forall ρ; ρ b:Bool -- ρ b:Bool) R.pack R.unpack ;") ["firth.type.mismatch"]
+  refused "a Bool literal packed into an Int field"
+    ("record R { x:Int }\n: f (forall ρ; ρ -- ρ r:R) true R.pack ;") ["firth.type.mismatch"]
+  refused "a Bool field unpacked into an Int field"
+    ("record R { x:Int }\nrecord Q { b:Bool }\n: f (forall ρ; ρ q:Q -- ρ r:R) Q.unpack R.pack ;")
+    ["firth.type.mismatch"]
+  accepted "an Int packed into an Int field, then unpacked"
+    ("record R { x:Int }\n: f (forall ρ; ρ n:Int -- ρ n:Int) R.pack R.unpack ;")
   refused "branches that leave different records"
     (stock ++ ": f (forall ρ; ρ b:Bool -- ρ s:Stock) [ 1 2 Stock.pack ] [ 1 2 Pair.pack ] if ;")
     ["firth.type.mismatch"]
@@ -215,10 +225,14 @@ def main : IO Unit := do
 
   -- Words that mention no record are untouched.
   accepted "plain word beside records" (stock ++ ": f (forall ρ; ρ a:Int -- ρ b:Int) dup prim + ;")
-  -- A record word is checked by the kernel on its flat form: a value of the
-  -- wrong base type in a field is still refused, in flat terms.
+  -- A declared scalar of the wrong type is refused at the pack. A value whose
+  -- type the lowering does not track (a primitive's result) is still refused
+  -- by the kernel on the flat form.
   refused "wrong base type in a field"
-    (stock ++ ": f (forall ρ; ρ b:Bool n:Int -- ρ s:Stock) Stock.pack ;") ["firth.type.declared-effect-mismatch"]
+    (stock ++ ": f (forall ρ; ρ b:Bool n:Int -- ρ s:Stock) Stock.pack ;") ["firth.type.mismatch"]
+  refused "untracked wrong base type in a field"
+    (stock ++ ": f (forall ρ; ρ a:Int b:Int -- ρ s:Stock) prim < 1 Stock.pack ;")
+    ["firth.type.declared-effect-mismatch"]
   IO.println "records: ok"
 
 end Firth.RecordsTest
