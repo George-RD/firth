@@ -212,5 +212,6 @@ outcome, computed by a script committed with it from the kept results only.
 - [x] The scored run's pre-registration written before calibration
   (`scored.md`).
 - [x] The prompts built at the pin and committed with `commit.txt` and this
-  file in the run directory: `runs/2026-10-12-calibration4/`, built at main
-  `814b61f` (this PR).
+  file in the run directory: `runs/2026-10-12-calibration4/`. The pin is main
+  `9f7328b` (`commit.txt`); the prompts were first built at `814b61f` and are
+  byte-identical at `9f7328b` (`pin-notes.md`).
