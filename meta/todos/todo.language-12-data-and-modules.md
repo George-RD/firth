@@ -28,6 +28,14 @@ Make bounded application data and reusable vocabularies practical.
   types erase to flat stack values, sequences of scalar-flat records to
   columns. Planned PRs: records, variants with `match`, sequences of records,
   then the agent guide and S7 inputs.
+- 29 October 2026: the first records PR (declarations, `pack`/`unpack`, field
+  read and set, flat word types, the nominal and field diagnostics, the
+  structural atoms on records, `examples/programs/records.firth`). Records are
+  file-local and a `locals` block cannot yet bind one: the next records PRs add
+  record locals, then the import and export of types with the layer identity
+  and proof-record digests the decision requires. Until then
+  `firth.type.locals-record-unsupported` and `firth.name.export-type-unsupported`
+  refuse those uses.
 - Still open: typed records and results (the first criterion) and bounded
   sequences of records, both through the planned PRs; the host-boundary
   definition of ownership, bounds, termination and serialization (partly

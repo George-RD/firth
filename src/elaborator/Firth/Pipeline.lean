@@ -1,5 +1,6 @@
 import elaborator.Firth.Parser
 import elaborator.Firth.Names
+import elaborator.Firth.Records
 import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
 import elaborator.Firth.Account
@@ -1470,7 +1471,30 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
   | .success file =>
       match resolveFile config file.declarations with
       | .error error => .failure [.parse error]
-      | .ok (resolved, stop) =>
+      | .ok (resolvedPlain, stop) =>
+      match checkRecords (collectRecords file.declarations) with
+      | .error error => .failure [.parse error]
+      | .ok table =>
+          -- Records erase to their fields before checking
+          -- (`dec.typed-records-and-variants`): each word's effect is
+          -- flattened and, where a record is involved, its body lowered.
+          let resolved :=
+            if table.isEmpty then resolvedPlain
+            else
+              let signatureShape (signature : Signature) : EffectShape :=
+                { input := signature.input.map fun _ => .val, output := signature.output.map fun _ => .val
+                  keepsStack := signature.rowPreserving && !signature.closed }
+              let own := resolvedPlain.map fun (word, _) => (word.name, effectShape table word.effect)
+              let ctx : Ctx :=
+                { table, generated := generatedOperations table
+                  word := fun name => match own.lookup name with
+                    | some shape => some shape
+                    | none => (config.erasureEnv.word name).map signatureShape
+                  primitive := fun name => (config.erasureEnv.primitive name).map fun signature =>
+                    (signature.input.length, signature.output.length) }
+              resolvedPlain.map fun (word, resolution) =>
+                let (lowered, fault) := lowerWord ctx word
+                (lowered, resolution.orElse fun _ => fault)
           let words := resolved.map (·.1)
           let written := collectWords file.declarations
           -- Every word's declared effect, those after a bad `use` included:

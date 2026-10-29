@@ -214,7 +214,9 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         (s!"{actual} is exported twice.", "List each word in one `export` declaration only; delete the repeat.")
     | "firth.name.duplicate-canonical" =>
         match error.files with
-        | [] => fallback
+        | [] =>
+            (s!"{actual} is declared more than once, as a word, a vocabulary, a record or an operation a record generates.",
+              "Rename one of them. A record `Name` generates `Name.pack`, `Name.unpack` and `Name.field` and `Name.set-field` for each field, so no word or vocabulary may use those names.")
         | [other] =>
             (s!"{actual} is also defined in `{other}`, which this file imports. A program has one word of each name, whichever file defines it.",
               s!"Rename one of the two words, or put one file's words in a vocabulary (`vocab name \{ ... }`), which gives them the keys `name.{error.actual.getD "word"}`.")
@@ -269,6 +271,64 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
     | "firth.syntax.quote-in-name" =>
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
           "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
+    | "firth.name.export-type-unsupported" =>
+        (s!"{actual} is a record, and a record cannot be exported yet: it is usable in the file that declares it.",
+          "Export words over the record's fields instead (their stack effects name flat values), or keep the words that use the record in this file.")
+    | "firth.type.type-name-case" =>
+        (s!"{actual} is not a type name: a record name starts with an upper-case letter.",
+          "Write the name with a capital first letter, as in `record Request { id:Int qty:Int }`, so a type never reads as a word.")
+    | "firth.type.reserved-type-name" =>
+        (s!"{actual} is a built-in type, so a record cannot take its name.",
+          "Choose another name for the record: `Int`, `Bool`, `Seq`, `World`, `Handle` and `Bytes` always mean the built-in types.")
+    | "firth.type.empty-record" =>
+        (s!"The record {actual} has no fields.", "A record has at least one field, written `name:Type`, as in `record Request { id:Int qty:Int }`.")
+    | "firth.type.duplicate-field" =>
+        (s!"The field {actual} is declared twice in one record.", "Give each field of a record its own name.")
+    | "firth.type.reserved-field-name" =>
+        (s!"{actual} cannot be a field name: `pack`, `unpack`, `seq` and names starting with `set-` are taken by the operations a record generates.",
+          "Rename the field, for example with a longer name that is not one of those.")
+    | "firth.type.linear-composite-field" =>
+        (s!"A field of the record type {actual} cannot carry `^linear`.",
+          "Leave the usage off: a record field is linear exactly when some slot of its own type is, so the usage is always the one its slots declare.")
+    | "firth.type.recursive-type" =>
+        (s!"The record {actual} contains itself, directly or through other records.",
+          "A record has a fixed number of slots on the stack, so it cannot hold itself. Hold a `Seq Int` of indices instead, or split the structure into records that do not refer back.")
+    | "firth.type.composite-usage" =>
+        (s!"A usage cannot be written on the record type {actual}.",
+          "Delete the `^linear` or `^many` suffix: a record's usage is derived from its fields' usages, so there is only one meaning for copying and dropping it.")
+    | "firth.syntax.refinement-in-type" =>
+        (s!"A refinement cannot be written on {actual} here.",
+          "Refinements stay at word boundaries and apply to values of the built-in types. Delete the `{ ... }` after the record type, and state the condition on the fields' values where they are used.")
+    | "firth.type.mismatch" =>
+        let shown (type : String) : String := if type.startsWith "a " then type else s!"`{type}`"
+        let wanted := error.expected.map shown |>.getD "a different type"
+        match error.actual with
+        | some other =>
+            if other.startsWith "the branches" then
+              (s!"The two branches of this `if` leave different values.",
+                "Both branches of an `if` must leave the same values, record for record. Check what each branch builds.")
+            else
+              (s!"{shown other} is on the stack here, but {wanted} is needed.",
+                "Records are different types even when their fields look alike. Build the value the operation wants with its own `pack`, read the field you need with `Name.field`, or fix the order of the values before this operation.")
+        | none => fallback
+    | "firth.type.composite-in-quotation" =>
+        (s!"A quotation cannot take the record {actual} from the stack.",
+          "A quotation is checked on its own, before the stack it runs on is known, so it sees every value below it as one slot. Move the work into a word with the record in its stack effect, or build the record inside the quotation.")
+    | "firth.type.untracked-quotation" =>
+        ("The effect of the quotation run here is not known, so the values around it cannot be tracked.",
+          "In a word that uses records, run a quotation that the same word wrote in its body, or call a word with a declared stack effect instead.")
+    | "firth.type.record-drop-linear" =>
+        (s!"This would drop a linear slot of {actual}.",
+          "A linear value must be used exactly once, so an operation that leaves a slot behind cannot be used on a record that holds one. Take the record apart with `unpack` and use each slot.")
+    | "firth.type.record-copy-linear" =>
+        (s!"{actual} holds a linear slot, so it cannot be copied.",
+          "A linear value is used exactly once. Move the record instead of duplicating it, or unpack it and use each slot once.")
+    | "firth.type.locals-record-unsupported" =>
+        (s!"A `locals` block cannot yet bind the record {actual}.",
+          "Take the record apart first with `Name.unpack`, bind the fields with `locals`, and rebuild it with `Name.pack`.")
+    | "firth.type.unknown-type" =>
+        (s!"{actual} is not a type.",
+          "A record field is one of the built-in types (`Int`, `Bool`, `Seq Int`, `Seq Bool`, `World`, `Handle`, `Bytes`) or another record declared in the file.")
     | _ => fallback
   .mkObj [("message", .str message), ("hint", .str hint)]
 

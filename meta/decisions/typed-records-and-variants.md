@@ -524,3 +524,34 @@ calibration pin PR to merge.
   allocator ID strings.
 - The agent guide and S7 inputs change in PR 5, so the S7 run after it
   measures a larger language than the scored run of 11 October 2026.
+
+## Implementation notes
+
+Added with the first records PR, which implements part of step 2 of "Work, in
+order" (the second part, record locals, and the third, the import and export of
+types with their layer identity and proof-record digests, follow as their own
+PRs):
+
+- The operations are realised as `locals` blocks over the record's flat slots,
+  not as `roll` and `pick` sequences. Surface items have no `pick n` or `roll n`,
+  and the proof-carrying erasure (`erase_sound`) knows only the items the
+  parser produces, so emitting `locals` reuses it unchanged. The semantics are
+  the recipes above (a field read keeps the field's slots, a write replaces
+  them, `dup` copies every slot); the emitted kernel sequence is what the
+  erasure produces for the block, and its cost is measured, not the one the
+  recipes state. `dip` of a quotation written just before it nests that
+  quotation in `w - 1` more `dip` literals, which the erasure tracks; a
+  quotation built at run time falls back to the `quote [dip] compose` form
+  above, and a `locals` after it may lose track
+  (`todo.record-generated-code-reports`).
+- `R.f` is looked up as `R` is, so inside a vocabulary or after a `use` it needs
+  no prefix, and a qualified spelling (`inv.Request.id`) is the canonical key.
+- New codes: `firth.type.empty-record`, `firth.type.record-copy-linear` (a
+  `dup` of a record with a linear slot), `firth.type.untracked-quotation`
+  (`call`, `dip` or `if` of a quotation whose effect the lowering does not
+  know), and two codes that refuse what the next PRs add:
+  `firth.type.locals-record-unsupported` and `firth.name.export-type-unsupported`.
+  A record field that is repeated or reserved generates no operation, so its own
+  code is the one reported.
+- The surface layer runs only on a word that names a record or calls a word that
+  does. Other words are checked exactly as before.

@@ -170,12 +170,28 @@ structure WordDefinition where
   span : Span
   deriving Repr, BEq
 
+/-- `name:Type`, a field of a `record` declaration. -/
+structure FieldDecl where
+  name : LocatedName
+  type : TypeExpr
+  deriving Repr, BEq
+
+/-- `record Name { f:Type ... }` (`dec.typed-records-and-variants`). -/
+structure RecordDecl where
+  name : String
+  nameSpan : Span
+  fields : List FieldDecl
+  span : Span
+  deriving Repr, BEq
+
 inductive Declaration where
   | «import» (decl : ImportDecl)
   /-- `export a b;`: words this file offers to the files that import it. -/
   | «export» (names : List LocatedName) (span : Span)
   | use (decl : UseDecl)
   | word (decl : WordDefinition)
+  /-- A record type: a surface type that erases to its fields on the stack. -/
+  | record (decl : RecordDecl)
   | vocabulary (name : String) (declarations : List Declaration) (span : Span)
   deriving Repr, BEq
 
@@ -709,6 +725,22 @@ private partial def parseLocals (p : Parser) (start : Token) (outer : List Strin
         parseItems bodyOpen "}" outer |>.map (fun (xs, after, close) => (.locals ns xs (mkSpan start.span.start close.stop), after))
 end
 
+/-- The fields of a `record` declaration after its `{`, up to the closing
+`}`. A field is `name:Type`; a refinement on a field type is refused here,
+since refinements stay at word boundaries. -/
+private partial def parseFields (p : Parser) (acc : List FieldDecl) :
+    Except ParseError (List FieldDecl × Span × Parser) :=
+  match current p with
+  | none => expected p "}"
+  | some t => if isSymbol "}" t then .ok (acc.reverse, t.span, bump p) else
+    parseName p false >>= fun (n, ns, p1) =>
+      takeSymbol p1 ":" >>= fun p2 =>
+        parseName p2 true >>= fun (typeName, typeSpan, p3) =>
+          parseType p3 typeName typeSpan >>= fun (ty, p4) =>
+            if !ty.refinements.isEmpty then
+              .error (err "firth.syntax.refinement-in-type" ty.span .validation)
+            else parseFields p4 ({ name := { name := n, span := ns }, type := ty } :: acc)
+
 /-- The names of an `export` declaration, up to its `;`. -/
 private partial def parseExportNames (p : Parser) (acc : List LocatedName) :
     Except ParseError (List LocatedName × Parser) :=
@@ -740,6 +772,16 @@ private partial def parseDeclarations (p : Parser) (closing : Option String) (im
     | .identifier "use" => parseName (bump p) true >>= fun (n, ns, p1) =>
         (match current p1 with | some a => if a.kind == .identifier "as" then parseName (bump p1) false |>.map (fun (x, _, r) => (some x, r)) else .ok (none, p1) | none => .ok (none, p1)) >>= fun (alias, p2) =>
           takeSymbol p2 ";" >>= fun p3 => parseDeclarations p3 closing |>.map (fun (ds, r, close) => (.use { name := n, alias, span := mkSpan t.span.start (lastStop p3 ns.stop) } :: ds, r, close))
+    | .identifier "record" =>
+        -- A keyword only before a type name and `{`, so that anywhere else
+        -- `record` is an ordinary name (`dec.typed-records-and-variants`).
+        match current (bump p), current (bump (bump p)) with
+        | some { kind := .identifier _, .. }, some opening =>
+            if !isSymbol "{" opening then .error (err "firth.syntax.invalid-declaration" t.span .grammar) else
+            parseName (bump p) false >>= fun (n, ns, p1) => parseFields (bump p1) [] >>= fun (fields, close, p2) =>
+              parseDeclarations p2 closing |>.map
+                (fun (ds, r, outerClose) => (.record { name := n, nameSpan := ns, fields, span := mkSpan t.span.start close.stop } :: ds, r, outerClose))
+        | _, _ => .error (err "firth.syntax.invalid-declaration" t.span .grammar)
     | .identifier "vocab" => if closing.isSome then .error (err "firth.syntax.nested-vocabulary" t.span .validation)
         else parseName (bump p) false >>= fun (n, ns, p1) => takeSymbol p1 "{" >>= fun p2 => parseDeclarations p2 (some "}") >>= fun (ds, p3, close) => parseDeclarations p3 closing |>.map (fun (outer, r, outerClose) => (.vocabulary n ds (mkSpan t.span.start (close.map (·.stop) |>.getD ns.stop)) :: outer, r, outerClose))
     | .symbol ":" => parseName (bump p) false >>= fun (n, _, p1) => parseStackEffect p1 >>= fun (effect, p2) => parseItems p2 ";" >>= fun (body, p3, close) => parseDeclarations p3 closing |>.map (fun (ds, r, outerClose) => (.word { name := n, effect, body, span := mkSpan t.span.start close.stop } :: ds, r, outerClose))

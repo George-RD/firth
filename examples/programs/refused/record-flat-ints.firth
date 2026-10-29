@@ -1,0 +1,9 @@
+\ Two Ints are not a Stock until they are packed. The flat stack matches, but
+\ the declared result is a record, so the body must build it.
+record Stock { on-hand:Int reserved:Int }
+
+: forgot-pack
+  (forall ρ; ρ on:Int res:Int -- ρ s:Stock)
+  ;
+
+: record-flat-ints ( -- ) ;

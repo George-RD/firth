@@ -1,0 +1,8 @@
+\ Reading `n` would drop the linear handle, which must be used exactly once.
+record Box { h:Handle^linear n:Int }
+
+: read-n
+  (forall ρ; ρ b:Box -- ρ n:Int)
+  Box.n ;
+
+: record-linear-drop ( -- ) ;
