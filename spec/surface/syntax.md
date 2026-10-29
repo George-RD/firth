@@ -435,7 +435,7 @@ word's body from its declared effect: which record a value is, and whether a
 scalar is an `Int` or a `Bool` where that is known (a literal, a declared
 effect, a primitive's result, a local or a quotation's result). It does not
 know the scalar type of a value taken from below an open stack row, or of the
-result of a call to a word defined in another file, so a mistyped scalar packed
+result of a call to a word defined in another file, or of a value a quotation takes from the stack, so a mistyped scalar packed
 from one of those is not refused at the pack (`todo.record-scalar-type-tracking`);
 the kernel still checks the erased program. It applies only to a word that
 names a record or calls a word that does, and every other word is checked as

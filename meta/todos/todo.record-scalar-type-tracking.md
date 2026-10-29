@@ -28,6 +28,10 @@ without the change. Today each is accepted.
   refuses the form whose result is kept (`declared-effect-mismatch`) and the
   lowering already refuses the same word defined in the same file, so the gap is
   a call to an imported word whose result is packed and then dropped.
+- A value a quotation takes from below: `record R { x:Int }` and
+  `: f ( b:Bool -- ) [ R.pack drop ] call ;`. A quotation is analysed alone, so
+  the value it takes is one unknown slot, and `call` does not compare it with
+  the `Bool` it is run on. Accepted today.
 - The accepted twins of each (an `Int` where an `Int` is wanted) stay accepted.
 - `spec/surface/syntax.md` 3.1 stops listing these as untracked.
 
@@ -36,7 +40,7 @@ without the change. Today each is accepted.
 - 29 October 2026: found in review of the first records PR. Tracked today:
   literals, declared effects, primitive results (from the typing environment,
   `Int` and `Bool` only), locals, and a quotation's scalar result
-  (`: f ( -- ) [ true ] call R.pack drop ;` is refused). Not tracked: the two
+  (`: f ( -- ) [ true ] call R.pack drop ;` is refused). Not tracked: the three
   cases above. It is
   a missed refusal, not an unsoundness: the kernel still checks the erased
   program, and a mistyped value cannot cross a word boundary because the

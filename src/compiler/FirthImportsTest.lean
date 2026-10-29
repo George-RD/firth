@@ -200,6 +200,16 @@ def main : IO Unit := do
   reject "imports collide" (src "main.firth" "import \"lib.firth\"; import \"other.firth\"; : main ( -- ) ;")
     [lib, other] [("firth.name.duplicate-canonical", "main.firth", ["lib.firth", "other.firth"])]
 
+  -- An operation a record generates is a key like any other: a record whose
+  -- `R.pack` is also an imported word would erase that word's calls.
+  let packLib := src "packlib.firth" "vocab R { : pack ( forall ρ; ρ n:Int -- ρ m:Int ) 1 prim + ; }\nexport R.pack;"
+  reject "generated key collides with an import"
+    (src "main.firth" "import \"packlib.firth\"; record R { x:Int }\n: f ( forall ρ; ρ n:Int -- ρ n:Int ) ;") [packLib]
+    [("firth.name.duplicate-canonical", "main.firth", ["packlib.firth"])]
+  accept "a record beside an import with other names"
+    (src "main.firth" "import \"packlib.firth\"; record S { x:Int }\n: f ( forall ρ; ρ n:Int -- ρ n:Int ) ;") [packLib]
+    [("packlib.firth", ["R.pack"]), ("main.firth", ["f"])]
+
   -- A collision is reported once, where it happens; a file that imports that
   -- one gets the failed import, not the collision again.
   let mid := src "mid.firth" "import \"lib.firth\"; export m; : m ( -- ) ; : helper ( -- ) ;"
