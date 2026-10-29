@@ -49,9 +49,9 @@ S7 = RUN.parents[1]
 W = RUN.parents[3]
 WORKTREE = Path("/home/user/firth-r14")  # the path the prompts name
 MAIN = Path("/home/user/firth")  # the session's own checkout, whose AGENTS.md authors see
-HOOK = Path("/home/user/r14-hook")  # STATE's path is fixed by the skill's hook command
+HOOK = Path("/home/user/r14-hook")  # STATE's path is fixed by the settings file's hook command
 AGENT_FILE = Path(".claude/agents/s7-author.md")
-SKILL = Path(".claude/skills/s7-author-hook/SKILL.md")  # registers the hook (author_hook.py)
+SETTINGS = Path(".claude/settings.json")  # registers the hook (author_hook.py)
 SEEN = HOOK / "seen.jsonl"  # every call the hook passed as not an author's
 RUN14_SHARED = Path("/mnt/project-files/s7-eval/run14")
 
@@ -294,7 +294,7 @@ def require_hook(cmd: str, session: str, st: dict) -> None:
     at = hook_registered(SEEN, cmd, session, st.get("hook_seen"))
     if not at:
         raise Stop(f"the author hook is not registered in this session: {SEEN} has no new record of this "
-                   f"`session.py {cmd} {session}` call (runbook step 2 invokes the s7-author-hook skill)")
+                   f"`session.py {cmd} {session}` call (the hook is in .claude/settings.json, which a session reads when it starts)")
     st["hook_seen"] = at
     save(session, st, f"hook registered: {cmd} recorded at {at}")
 
@@ -334,7 +334,7 @@ def cmd_setup(session: str, pin: str) -> None:
         mb = sh("git", "-C", MAIN, "hash-object", MAIN / f).stdout.strip()
         if mb != b:
             raise Stop(f"{MAIN / f} is blob {mb}, not the pinned {b}: authors would see another {f}")
-    for f in (AGENT_FILE, SKILL):
+    for f in (AGENT_FILE, SETTINGS):
         if not (W / f).is_file() or not (MAIN / f).is_file() or (MAIN / f).read_bytes() != (W / f).read_bytes():
             raise Stop(f"{MAIN / f} is missing or differs from the pinned {W / f}")
     held = [d for a in ARMS.values() for d in (shared() / session / a).glob("haiku-firth-*")]
@@ -355,7 +355,7 @@ def cmd_setup(session: str, pin: str) -> None:
     (sdir(session) / "pinned.txt").write_text(
         f"run 14 session {session}, set up {now()}\nworktree {W} HEAD {head}\n"
         f"make_prompts.py --check: {p.stdout.strip()}\npinned blobs {json.dumps(blobs)}; "
-        f"{MAIN} has the same\nagent file {AGENT_FILE} and skill {SKILL} identical in {MAIN} and {W}\n"
+        f"{MAIN} has the same\nagent file {AGENT_FILE} and settings file {SETTINGS} identical in {MAIN} and {W}\n"
         f"toolchain (authors' PATH): {versions}\nscratch check: ok\n")
     save(session, load(session), "setup ok")
     publish(session)
