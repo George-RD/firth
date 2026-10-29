@@ -430,9 +430,16 @@ and `drop` of the record refuse (`firth.type.record-copy-linear`,
 `firth.type.record-drop-linear`), and so does `R.f` or `R.set-f` when the slots
 it would drop are linear.
 
-The surface layer follows the type of every value on the stack through a
-word's body from its declared effect; it applies only to a word that names a
-record or calls a word that does, and every other word is checked as before.
+The surface layer follows the shape of every value on the stack through a
+word's body from its declared effect: which record a value is, and whether a
+scalar is an `Int` or a `Bool` where that is known (a literal, a declared
+effect, a primitive's result or a local). It does not know the scalar type of
+a value taken from below an open stack row, of the result of a call to a word
+from another file, or of a quotation's result, so a mistyped scalar packed
+from one of those is not refused at the pack (`todo.record-scalar-type-tracking`);
+the kernel still checks the erased program. It applies only to a word that
+names a record or calls a word that does, and every other word is checked as
+before.
 It refuses what the kernel cannot see: a record of another name, or a
 plain value, where a record is needed (`firth.type.mismatch`), a body that
 leaves a value where the effect declares a record, and `if` branches that leave
@@ -443,7 +450,8 @@ quotation that takes a record from the stack is refused
 quotation whose effect the word does not know
 (`firth.type.untracked-quotation`). A `locals` block cannot yet bind a record
 (`firth.type.locals-record-unsupported`), and a record cannot yet be exported
-(`firth.name.export-type-unsupported`).
+(`firth.name.export-type-unsupported`), and neither can a word whose stack
+effect names a record.
 
 ## 4. Bodies, sequencing, and quotations
 

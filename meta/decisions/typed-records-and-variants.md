@@ -538,8 +538,19 @@ PRs):
   parser produces, so emitting `locals` reuses it unchanged. The semantics are
   the recipes above (a field read keeps the field's slots, a write replaces
   them, `dup` copies every slot); the emitted kernel sequence is what the
-  erasure produces for the block, and its cost is measured, not the one the
-  recipes state. `dip` of a quotation written just before it nests that
+  erasure produces for the block, and its cost is what is measured here, not the
+  `O(width)` straight-line count of the recipes. Measured with
+  `python3 tools/loop/firth_run.py run examples/programs/records.firth --entry <word> --stack '[1,2,3]'`
+  (`kernel_cost` and `vm_cost` agree in all three): `trio-first`, the first field of a
+  three-slot record, costs 5 kernel steps; `trio-copy-read-drop`
+  (`dup Trio.a drop`) costs 12; `trio-dip` (`[ 77 ] dip` over the record)
+  costs 7, with the VM and reference traces not compared because the word
+  runs a quotation (`unsupported-quotation-values`). Three words do not show
+  how the cost grows with the width of a record. What it would have cost to extend the surface items and
+  `erase_sound` with `pick` and `roll` instead (a new item case in the erasure
+  and in its soundness proof, and a re-proof of the governed modules) was not
+  tried, so it is not measured; `locals` was chosen because it needed none of
+  that. `dip` of a quotation written just before it nests that
   quotation in `w - 1` more `dip` literals, which the erasure tracks; a
   quotation built at run time falls back to the `quote [dip] compose` form
   above, and a `locals` after it may lose track
@@ -551,6 +562,10 @@ PRs):
   (`call`, `dip` or `if` of a quotation whose effect the lowering does not
   know), and two codes that refuse what the next PRs add:
   `firth.type.locals-record-unsupported` and `firth.name.export-type-unsupported`.
+  `firth.name.export-type-unsupported` also refuses the export of a word whose
+  stack effect names a record, which no importer could use until types are
+  exported; its report names the word and the record. Scalar types are tracked
+  only where known (`todo.record-scalar-type-tracking`).
   A record field that is repeated or reserved generates no operation, so its own
   code is the one reported.
 - The surface layer runs only on a word that names a record or calls a word that

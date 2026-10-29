@@ -34,14 +34,3 @@ not the `locals` blocks the elaborator emits for record operations.
 ## Traceability
 
 PRD G3, S7; `dec.typed-records-and-variants`.
-
-## Scalar types through erased pack and unpack
-
-`pack` and `unpack` erase to nothing, so the kernel never sees a field's type.
-The lowering tracks `Int` and `Bool` for literals, declared effects, primitive
-results and locals, and refuses a mismatch with `firth.type.mismatch`. It does
-not track the result types of calls to dictionary words (the erasure signature
-has usage only), values taken from below an open stack row (`ρ -- ρ` with
-`R.pack R.unpack` is accepted), or quotation results. Such a value packed into a
-field of the wrong type and unpacked again in the same word is not refused.
-Carry types through the erasure signature and close this.

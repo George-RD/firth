@@ -220,6 +220,16 @@ def main : IO Unit := do
 
   refused "export of a record (until types can be imported)" "record P { a:Int }\nexport P;"
     ["firth.name.export-type-unsupported"]
+  refused "export of a word that takes a record"
+    "export qty-of;\nrecord Request { id:Int qty:Int }\n: qty-of (forall ρ; ρ r:Request -- ρ n:Int) Request.qty ;"
+    ["firth.name.export-type-unsupported"]
+  refused "export of a word that leaves a record"
+    "export make;\nrecord Request { id:Int qty:Int }\n: make (forall ρ; ρ id:Int qty:Int -- ρ r:Request) Request.pack ;"
+    ["firth.name.export-type-unsupported"]
+  accepted "export of a word over the fields of a record"
+    "export qty-of;\nrecord Request { id:Int qty:Int }\n: qty-of (forall ρ; ρ id:Int qty:Int -- ρ n:Int) Request.pack Request.qty ;"
+  accepted "a word that takes a record, not exported"
+    "record Request { id:Int qty:Int }\n: qty-of (forall ρ; ρ r:Request -- ρ n:Int) Request.qty ;"
   -- `record` and `match` are ordinary names where no declaration may stand.
   accepted "a word named record"
     ": record (forall ρ; ρ -- ρ) ;\n: match (forall ρ; ρ -- ρ) ;\n: f (forall ρ; ρ -- ρ) record match ;"

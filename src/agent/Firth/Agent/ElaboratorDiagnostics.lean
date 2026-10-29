@@ -272,8 +272,12 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
           "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
     | "firth.name.export-type-unsupported" =>
-        (s!"{actual} is a record, and a record cannot be exported yet: it is usable in the file that declares it.",
-          "Export words over the record's fields instead (their stack effects name flat values), or keep the words that use the record in this file.")
+        let hint := "Export words whose stack effects name only `Int`, `Bool`, `Seq` and the other built-in types, or keep the words that use the record in this file."
+        match error.expected with
+        | some record =>
+            (s!"{actual} cannot be exported: its stack effect names the record `{record}`, and a record cannot be exported yet.", hint)
+        | none =>
+            (s!"{actual} is a record, and a record cannot be exported yet: it is usable in the file that declares it.", hint)
     | "firth.type.type-name-case" =>
         (s!"{actual} is not a type name: a record name starts with an upper-case letter.",
           "Write the name with a capital first letter, as in `record Request { id:Int qty:Int }`, so a type never reads as a word.")

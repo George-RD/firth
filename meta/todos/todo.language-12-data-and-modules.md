@@ -35,7 +35,9 @@ Make bounded application data and reusable vocabularies practical.
   record locals, then the import and export of types with the layer identity
   and proof-record digests the decision requires. Until then
   `firth.type.locals-record-unsupported` and `firth.name.export-type-unsupported`
-  refuse those uses.
+  refuse those uses; a word whose stack effect names a record is refused at
+  `export` too. The scalar-type gap in `pack`/`unpack` is
+  `todo.record-scalar-type-tracking`.
 - Still open: typed records and results (the first criterion) and bounded
   sequences of records, both through the planned PRs; the host-boundary
   definition of ownership, bounds, termination and serialization (partly

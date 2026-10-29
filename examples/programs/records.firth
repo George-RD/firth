@@ -79,3 +79,20 @@ record Order { request:Request price:Int }
 : quoted-request
   (forall ρ; ρ r:Request -- ρ r:Request)
   quote call ;
+
+\ Three words whose kernel cost is measured in
+\ `meta/decisions/typed-records-and-variants.md`: the first field of a three-slot
+\ record, a copy and read and drop, and a quotation run beneath the whole record.
+record Trio { a:Int b:Int c:Int }
+
+: trio-first
+  (forall ρ; ρ t:Trio -- ρ n:Int)
+  Trio.a ;
+
+: trio-copy-read-drop
+  (forall ρ; ρ t:Trio -- ρ t:Trio)
+  dup Trio.a drop ;
+
+: trio-dip
+  (forall ρ; ρ t:Trio -- ρ n:Int t:Trio)
+  [ 77 ] dip ;

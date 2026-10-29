@@ -1590,7 +1590,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
               | .skipped callee span => [.unchecked word.name callee span]
               | .checked _ => []
           let tail := (stop.map PipelineDiagnostic.parse).toList ++
-            (checkExports file.declarations).map PipelineDiagnostic.parse
+            (checkExports file.declarations (resolvedPlain.map (·.1))).map PipelineDiagnostic.parse
           if !(errors ++ tail).isEmpty then .failure (errors ++ tail)
           else if words.isEmpty then
             .failure [.parse { code := "firth.elaboration.empty-program"

@@ -434,9 +434,17 @@ def exportedNames (declarations : List Declaration) : List LocatedName :=
 /-- Each `export` name that is not a word this file defines
 (`firth.name.unresolved`) or that is listed again
 (`firth.name.duplicate-export`), in source order. -/
-def checkExports (declarations : List Declaration) : List ParseError :=
+def checkExports (declarations : List Declaration) (resolved : List WordDefinition := []) :
+    List ParseError :=
   let words := (collectWords declarations).map (·.name)
   let records := (collectRecords declarations).map (·.key)
+  -- A word whose stack effect names a record cannot be used by an importer
+  -- until types are exported, so it is refused here rather than at its use.
+  let recordIn (word : String) : Option String :=
+    (resolved.find? (·.name == word)).bind fun definition =>
+      (definition.effect.input ++ definition.effect.output).findSome? fun
+        | .value _ type _ => if records.contains type.name then some type.name else none
+        | .row .. => none
   let (_, errors) := (exportedNames declarations).foldl (init := (([] : List String), ([] : List ParseError)))
     fun (seen, errors) name =>
       -- A record is file-local until the import and export of types lands
@@ -444,6 +452,9 @@ def checkExports (declarations : List Declaration) : List ParseError :=
       if records.contains name.name then
         (seen, errors ++ [nameError "firth.name.export-type-unsupported" name.name name.span])
       else if !words.contains name.name then (seen, errors ++ [nameError "firth.name.unresolved" name.name name.span])
+      else if let some record := recordIn name.name then
+        (seen, errors ++ [{ nameError "firth.name.export-type-unsupported" name.name name.span with
+          expected := some record }])
       else if seen.contains name.name then
         (seen, errors ++ [nameError "firth.name.duplicate-export" name.name name.span])
       else (seen ++ [name.name], errors)
