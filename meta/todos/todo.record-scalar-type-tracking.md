@@ -22,10 +22,12 @@ without the change. Today each is accepted.
   `: f (forall ρ; ρ -- ρ) R.pack R.unpack ;`. The type of a value the word
   takes from its row is not declared, so either the word's effect must declare
   it or the lowering must refuse the pack; the decision is part of this todo.
-- A call result: a word imported from another file whose effect leaves
-  `b:Bool`, packed into an `Int` field.
-- A quotation result: a `Bool` built by a quotation, run with `call` or `dip`,
-  then packed into an `Int` field.
+- A result from a word defined in another file: `lib.firth` holds
+  `: isb ( -- b:Bool ) true ;` and `export isb;`, and the importer has
+  `record R { x:Int }` and `: f ( -- ) isb R.pack R.unpack drop ;`. The kernel
+  refuses the form whose result is kept (`declared-effect-mismatch`) and the
+  lowering already refuses the same word defined in the same file, so the gap is
+  a call to an imported word whose result is packed and then dropped.
 - The accepted twins of each (an `Int` where an `Int` is wanted) stay accepted.
 - `spec/surface/syntax.md` 3.1 stops listing these as untracked.
 
@@ -33,7 +35,9 @@ without the change. Today each is accepted.
 
 - 29 October 2026: found in review of the first records PR. Tracked today:
   literals, declared effects, primitive results (from the typing environment,
-  `Int` and `Bool` only) and locals. Not tracked: the three cases above. It is
+  `Int` and `Bool` only), locals, and a quotation's scalar result
+  (`: f ( -- ) [ true ] call R.pack drop ;` is refused). Not tracked: the two
+  cases above. It is
   a missed refusal, not an unsoundness: the kernel still checks the erased
   program, and a mistyped value cannot cross a word boundary because the
   declared effect is flattened and checked.
