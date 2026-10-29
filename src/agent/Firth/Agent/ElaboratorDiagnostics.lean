@@ -304,7 +304,10 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         let wanted := error.expected.map shown |>.getD "a different type"
         match error.actual with
         | some other =>
-            if other.startsWith "the branches" then
+            if other == "nothing" then
+              (s!"The stack holds nothing here, but {wanted} is needed.",
+                "The declared stack effect supplies no value for this operation. Add the value to the inputs of the word's stack effect, or push it before this operation.")
+            else if other.startsWith "the branches" then
               (s!"The two branches of this `if` leave different values.",
                 "Both branches of an `if` must leave the same values, record for record. Check what each branch builds.")
             else

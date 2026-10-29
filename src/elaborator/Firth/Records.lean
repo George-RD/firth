@@ -216,9 +216,12 @@ structure Ctx where
   table : RecordTable
   generated : List (String × Generated)
   word : String → Option EffectShape
-  primitive : String → Option (Nat × Nat)
+  primitive : String → Option (List Shape × List Shape)
   inQuotation : Bool := false
-  locals : List String := []
+  /-- The word's effect names no stack row, so nothing lies below its inputs. -/
+  closed : Bool := false
+  /-- The names `locals` binds, innermost first, with what is known of each. -/
+  locals : List (String × Shape) := []
 
 private structure Sim where
   stack : List Shape := []
@@ -246,6 +249,10 @@ scalar. A record wanted below the values a quotation has built itself is the
 quotation's limit (`firth.type.composite-in-quotation`). -/
 private def popExpecting (ctx : Ctx) (span : Span) (expected : Shape) : SimM Unit := do
   let (actual, fromBelow) ← pop
+  -- Pack and unpack erase to nothing, so a value they need that the declared
+  -- inputs do not supply would otherwise vanish with them.
+  if fromBelow && ctx.closed && !ctx.inQuotation then
+    refuse "firth.type.mismatch" span (some "nothing") (some expected.describe)
   match expected, actual with
   | .record wanted, .record found =>
       if wanted != found then refuse "firth.type.mismatch" span (some found) (some wanted)
@@ -402,23 +409,26 @@ private partial def lowerItem (ctx : Ctx) : Item → SimM (List Item)
       match ctx.primitive name with
       | none => pure [.primitive name span]
       | some (takes, leaves) =>
-          for _ in List.range takes do popExpecting ctx span .val
-          for _ in List.range leaves do push .val
+          for shape in takes.reverse do popExpecting ctx span shape
+          for shape in leaves do push shape
           pure [.primitive name span]
   | .quotation items span => do
       let (lowered, state) ← liftM (lowerBody { ctx with inQuotation := true } items)
       push (.quote state.below state.stack)
       pure [.quotation lowered span]
   | .locals names items span => do
-      for _ in names do
+      -- The names are bottom to top, so the top of the stack binds the last.
+      let mut bound : List (String × Shape) := []
+      for name in names.reverse do
         let (shape, _) ← pop
         if shape.isRecord then refuse "firth.type.locals-record-unsupported" span (some shape.describe)
-      let lowered ← lowerItems { ctx with locals := names.map (·.name) ++ ctx.locals } items
+        bound := (name.name, shape) :: bound
+      let lowered ← lowerItems { ctx with locals := bound.reverse ++ ctx.locals } items
       pure [.locals names lowered span]
   | .atom name span => lowerAtom ctx name span
   | .word name span => do
-      if ctx.locals.contains name then
-        push .val
+      if let some (_, shape) := ctx.locals.find? (·.1 == name) then
+        push shape
         pure [.word name span]
       else match ctx.generated.lookup name with
         | some operation => lowerGenerated ctx operation span
@@ -542,6 +552,7 @@ def lowerWord (ctx : Ctx) (word : WordDefinition) : WordDefinition × Option Par
   | some fault => (flat, some fault)
   | none =>
     let shape := effectShape ctx.table word.effect
+    let ctx := { ctx with closed := (itemRows word.effect.input).isEmpty }
     if !shape.hasRecord && !mentionsRecord ctx word.body then (flat, none)
     else
       let finish : SimM Unit := do

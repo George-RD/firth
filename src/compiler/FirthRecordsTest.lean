@@ -65,8 +65,7 @@ private def loweredWith (mutate : List (String × Generated) → List (String ×
         let ctx : Ctx :=
           { table, generated := mutate (generatedOperations table)
             word := fun name => own.lookup name
-            primitive := fun name => (config.erasureEnv.primitive name).map fun signature =>
-              (signature.input.length, signature.output.length) }
+            primitive := primitiveShapes config }
         match resolved.find? (·.1.name == word) with
         | none => .error "no such word"
         | some (entry, _) =>
@@ -189,6 +188,10 @@ def main : IO Unit := do
   refused "a Bool field unpacked into an Int field"
     ("record R { x:Int }\nrecord Q { b:Bool }\n: f (forall ρ; ρ q:Q -- ρ r:R) Q.unpack R.pack ;")
     ["firth.type.mismatch"]
+  refused "a pack and unpack that the closed effect gives no value for"
+    ("record R { x:Int }\n: f ( -- ) R.pack R.unpack ;") ["firth.type.mismatch"]
+  refused "an unpack that the closed effect gives no record for"
+    ("record R { x:Int }\n: f ( -- n:Int ) R.unpack ;") ["firth.type.mismatch"]
   accepted "an Int packed into an Int field, then unpacked"
     ("record R { x:Int }\n: f (forall ρ; ρ n:Int -- ρ n:Int) R.pack R.unpack ;")
   refused "branches that leave different records"
@@ -225,14 +228,20 @@ def main : IO Unit := do
 
   -- Words that mention no record are untouched.
   accepted "plain word beside records" (stock ++ ": f (forall ρ; ρ a:Int -- ρ b:Int) dup prim + ;")
-  -- A declared scalar of the wrong type is refused at the pack. A value whose
-  -- type the lowering does not track (a primitive's result) is still refused
-  -- by the kernel on the flat form.
+  -- A declared scalar of the wrong type is refused at the pack, and so is the
+  -- result of a primitive or a value read from a local.
   refused "wrong base type in a field"
     (stock ++ ": f (forall ρ; ρ b:Bool n:Int -- ρ s:Stock) Stock.pack ;") ["firth.type.mismatch"]
-  refused "untracked wrong base type in a field"
+  refused "a primitive's Bool result packed into an Int field"
     (stock ++ ": f (forall ρ; ρ a:Int b:Int -- ρ s:Stock) prim < 1 Stock.pack ;")
-    ["firth.type.declared-effect-mismatch"]
+    ["firth.type.mismatch"]
+  refused "a Bool local packed into an Int field"
+    ("record R { x:Int }\n: f (forall ρ; ρ b:Bool -- ρ r:R) locals { b } { b R.pack } ;")
+    ["firth.type.mismatch"]
+  accepted "an Int local packed into an Int field"
+    ("record R { x:Int }\n: f (forall ρ; ρ n:Int -- ρ r:R) locals { n } { n R.pack } ;")
+  accepted "a primitive's Int result packed into an Int field"
+    (stock ++ ": f (forall ρ; ρ a:Int b:Int -- ρ s:Stock) prim + 1 Stock.pack ;")
   IO.println "records: ok"
 
 end Firth.RecordsTest

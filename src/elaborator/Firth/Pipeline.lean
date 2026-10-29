@@ -174,6 +174,17 @@ private def unsupportedSourceRefinements (word : WordDefinition) : List Pipeline
           .parse { code := "firth.refinement.unsupported-source"
                    primary := refinement.span, actual := some word.name, cause := .validation }
 
+/-- What a primitive takes and leaves for the record lowering, bottom to top:
+its types where the typing environment gives them (`Int` and `Bool` are
+tracked), else only the counts the erasure environment knows. -/
+def primitiveShapes (config : PipelineConfig) (name : String) : Option (List Shape × List Shape) :=
+  let scalar (type : String) : Shape :=
+    if type == "Int" || type == "Bool" then .scalar type else .val
+  match (config.typingEnv.primitive name).bind Account.primitiveShape with
+  | some (inputs, outputs) => some (inputs.map scalar, outputs.map scalar)
+  | none => (config.erasureEnv.primitive name).map fun signature =>
+      (signature.input.map fun _ => .val, signature.output.map fun _ => .val)
+
 /-- A refused `if` recounted from the source, value by value, so its
 diagnostic can name the operation and the values responsible. Diagnostics
 only: it never changes what is accepted. -/
@@ -1490,8 +1501,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
                   word := fun name => match own.lookup name with
                     | some shape => some shape
                     | none => (config.erasureEnv.word name).map signatureShape
-                  primitive := fun name => (config.erasureEnv.primitive name).map fun signature =>
-                    (signature.input.length, signature.output.length) }
+                  primitive := primitiveShapes config }
               resolvedPlain.map fun (word, resolution) =>
                 let (lowered, fault) := lowerWord ctx word
                 (lowered, resolution.orElse fun _ => fault)
