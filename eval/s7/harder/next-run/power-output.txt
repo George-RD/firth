@@ -1,0 +1,10 @@
+replicates 2000, bootstrap 2000, seed 0
+true means (higher arm vs lower arm) | n per arm | power
+5.5 vs 4.5 | 8 | 0.40
+5.5 vs 4.0 | 8 | 0.76
+5.5 vs 3.5 | 8 | 0.93
+5.75 vs 4.38 | 8 | 0.77
+5.5 vs 4.5 | 12 | 0.54
+5.5 vs 4.0 | 12 | 0.91
+5.5 vs 3.5 | 12 | 0.99
+5.75 vs 4.38 | 12 | 0.88
