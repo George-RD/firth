@@ -1322,6 +1322,22 @@ def deepseek_driver() -> None:
 
 
 
+def calibration_selection() -> None:
+    """The calibration's selection script (`next-run/calibration_selection.py`):
+    its self-test passes (hand-worked example, planted bugs in each rule), and
+    the command refuses a kept set of five authors."""
+    import subprocess
+    script = HERE / "next-run" / "calibration_selection.py"
+    p = subprocess.run([sys.executable, str(script), "--self-test"], capture_output=True, text=True, timeout=120)
+    ok = p.returncode == 0 and p.stdout.strip().splitlines()[-1:] == ["calibration_selection.py self-test: ok"]
+    check(ok, "calibration_selection.py's self-test passes" + ("" if ok else f": {(p.stdout + p.stderr).strip()[-300:]}"))
+    names = ",".join(f"cal-{l}-{i}" for l in ("python", "firth") for i in (1, 2, 3))[:-len(",cal-firth-3")]
+    q = subprocess.run([sys.executable, str(script), "/nonexistent", "--authors", names],
+                       capture_output=True, text=True, timeout=120)
+    check(q.returncode != 0 and "kept authors, need 3" in q.stderr,
+          "planted: five kept authors are refused, not selected from")
+
+
 def deepseek_sample_driver() -> None:
     """`deepseek_sample.py` runs a DeepSeek sample through both rounds against
     planted replies, with no network, and a stand-in scorer: an answer passes
@@ -2355,6 +2371,7 @@ def main() -> int:
     candidates_costliest()
     regex_drafted_bounds()
     deepseek_driver()
+    calibration_selection()
     deepseek_sample_driver()
     take_rule()
     prompt_and_repair()
