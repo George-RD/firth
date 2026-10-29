@@ -23,7 +23,21 @@ Make bounded application data and reusable vocabularies practical.
   deterministic load order and stable `firth.name.*` errors
   (`dec.multi-file-imports`). `examples/inventory/policy-change/` clients
   import `allocator.firth`.
-- Still open: typed records/results and the other criteria above.
+- 13 October 2026: design for typed records and results in
+  `dec.typed-records-and-variants`. No kernel change: `record` and `variant`
+  types erase to flat stack values, sequences of scalar-flat records to
+  columns. Planned PRs: records, variants with `match`, sequences of records,
+  then the agent guide and S7 inputs.
+- Still open: typed records and results (the first criterion) and bounded
+  sequences of records, both through the planned PRs; the host-boundary
+  definition of ownership, bounds, termination and serialization (partly
+  `todo.host-record-values`); core library examples; malformed-data tests;
+  and differential coverage (VM against reference interpreter). The
+  multi-file criterion is met by the import work above.
+- Known gap from the design: a record or variant with an imported member type
+  cannot be exported, because exports are non-transitive and the design adds
+  no type re-export (`firth.name.export-imported-member`). Re-export of types
+  is a follow-up once a consumer needs it.
 
 ## Traceability
 
