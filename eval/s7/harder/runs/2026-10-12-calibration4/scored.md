@@ -257,8 +257,9 @@ files under `eval/s7/harder/`; the checker, `stdlib/` and the S7 inputs
 (`docs/getting-started.md`, `docs/firth-agent-guide.md`,
 `examples/programs/README.md`, `AGENTS.md`) must be identical to the
 calibration pin, checked by `git diff --quiet` between the two commits on
-`src/`, `stdlib/` and those four files, with the output in the run
-directory. If any of them differs, the calibration result is stale
+`src/`, `stdlib/`, those four files, `CLAUDE.md`, `.claude/agents/` and
+`.claude/settings.json` (the author's definition and every hook it runs
+under), with the output in the run directory. If any of them differs, the calibration result is stale
 (`calibration.md`) and this run does not start from it.
 
 ## Before the pin
@@ -268,7 +269,7 @@ directory. If any of them differs, the calibration result is stale
 - [ ] The selection PR merged: the selected set nameable by `tier.py`,
   `audit.py` and `deepseek_sample.py`, and the analysis script with its
   self-test.
-- [ ] The S7 inputs, `src/` and `stdlib/` identical to the calibration pin
-  (above).
+- [ ] The S7 inputs, `CLAUDE.md`, `.claude/agents/`, `.claude/settings.json`,
+  `src/` and `stdlib/` identical to the calibration pin (above).
 - [ ] The prompts built at the pin and committed with `commit.txt`, this
   file and the input check's output in the run directory.

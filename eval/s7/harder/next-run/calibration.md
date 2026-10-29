@@ -9,7 +9,9 @@ fresh authors. Neither this file nor the
 candidates change after the pin below; anything learnt in calibration is
 reported, not folded back in.
 
-**Status: draft. Not pinned. No author has run.** The maintainer chose
+**Status: pinned by the PR that merges this text; the pin commit and
+input hashes are in `runs/2026-10-12-calibration4/` (`commit.txt`,
+`pin-notes.md`). No author has run.** The maintainer chose
 calibrate-then-select over freezing an unrun set on the coordinator's card
 of 11 October 2026 ("Calibrate first", answered 12 October 2026).
 Calibration starts only after the other conditions in "Before the pin" are
@@ -91,7 +93,8 @@ met.
   run directory `runs/<date>-calibration4/`, with a copy of this file and
   `scored.md`. The scored run is pinned later, at the merge of the PR that
   makes the selected set nameable (`scored.md`, "The pin"), but with the
-  same checker, docs and stdlib: `src/`, `stdlib/` and the S7 inputs must
+  same checker, docs and stdlib: `src/`, `stdlib/`, the S7 inputs,
+  `CLAUDE.md`, `.claude/agents/` and `.claude/settings.json` must
   be identical at both commits. If any of them changes before the scored
   run is pinned, the calibration result is reported as stale and the
   selection is not used.
