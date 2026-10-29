@@ -14,8 +14,10 @@ the kept authors' score files in a calibration run directory:
 
 `--authors` names the kept authors (the six, replacements for voids included,
 voids left out): three per arm, `cal-python-N` and `cal-firth-N`. The script
-stops on any other count, on a missing score file, and on a task the file
-lacks. Candidate order is `candidates.py`'s (`tier.SETS["candidates"]`).
+stops on any other count or name (the full `cal-python-N` or `cal-firth-N`),
+on a missing score file, on a task the file lacks, on a file scored in the
+other language, and on files whose `eval_sha256` (the task sets and scorer
+`tier.py score` records) differ from one another. Candidate order is `candidates.py`'s (`tier.SETS["candidates"]`).
 
 For each candidate, `pass(t)` counts the authors whose final answer passed
 and `first(t)` those whose round 1 passed, summed over both arms. A candidate
@@ -33,6 +35,7 @@ the round-1 count used as final, a stop rule at 5.5 exclusive).
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -41,11 +44,14 @@ PICK = 6
 PER_ARM = 3
 
 
+AUTHOR = re.compile(r"cal-(python|firth)-[1-9][0-9]*")
+
+
 def arm(name: str) -> str:
-    for lang in ("python", "firth"):
-        if name.startswith(f"cal-{lang}-"):
-            return lang
-    raise SystemExit(f"{name}: not a cal-python-N or cal-firth-N author")
+    m = AUTHOR.fullmatch(name)
+    if not m:
+        raise SystemExit(f"{name}: not a cal-python-N or cal-firth-N author")
+    return m.group(1)
 
 
 def final(first: dict[str, bool], second: dict[str, bool] | None) -> dict[str, bool]:
@@ -133,6 +139,7 @@ def load(run: Path, names: list[str], order: list[str]) -> dict:
     if len(set(names)) != len(names):
         raise SystemExit("an author is named twice")
     authors = {}
+    expected_eval = None
     for n in names:
         rounds = []
         for k in (1, 2):
@@ -141,6 +148,15 @@ def load(run: Path, names: list[str], order: list[str]) -> dict:
                 res = json.loads(p.read_text())
                 if set(res["tasks"]) != set(order):
                     raise SystemExit(f"{p}: tasks differ from the candidate set")
+                if res.get("lang") != arm(n):
+                    raise SystemExit(f"{p}: scored as {res.get('lang')}, not {arm(n)}")
+                ev = res.get("eval_sha256")
+                if not isinstance(ev, dict) or not ev:
+                    raise SystemExit(f"{p}: missing or invalid eval_sha256")
+                if expected_eval is None:
+                    expected_eval = ev
+                elif ev != expected_eval:
+                    raise SystemExit(f"{p}: eval_sha256 differs from the first score file's")
                 rounds.append({t: bool(res["tasks"][t]["pass"]) for t in order})
             elif k == 1:
                 raise SystemExit(f"{p}: missing")
@@ -229,9 +245,12 @@ def self_test() -> None:
         run = Path(d)
         for n, (r1, fin) in authors.items():
             (run / n).mkdir()
-            (run / n / "results-1.json").write_text(json.dumps({"tasks": {t: {"pass": r1[t]} for t in order}}))
+            def doc(passes, lang=arm(n), ev=None):
+                return json.dumps({"lang": lang, "eval_sha256": ev or {"tier.py": "aa"},
+                                   "tasks": {t: {"pass": passes[t]} for t in order}})
+            (run / n / "results-1.json").write_text(doc(r1))
             if fin != r1:
-                (run / n / "results-2.json").write_text(json.dumps({"tasks": {t: {"pass": fin[t]} for t in order}}))
+                (run / n / "results-2.json").write_text(doc(fin))
         assert load(run, sorted(authors), order) == authors
         for bad in (sorted(authors)[:5], sorted(authors) + ["cal-firth-4"], ["cal-python-1"] * 6):
             try:
@@ -239,13 +258,31 @@ def self_test() -> None:
             except SystemExit:
                 continue
             raise AssertionError(f"load accepted {bad}")
-        (run / "cal-firth-1" / "results-1.json").write_text(json.dumps({"tasks": {"t1": {"pass": True}}}))
-        try:
-            load(run, sorted(authors), order)
-        except SystemExit:
-            pass
-        else:
-            raise AssertionError("load accepted a different task set")
+        good = (run / "cal-firth-1" / "results-1.json").read_text()
+        def refused(text, why, message):
+            (run / "cal-firth-1" / "results-1.json").write_text(text)
+            try:
+                load(run, sorted(authors), order)
+            except SystemExit as e:
+                assert message in str(e), (why, str(e))
+                return
+            finally:
+                (run / "cal-firth-1" / "results-1.json").write_text(good)
+            raise AssertionError(f"load accepted {why}")
+        base = json.loads(good)
+        refused(json.dumps({**base, "tasks": {"t1": {"pass": True}}}), "a different task set", "tasks differ")
+        refused(json.dumps({**base, "lang": "python"}), "a Firth author's file scored as Python", "scored as python, not firth")
+        refused(json.dumps({k: v for k, v in base.items() if k != "lang"}), "a file with no lang", "scored as None")
+        refused(json.dumps({**base, "eval_sha256": {"tier.py": "bb"}}), "a different scorer hash", "eval_sha256 differs")
+        refused(json.dumps({k: v for k, v in base.items() if k != "eval_sha256"}), "a file with no scorer hash", "missing or invalid eval_sha256")
+        # A path component or a suffix in a name must not pass as an author (CodeRabbit's case).
+        (run / "cal-python-2").mkdir(exist_ok=True)
+        for bad in ("cal-python-1/../cal-python-2", "cal-python-1x", "xcal-python-1", "cal-python-0", "cal-python-"):
+            try:
+                arm(bad)
+            except SystemExit:
+                continue
+            raise AssertionError(f"arm accepted {bad!r}")
     print("calibration_selection.py self-test: ok")
 
 
