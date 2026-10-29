@@ -560,8 +560,8 @@ PRs):
 - New codes: `firth.type.empty-record`, `firth.type.record-copy-linear` (a
   `dup` of a record with a linear slot), `firth.type.untracked-quotation`
   (`call`, `dip` or `if` of a quotation whose effect the lowering does not
-  know), and two codes that refuse what the next PRs add:
-  `firth.type.locals-record-unsupported` and `firth.name.export-type-unsupported`.
+  know), and a code that refuses what the next PR adds,
+  `firth.name.export-type-unsupported`.
   `firth.name.export-type-unsupported` also refuses the export of a word whose
   stack effect names a record, which no importer could use until types are
   exported; its report names the word and the record. Scalar types are tracked
@@ -570,3 +570,18 @@ PRs):
   code is the one reported.
 - The surface layer runs only on a word that names a record or calls a word that
   does. Other words are checked exactly as before.
+
+Added with the second records PR (record locals):
+
+- A record local is bound by the lowering, which knows what the value is. The
+  resolver lets `s.f` through when `s` is a local and records are declared, and
+  the lowering resolves it against the record or refuses it as
+  `firth.name.unresolved`; a file with no record resolves as before. The
+  `locals` block it emits binds one local per flat slot, named by path
+  (`s.on-hand`), so the erasure and its proof are untouched, and a bare `s`
+  becomes the slot words in order.
+- `firth.name.local-shadows-prefix` is raised at the binder of a record local
+  when its name starts a qualified name in scope, taken from the file's words,
+  the generated operations, imported names and `use` declarations, nested ones included.
+- Not done: variant locals and sequence-of-record locals, which belong to the
+  variants and sequences PRs.

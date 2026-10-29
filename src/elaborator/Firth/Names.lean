@@ -150,6 +150,9 @@ def resolveWord (keys types : List String) (hidden : List ImportedName) (externa
         let operation := record ++ "." ++ segments.getLast!
         if keys.contains operation then return operation
     | _ => pure ()
+    -- `s.reserved` names a field of the record local `s`; the lowering, which
+    -- knows what `s` holds, resolves it or refuses it.
+    if !types.isEmpty && locals.any (fun binder => name.startsWith (binder ++ ".")) then return name
     throw (missingName hidden [canonical] name span)
   let imported : List String := uses.map (fun (declaration : UseDecl) => qualified declaration.name name)
   -- A word declared outside any vocabulary has no qualified spelling, so

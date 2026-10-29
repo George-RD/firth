@@ -1,0 +1,8 @@
+\ A record local is read by the fields its record declares. `Stock` has no
+\ field `free`, so `s.free` names nothing.
+record Stock { on-hand:Int reserved:Int }
+
+: free (forall ρ; ρ s:Stock -- ρ n:Int)
+  locals { s } { s.free } ;
+
+: record-local-field ( -- ) ;
