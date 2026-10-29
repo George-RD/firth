@@ -31,13 +31,15 @@ Make bounded application data and reusable vocabularies practical.
 - 29 October 2026: the first records PR (declarations, `pack`/`unpack`, field
   read and set, flat word types, the nominal and field diagnostics, the
   structural atoms on records, `examples/programs/records.firth`). Records are
-  file-local and a `locals` block cannot yet bind one: the next records PRs add
-  record locals, then the import and export of types with the layer identity
-  and proof-record digests the decision requires. Until then
-  `firth.type.locals-record-unsupported` and `firth.name.export-type-unsupported`
-  refuse those uses; a word whose stack effect names a record is refused at
+  file-local: the next records PRs add the import and export of types with the
+  layer identity and proof-record digests the decision requires. Until then
+  `firth.name.export-type-unsupported` refuses those uses; a word whose stack effect names a record is refused at
   `export` too. The scalar-type gap in `pack`/`unpack` is
   `todo.record-scalar-type-tracking`.
+- 29 October 2026: record locals (second records PR). `locals { s }` over a
+  record binds its flat slots (`s.on-hand`), `s` and `s.f` read the whole record
+  or a field, and `examples/programs/record-locals.firth` runs on the VM and
+  the reference interpreter. `firth.type.locals-record-unsupported` is gone.
 - Still open: typed records and results (the first criterion) and bounded
   sequences of records, both through the planned PRs; the host-boundary
   definition of ownership, bounds, termination and serialization (partly

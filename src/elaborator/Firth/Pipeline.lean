@@ -158,6 +158,14 @@ private def withImportedEffects (config : PipelineConfig) : PipelineConfig :=
         | some word => (schemeOfEffect word.effect).toOption
         | none => config.typingEnv.word name } }
 
+/-- The first segment of each `use` in the declarations, nested ones included:
+the alias, or the vocabulary's own first segment. -/
+private partial def useNames : List Declaration → List String
+  | [] => []
+  | .use use :: rest => use.alias.getD ((use.name.splitOn ".").headD use.name) :: useNames rest
+  | .vocabulary _ body _ :: rest => useNames body ++ useNames rest
+  | _ :: rest => useNames rest
+
 private def refinementDiagnostics (word : String) :
     Refinement.PipelineResult → List PipelineDiagnostic
   | result => result.diagnostics.map (PipelineDiagnostic.refinement word)
@@ -1496,8 +1504,18 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
                 { input := signature.input.map fun _ => .val, output := signature.output.map fun _ => .val
                   keepsStack := signature.rowPreserving && !signature.closed }
               let own := resolvedPlain.map fun (word, _) => (word.name, effectShape table word.effect)
+              -- The leading segments of the qualified names a record local
+              -- must not shadow: vocabularies and imported ones, record
+              -- types, and the aliases of `use`.
+              let prefixes :=
+                (resolvedPlain.map (·.1.name) ++ (generatedOperations table).map (·.1) ++ config.imported.map (·.name)
+                  ).filterMap (fun name =>
+                    match name.splitOn "." with
+                    | head :: _ :: _ => some head
+                    | _ => none) ++
+                useNames file.declarations
               let ctx : Ctx :=
-                { table, generated := generatedOperations table
+                { table, generated := generatedOperations table, prefixes
                   word := fun name => match own.lookup name with
                     | some shape => some shape
                     | none => (config.erasureEnv.word name).map signatureShape

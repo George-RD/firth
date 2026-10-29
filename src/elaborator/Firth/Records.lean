@@ -220,8 +220,13 @@ structure Ctx where
   inQuotation : Bool := false
   /-- The word's effect names no stack row, so nothing lies below its inputs. -/
   closed : Bool := false
-  /-- The names `locals` binds, innermost first, with what is known of each. -/
+  /-- The names `locals` binds, innermost first, with what is known of each.
+  A record local is listed under its own name and under the path of each
+  field (`s`, `s.on-hand`). -/
   locals : List (String × Shape) := []
+  /-- The leading segments of the qualified names in scope (vocabularies,
+  aliases and record types), which a record local must not shadow. -/
+  prefixes : List String := []
 
 private structure Sim where
   stack : List Shape := []
@@ -377,6 +382,27 @@ private def fieldShape (ctx : Ctx) (record : RecordInfo) (index : Nat) : Shape :
   | some (_, member) => shapeOfType ctx.table member
   | none => .val
 
+/-- The flat slots of the record `key` bound as `name`, named by path:
+`s.on-hand s.reserved`, as `R.unpack` leaves them. -/
+private def localSlots (ctx : Ctx) (name key : String) : List String :=
+  match ctx.table.find? (·.key == key) with
+  | some record =>
+      (record.fields.flatMap fun (field, member) => leavesOf ctx.table (name ++ "." ++ field.name) member).map (·.1)
+  | none => [name]
+
+/-- What a record local `name` of the record `key` makes nameable: itself, and
+each field by its path, with the nested records among them. -/
+private partial def localScope (ctx : Ctx) (name key : String) : List (String × Shape) :=
+  (name, .record key) ::
+    match ctx.table.find? (·.key == key) with
+    | some record =>
+        record.fields.flatMap fun (field, member) =>
+          let path := name ++ "." ++ field.name
+          match shapeOfType ctx.table member with
+          | .record nested => localScope ctx path nested
+          | shape => [(path, shape)]
+    | none => []
+
 private def liftM {α : Type} (action : Except ParseError α) : SimM α := fun state => do
   let value ← action
   pure (value, state)
@@ -418,18 +444,37 @@ private partial def lowerItem (ctx : Ctx) : Item → SimM (List Item)
       pure [.quotation lowered span]
   | .locals names items span => do
       -- The names are bottom to top, so the top of the stack binds the last.
-      let mut bound : List (String × Shape) := []
+      let mut bound : List (LocatedName × Shape) := []
       for name in names.reverse do
         let (shape, _) ← pop
-        if shape.isRecord then refuse "firth.type.locals-record-unsupported" span (some shape.describe)
-        bound := (name.name, shape) :: bound
-      let lowered ← lowerItems { ctx with locals := bound.reverse ++ ctx.locals } items
-      pure [.locals names lowered span]
+        bound := (name, shape) :: bound
+      -- A record local binds one local per flat slot (`s.on-hand`), in order,
+      -- and the program names the whole record or a field by path.
+      let mut slots : List LocatedName := []
+      let mut scope : List (String × Shape) := []
+      for (name, shape) in bound do
+        match shape with
+        | .record key =>
+            if ctx.prefixes.contains name.name then
+              refuse "firth.name.local-shadows-prefix" name.span (some name.name)
+            slots := slots ++ (localSlots ctx name.name key).map fun slot => { name := slot, span := name.span }
+            scope := localScope ctx name.name key ++ scope
+        | _ =>
+            slots := slots ++ [name]
+            scope := (name.name, shape) :: scope
+      let lowered ← lowerItems { ctx with locals := scope ++ ctx.locals } items
+      pure [.locals slots lowered span]
   | .atom name span => lowerAtom ctx name span
   | .word name span => do
       if let some (_, shape) := ctx.locals.find? (·.1 == name) then
         push shape
-        pure [.word name span]
+        match shape with
+        | .record key => pure ((localSlots ctx name key).map fun slot => Item.word slot span)
+        | _ => pure [.word name span]
+      else if (name.splitOn ".").length > 1 && ctx.locals.any (fun (binder, _) => (name.splitOn ".").head? == some binder) then
+        -- The resolver let a dotted name through because its first segment is
+        -- a local; it names no field of a record local.
+        refuse "firth.name.unresolved" span (some name)
       else match ctx.generated.lookup name with
         | some operation => lowerGenerated ctx operation span
         | none =>
@@ -534,13 +579,18 @@ private partial def lowerBody (ctx : Ctx) (items : List Item) : Except ParseErro
   (lowerItems ctx items).run {}
 end
 
-private partial def mentionsRecord (ctx : Ctx) : List Item → Bool
+/-- Whether a body mentions a record, or reads a field of a local (`s.f`),
+which the resolver lets through for the lowering to resolve or refuse. -/
+private partial def mentionsRecord (ctx : Ctx) (binders : List String := []) : List Item → Bool
   | [] => false
   | .word name _ :: rest =>
-      ctx.generated.any (·.1 == name) || (ctx.word name).any (·.hasRecord) || mentionsRecord ctx rest
-  | .quotation items _ :: rest | .locals _ items _ :: rest =>
-      mentionsRecord ctx items || mentionsRecord ctx rest
-  | _ :: rest => mentionsRecord ctx rest
+      ctx.generated.any (·.1 == name) || (ctx.word name).any (·.hasRecord) ||
+        (name.splitOn ".").length > 1 && binders.contains ((name.splitOn ".").headD name) ||
+        mentionsRecord ctx binders rest
+  | .quotation items _ :: rest => mentionsRecord ctx binders items || mentionsRecord ctx binders rest
+  | .locals names items _ :: rest =>
+      mentionsRecord ctx (names.map (·.name) ++ binders) items || mentionsRecord ctx binders rest
+  | _ :: rest => mentionsRecord ctx binders rest
 
 /-- A word with its effect flattened and, when it names a record or calls a
 word that does, its body lowered; and the first fault found, for which the
@@ -553,7 +603,7 @@ def lowerWord (ctx : Ctx) (word : WordDefinition) : WordDefinition × Option Par
   | none =>
     let shape := effectShape ctx.table word.effect
     let ctx := { ctx with closed := (itemRows word.effect.input).isEmpty }
-    if !shape.hasRecord && !mentionsRecord ctx word.body then (flat, none)
+    if !shape.hasRecord && !mentionsRecord ctx [] word.body then (flat, none)
     else
       let finish : SimM Unit := do
         for expected in shape.output.reverse do popExpecting ctx word.effect.span expected

@@ -1,0 +1,55 @@
+\ Record locals (`dec.typed-records-and-variants`). `locals { s }` over a
+\ record binds one local per slot, and the program names the whole record
+\ (`s`) or one field (`s.reserved`). The kernel sees only the slots.
+
+record Stock { on-hand:Int reserved:Int }
+record Request { id:Int qty:Int }
+record Order { request:Request price:Int }
+
+\ Units not yet promised.
+: available
+  (forall ρ; ρ s:Stock -- ρ n:Int)
+  locals { s } { s.on-hand s.reserved prim - } ;
+
+\ Promises as much of a request as is available and records it as reserved.
+\ `s` is read as a whole record for `available`, then by field to rebuild it.
+: grant
+  (forall ρ; ρ s:Stock r:Request -- ρ s:Stock granted:Int)
+  locals { s r } {
+    s available
+    locals { free } {
+      free r.qty prim < [ free ] [ r.qty ] if
+      locals { g } { s.on-hand s.reserved g prim + Stock.pack g } } } ;
+
+: grant-flat
+  (forall ρ; ρ on:Int res:Int id:Int qty:Int -- ρ on:Int res:Int granted:Int)
+  Request.pack [ Stock.pack ] dip grant
+  swap Stock.unpack
+  locals { g on res } { on res g } ;
+
+: flip
+  (forall ρ; ρ s:Stock -- ρ s:Stock)
+  locals { s } { s.reserved s.on-hand Stock.pack } ;
+
+\ A whole record read twice is copied, slot by slot.
+: twice
+  (forall ρ; ρ s:Stock -- ρ s:Stock s:Stock)
+  locals { s } { s s } ;
+
+: on-hand-sum
+  (forall ρ; ρ a:Stock b:Stock -- ρ n:Int)
+  locals { a b } { a.on-hand b.on-hand prim + } ;
+
+\ A scalar bound beside a record.
+: add-reserved
+  (forall ρ; ρ n:Int s:Stock -- ρ s:Stock)
+  locals { n s } { s.on-hand s.reserved n prim + Stock.pack } ;
+
+\ A field that is itself a record is read whole or by path.
+: order-cost
+  (forall ρ; ρ o:Order -- ρ n:Int)
+  locals { o } { o.request.qty o.price prim * } ;
+
+: reprice
+  (forall ρ; ρ o:Order n:Int -- ρ o:Order)
+  locals { o n } { o.request n Order.pack } ;

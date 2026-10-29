@@ -1,0 +1,9 @@
+\ A record local keeps its type. `p` is a Pair, so reading it where a Stock is
+\ wanted is refused by name, though both are two Ints.
+record Stock { on-hand:Int reserved:Int }
+record Pair { a:Int b:Int }
+
+: reserved (forall ρ; ρ p:Pair -- ρ n:Int)
+  locals { p } { p Stock.reserved } ;
+
+: record-local-mismatch ( -- ) ;

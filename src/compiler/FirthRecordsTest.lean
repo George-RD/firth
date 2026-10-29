@@ -28,6 +28,10 @@ private def codes (text : String) : List String :=
       | .parse error => error.code
       | .stackEffect diagnostic => diagnostic.code
       | .assumes _ _ _ (.parse error) => error.code
+      -- The kernel's usage rule, which a record local's slots fall under,
+      -- named by the slot it refuses.
+      | .erasure _ (.linearUnused name _) => "linear-unused:" ++ name
+      | .erasure _ (.linearCopy name _ _) => "linear-copy:" ++ name
       | _ => "other"
 
 private def refused (name text : String) (expected : List String) : IO Unit := do
@@ -51,7 +55,7 @@ private def render : Item → String
 /-- The body of `word` after lowering, rendered, for the file `text`, with
 the table's generated operations replaced by `mutate`. -/
 private def loweredWith (mutate : List (String × Generated) → List (String × Generated))
-    (text word : String) : Except String String :=
+    (text word : String) (prefixes : List String := []) : Except String String :=
   match parse text with
   | .failure _ => .error "does not parse"
   | .success file =>
@@ -63,7 +67,7 @@ private def loweredWith (mutate : List (String × Generated) → List (String ×
       | .ok table =>
         let own := resolved.map fun (entry, _) => (entry.name, effectShape table entry.effect)
         let ctx : Ctx :=
-          { table, generated := mutate (generatedOperations table)
+          { table, generated := mutate (generatedOperations table), prefixes
             word := fun name => own.lookup name
             primitive := primitiveShapes config }
         match resolved.find? (·.1.name == word) with
@@ -97,6 +101,17 @@ private def rejectsMutant (name text word expected : String) : IO Unit := do
   match loweredWith shifted text word with
   | .ok got => if got == expected then fail s!"{name}: the mutant lowers the same way"
   | .error code => fail s!"{name}: the mutant was refused with {code}, so nothing was compared"
+
+/-- A record local named like a qualified name's first segment is refused
+only because the caller lists that segment: with the list left empty, the
+planted bug, the same word lowers. -/
+private def prefixCheckNeedsPrefixes (name text word : String) (prefixes : List String) : IO Unit := do
+  match loweredWith id text word prefixes with
+  | .error "firth.name.local-shadows-prefix" => pure ()
+  | other => fail s!"{name}: with the prefixes listed, got {repr (other.toOption)} or another code"
+  match loweredWith id text word [] with
+  | .ok _ => pure ()
+  | .error code => fail s!"{name}: without the prefixes the planted bug was still refused with {code}"
 
 def main : IO Unit := do
   -- Lowerings, from the recipes of the decision.
@@ -215,8 +230,44 @@ def main : IO Unit := do
   refused "a linear slot dropped whole" "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ) drop ;" ["firth.type.record-drop-linear"]
   refused "a linear slot copied whole" "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ b:Box b:Box) dup ;" ["firth.type.record-copy-linear"]
   accepted "a linear slot moved whole" "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box n:Int -- ρ n:Int b:Box) swap ;"
-  refused "locals over a record (not yet)"
-    (stock ++ ": f (forall ρ; ρ s:Stock -- ρ n:Int) locals { s } { 1 } ;") ["firth.type.locals-record-unsupported"]
+  -- Record locals: a record binds one local per flat slot, named by path.
+  expectLowering "record local, whole"
+    (stock ++ ": f (forall ρ; ρ s:Stock -- ρ s:Stock s:Stock) locals { s } { s s } ;") "f"
+    "locals { s.on-hand s.reserved } { s.on-hand s.reserved s.on-hand s.reserved }"
+  expectLowering "record local, field"
+    (stock ++ ": f (forall ρ; ρ s:Stock -- ρ n:Int) locals { s } { s.reserved } ;") "f"
+    "locals { s.on-hand s.reserved } { s.reserved }"
+  expectLowering "record local beside a scalar"
+    (stock ++ ": f (forall ρ; ρ n:Int s:Stock -- ρ m:Int) locals { n s } { s.on-hand n prim + } ;") "f"
+    "locals { n s.on-hand s.reserved } { s.on-hand n prim + }"
+  expectLowering "nested record local, inner record whole"
+    (stock ++ "record Order { request:Pair price:Int }\n: f (forall ρ; ρ o:Order -- ρ p:Pair) locals { o } { o.request } ;") "f"
+    "locals { o.request.a o.request.b o.price } { o.request.a o.request.b }"
+  accepted "nested record local, inner record rebuilt and checked by name"
+    (stock ++ "record Order { request:Pair price:Int }\n: f (forall ρ; ρ o:Order -- ρ p:Pair) locals { o } { o.request } ;")
+  refused "a nested record local read as the wrong record"
+    (stock ++ "record Order { request:Pair price:Int }\n: f (forall ρ; ρ o:Order -- ρ n:Int) locals { o } { o.request Stock.reserved } ;")
+    ["firth.type.mismatch"]
+  refused "a record local read as the wrong record"
+    (stock ++ ": f (forall ρ; ρ p:Pair -- ρ n:Int) locals { p } { p Stock.reserved } ;") ["firth.type.mismatch"]
+  refused "a field of a record local that does not exist"
+    (stock ++ ": f (forall ρ; ρ s:Stock -- ρ n:Int) locals { s } { s.free } ;") ["firth.name.unresolved"]
+  refused "a field of a scalar local"
+    (stock ++ ": f (forall ρ; ρ n:Int -- ρ m:Int) locals { n } { n.free } ;") ["firth.name.unresolved"]
+  refused "a record local that shadows a vocabulary"
+    (stock ++ "vocab s { : f (forall ρ; ρ -- ρ) ; }\n: g (forall ρ; ρ s:Stock -- ρ n:Int) locals { s } { s.reserved } ;")
+    ["firth.name.local-shadows-prefix"]
+  prefixCheckNeedsPrefixes "shadow check reads the prefixes"
+    (stock ++ ": g (forall ρ; ρ s:Stock -- ρ n:Int) locals { s } { s.reserved } ;") "g" ["s"]
+  refused "a record local that shadows a use alias, nested in a vocabulary"
+    (stock ++ "vocab a { : f (forall ρ; ρ -- ρ) ; }\nvocab b { use a as s; : g (forall ρ; ρ s:Stock -- ρ n:Int) locals { s } { s.reserved } ; }")
+    ["firth.name.local-shadows-prefix"]
+  accepted "a record local over a linear field, each linear slot used once"
+    "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ h:Handle^linear n:Int) locals { b } { b.h b.n } ;"
+  refused "a record local over a linear field left unused"
+    "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ n:Int) locals { b } { b.n } ;" ["linear-unused:b.h"]
+  refused "a record local over a linear field used twice"
+    "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ h:Handle^linear h:Handle^linear n:Int) locals { b } { b.h b.h b.n } ;" ["linear-copy:b.h"]
 
   refused "export of a record (until types can be imported)" "record P { a:Int }\nexport P;"
     ["firth.name.export-type-unsupported"]

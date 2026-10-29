@@ -448,10 +448,22 @@ on is known, so it sees every value it takes from below as one slot. A
 quotation that takes a record from the stack is refused
 (`firth.type.composite-in-quotation`), and so is `call`, `dip` or `if` of a
 quotation whose effect the word does not know
-(`firth.type.untracked-quotation`). A `locals` block cannot yet bind a record
-(`firth.type.locals-record-unsupported`), and a record cannot yet be exported
+(`firth.type.untracked-quotation`). A record cannot yet be exported
 (`firth.name.export-type-unsupported`), and neither can a word whose stack
 effect names a record.
+
+A `locals` block can bind a record. `locals { s } { ... }` over a `Stock`
+binds one local per flat slot, `s.on-hand` and `s.reserved`, in order. In the
+body `s` pushes the whole record, a copy of every slot, and `s.on-hand`
+pushes one field; a field that is itself a record is named by its path
+(`o.request`) and pushes that record, and its fields by theirs
+(`o.request.qty`). The slots follow the usage rules of their declarations, so
+a record with a linear field must have that field used exactly once. A field
+the record does not declare, or a field of a local that is no record, is
+`firth.name.unresolved`. A record local whose name is also the first segment of
+a qualified name in scope (a vocabulary, a `use` alias or a record type) is
+refused at its binder, `firth.name.local-shadows-prefix`, so `s.f` never has two
+readings.
 
 ## 4. Bodies, sequencing, and quotations
 

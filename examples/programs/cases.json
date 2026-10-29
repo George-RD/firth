@@ -203,6 +203,18 @@
     {"source": "refused/record-flat-ints.firth", "entry": "record-flat-ints", "stack": [], "expect_error": "firth.type.mismatch"},
     {"source": "refused/record-in-quotation.firth", "entry": "record-in-quotation", "stack": [], "expect_error": "firth.type.composite-in-quotation"},
     {"source": "refused/record-linear-drop.firth", "entry": "record-linear-drop", "stack": [], "expect_error": "firth.type.record-drop-linear"},
-    {"source": "refused/record-recursive.firth", "entry": "record-recursive", "stack": [], "expect_error": "firth.type.recursive-type"}
+    {"source": "refused/record-recursive.firth", "entry": "record-recursive", "stack": [], "expect_error": "firth.type.recursive-type"},
+    {"source": "record-locals.firth", "entry": "grant-flat", "stack": [10, 3, 7, 5], "expect": [10, 8, 5]},
+    {"source": "record-locals.firth", "entry": "grant-flat", "stack": [10, 8, 7, 5], "expect": [10, 10, 2]},
+    {"source": "record-locals.firth", "entry": "grant-flat", "stack": [4, 4, 7, 3], "expect": [4, 4, 0]},
+    {"source": "record-locals.firth", "entry": "flip", "stack": [3, 9], "expect": [9, 3]},
+    {"source": "record-locals.firth", "entry": "twice", "stack": [3, 9], "expect": [3, 9, 3, 9]},
+    {"source": "record-locals.firth", "entry": "on-hand-sum", "stack": [1, 2, 10, 20], "expect": [11]},
+    {"source": "record-locals.firth", "entry": "add-reserved", "stack": [5, 10, 3], "expect": [10, 8]},
+    {"source": "record-locals.firth", "entry": "order-cost", "stack": [1, 4, 10], "expect": [40]},
+    {"source": "record-locals.firth", "entry": "reprice", "stack": [1, 4, 10, 99], "expect": [1, 4, 99]},
+    {"source": "record-locals.firth", "entry": "available", "stack": [10, 3], "expect": [7]},
+    {"source": "refused/record-local-field.firth", "entry": "record-local-field", "stack": [], "expect_error": "firth.name.unresolved"},
+    {"source": "refused/record-local-mismatch.firth", "entry": "record-local-mismatch", "stack": [], "expect_error": "firth.type.mismatch"}
   ]
 }

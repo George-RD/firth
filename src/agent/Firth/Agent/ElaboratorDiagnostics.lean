@@ -330,9 +330,9 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
     | "firth.type.record-copy-linear" =>
         (s!"{actual} holds a linear slot, so it cannot be copied.",
           "A linear value is used exactly once. Move the record instead of duplicating it, or unpack it and use each slot once.")
-    | "firth.type.locals-record-unsupported" =>
-        (s!"A `locals` block cannot yet bind the record {actual}.",
-          "Take the record apart first with `Name.unpack`, bind the fields with `locals`, and rebuild it with `Name.pack`.")
+    | "firth.name.local-shadows-prefix" =>
+        (s!"The record local {actual} has the same name as the start of a qualified name in scope.",
+          "A record local is read by its fields (`name.field`), which would also name a word or a type operation. Rename the local.")
     | "firth.type.unknown-type" =>
         (s!"{actual} is not a type.",
           "A record field is one of the built-in types (`Int`, `Bool`, `Seq Int`, `Seq Bool`, `World`, `Handle`, `Bytes`) or another record declared in the file.")
