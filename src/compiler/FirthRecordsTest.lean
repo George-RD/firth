@@ -237,6 +237,9 @@ def main : IO Unit := do
   refused "alias equal to a record name declared later"
     "vocab helper { : pack ( forall ρ; ρ -- ρ ) ; : unpack ( forall ρ; ρ -- ρ ) ; }\nuse helper as R;\nrecord R { x:Int }"
     ["firth.name.duplicate-alias"]
+  refused "alias equal to a record name inside a vocabulary"
+    "vocab helper { : pack ( forall ρ; ρ -- ρ ) ; : unpack ( forall ρ; ρ -- ρ ) ; }\nvocab app {\n  record R { x:Int }\n  use helper as R;\n}"
+    ["firth.name.duplicate-alias"]
   accepted "alias that is not a record name"
     "vocab helper { : pack ( forall ρ; ρ -- ρ ) ; : unpack ( forall ρ; ρ -- ρ ) ; }\nrecord R { x:Int }\nuse helper as h;"
   -- `record` and `match` are ordinary names where no declaration may stand.

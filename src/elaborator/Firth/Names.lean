@@ -226,7 +226,9 @@ private def badUse (vocabularies types : List String) (uses : List UseDecl) (use
             vocabularies.any (fun name => (name.splitOn ".").head? == some alias) ||
             -- A leading alias is expanded first, so one equal to a record's
             -- name would turn `R.pack` into another vocabulary's word.
-            types.any (fun key => (key.splitOn ".").head? == some alias) then
+            -- Inside a vocabulary the same holds for the record's bare name.
+            types.any (fun key => (key.splitOn ".").head? == some alias ||
+              (key.splitOn ".").getLast? == some alias) then
           some (nameError "firth.name.duplicate-alias" alias use.span)
         else none
     | none => none
