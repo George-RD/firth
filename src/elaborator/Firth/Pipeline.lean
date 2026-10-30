@@ -1,5 +1,6 @@
 import elaborator.Firth.Parser
 import elaborator.Firth.Names
+import elaborator.Firth.Records
 import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
 import elaborator.Firth.Account
@@ -172,6 +173,17 @@ private def unsupportedSourceRefinements (word : WordDefinition) : List Pipeline
         type.refinements.map fun refinement =>
           .parse { code := "firth.refinement.unsupported-source"
                    primary := refinement.span, actual := some word.name, cause := .validation }
+
+/-- What a primitive takes and leaves for the record lowering, bottom to top:
+its types where the typing environment gives them (`Int` and `Bool` are
+tracked), else only the counts the erasure environment knows. -/
+def primitiveShapes (config : PipelineConfig) (name : String) : Option (List Shape × List Shape) :=
+  let scalar (type : String) : Shape :=
+    if type == "Int" || type == "Bool" then .scalar type else .val
+  match (config.typingEnv.primitive name).bind Account.primitiveShape with
+  | some (inputs, outputs) => some (inputs.map scalar, outputs.map scalar)
+  | none => (config.erasureEnv.primitive name).map fun signature =>
+      (signature.input.map fun _ => .val, signature.output.map fun _ => .val)
 
 /-- A refused `if` recounted from the source, value by value, so its
 diagnostic can name the operation and the values responsible. Diagnostics
@@ -1470,7 +1482,29 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
   | .success file =>
       match resolveFile config file.declarations with
       | .error error => .failure [.parse error]
-      | .ok (resolved, stop) =>
+      | .ok (resolvedPlain, stop) =>
+      match checkRecords (collectRecords file.declarations) with
+      | .error error => .failure [.parse error]
+      | .ok table =>
+          -- Records erase to their fields before checking
+          -- (`dec.typed-records-and-variants`): each word's effect is
+          -- flattened and, where a record is involved, its body lowered.
+          let resolved :=
+            if table.isEmpty then resolvedPlain
+            else
+              let signatureShape (signature : Signature) : EffectShape :=
+                { input := signature.input.map fun _ => .val, output := signature.output.map fun _ => .val
+                  keepsStack := signature.rowPreserving && !signature.closed }
+              let own := resolvedPlain.map fun (word, _) => (word.name, effectShape table word.effect)
+              let ctx : Ctx :=
+                { table, generated := generatedOperations table
+                  word := fun name => match own.lookup name with
+                    | some shape => some shape
+                    | none => (config.erasureEnv.word name).map signatureShape
+                  primitive := primitiveShapes config }
+              resolvedPlain.map fun (word, resolution) =>
+                let (lowered, fault) := lowerWord ctx word
+                (lowered, resolution.orElse fun _ => fault)
           let words := resolved.map (·.1)
           let written := collectWords file.declarations
           -- Every word's declared effect, those after a bad `use` included:
@@ -1556,7 +1590,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
               | .skipped callee span => [.unchecked word.name callee span]
               | .checked _ => []
           let tail := (stop.map PipelineDiagnostic.parse).toList ++
-            (checkExports file.declarations).map PipelineDiagnostic.parse
+            (checkExports file.declarations (resolvedPlain.map (·.1))).map PipelineDiagnostic.parse
           if !(errors ++ tail).isEmpty then .failure (errors ++ tail)
           else if words.isEmpty then
             .failure [.parse { code := "firth.elaboration.empty-program"

@@ -63,11 +63,14 @@ errors.
 ## 2. Source files and vocabularies
 
     file              = { import-declaration } ,
-                        { vocabulary | use-declaration | export-declaration | word-definition } ;
+                        { vocabulary | use-declaration | export-declaration
+                        | record-declaration | word-definition } ;
     import-declaration = "import" , string , ";" ;
     export-declaration = "export" , name , { name } , ";" ;
     vocabulary      = "vocab" , word-name , "{" ,
-                      { vocabulary | use-declaration | word-definition } , "}" ;
+                      { vocabulary | use-declaration | record-declaration | word-definition } , "}" ;
+    record-declaration = "record" , word-name , "{" , field , { field } , "}" ;
+    field           = word-name , ":" , type-expression ;
     use-declaration = "use" , name , [ "as" , word-name ] , ";" ;
     word-definition = ":" , word-name , stack-effect , body , ";" ;
     body            = { item } ;
@@ -344,7 +347,8 @@ The chosen v0.1 annotation is a parenthesised effect at the word boundary:
                        [ "^" , ( "many" | "linear" ) ] ,
                        [ "{" , predicate , { "," , predicate } , "}" ] ;
 
-A stack effect may declare only the types a program can make a value of:
+A stack effect may declare the records a file declares (section 3.1) and, of
+the other types, only those a program can make a value of:
 `Int`, `Bool`, `Seq Int` and `Seq Bool`, and the effect types `World`,
 `Handle` and `Bytes` that the world primitives thread. A stack effect naming anything else, `Seq` with no element
 type, or the target spellings `SeqInt` and `SeqBool`, is refused with
@@ -371,6 +375,83 @@ adjacent to the definition boundary, easy to scan in a long dictionary, and
 matches the frozen Σ₁ → Σ₂ direction. The trailing form is not accepted in
 v0.1. The elaborated kernel type is exactly `∀ρ⃗. Σ₁ → Σ₂`, with usage
 annotations retained for checking.
+
+### 3.1 Records
+
+A record is a surface type that erases to its fields on the flat stack
+(`dec.typed-records-and-variants`). Nothing below the surface changes: the
+kernel, the checker, the compiler and the VM see only the erased program.
+
+    record Request { id:Int qty:Int }
+    record Order { request:Request price:Int }
+
+A declaration stands where a word definition may, at the top level of a file
+or in a vocabulary, and its canonical key is built as a word's is
+(`Request`, `inv.Request`). `record` is a keyword only there and only before a
+type name and `{`; anywhere else it is an ordinary name. The name starts with
+an upper-case letter (`firth.type.type-name-case`) and is not a built-in
+type's (`firth.type.reserved-type-name`). A record has at least one field
+(`firth.type.empty-record`). Field names are unique
+(`firth.type.duplicate-field`) and are not `pack`, `unpack`, `seq` or a name
+beginning `set-` (`firth.type.reserved-field-name`). A field type is a type
+a stack effect may name or another record; it has no refinement
+(`firth.syntax.refinement-in-type`), `^linear` only on a base type
+(`firth.type.linear-composite-field`), and a record may not contain itself
+(`firth.type.recursive-type`). A type and a word, a vocabulary or a generated
+operation may not share a canonical key (`firth.name.duplicate-canonical`).
+`Seq` of a record, variants and `match` are not part of this section yet.
+
+A stack item may name a declared record, `r:Request`, written as the name is
+looked up (the current vocabulary, the top level, the vocabularies `use`
+makes visible, or a qualified name). Its usage is the one its slots declare, so
+`r:Request^linear` is refused (`firth.type.composite-usage`) and so is a
+refinement on it. A record's **flat form** is its fields' flat forms in order;
+a word's stack effect is flattened when its dictionary entry is built, and the
+names of the leaf slots are field paths (`r.id`, `r.qty`). A call to the word
+needs no code.
+
+Every record `R` generates operations, each an elaborator macro over the flat
+slots and never a dictionary word. They resolve as words do, and `R.f` is found
+by the lookup rule for `R` itself, so inside a vocabulary or after a `use` no
+prefix is needed.
+
+| Operation | Effect | Code emitted |
+| --- | --- | --- |
+| `R.pack` | `ρ f1 ... fk -- ρ r:R` | none; changes the surface type |
+| `R.unpack` | `ρ r:R -- ρ f1 ... fk` | none |
+| `R.f` | `ρ r:R -- ρ v:Tf` | a `locals` block that keeps the field's slots |
+| `R.set-f` | `ρ r:R v:Tf -- ρ r:R` | a `locals` block that replaces the field's slots |
+
+The structural atoms act on whole values: `dup` copies every slot of a
+record, `drop` drops them, `swap` exchanges two values of any widths, `dip`
+runs its quotation beneath every slot, and `quote` of a record builds one
+quotation that pushes all of its slots. A slot that is `^linear` makes `dup`
+and `drop` of the record refuse (`firth.type.record-copy-linear`,
+`firth.type.record-drop-linear`), and so does `R.f` or `R.set-f` when the slots
+it would drop are linear.
+
+The surface layer follows the shape of every value on the stack through a
+word's body from its declared effect: which record a value is, and whether a
+scalar is an `Int` or a `Bool` where that is known (a literal, a declared
+effect, a primitive's result, a local or a quotation's result). It does not
+know the scalar type of a value taken from below an open stack row, or of the
+result of a call to a word defined in another file, or of a value a quotation takes from the stack, so a mistyped scalar packed
+from one of those is not refused at the pack (`todo.record-scalar-type-tracking`);
+the kernel still checks the erased program. It applies only to a word that
+names a record or calls a word that does, and every other word is checked as
+before.
+It refuses what the kernel cannot see: a record of another name, or a
+plain value, where a record is needed (`firth.type.mismatch`), a body that
+leaves a value where the effect declares a record, and `if` branches that leave
+different records. A quotation is checked on its own, before the stack it runs
+on is known, so it sees every value it takes from below as one slot. A
+quotation that takes a record from the stack is refused
+(`firth.type.composite-in-quotation`), and so is `call`, `dip` or `if` of a
+quotation whose effect the word does not know
+(`firth.type.untracked-quotation`). A `locals` block cannot yet bind a record
+(`firth.type.locals-record-unsupported`), and a record cannot yet be exported
+(`firth.name.export-type-unsupported`), and neither can a word whose stack
+effect names a record.
 
 ## 4. Bodies, sequencing, and quotations
 

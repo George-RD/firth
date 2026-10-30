@@ -120,6 +120,10 @@ private def runSyntaxMessageTests : IO Unit := do
       "firth.syntax.parenthesis-in-body",
       "`(` is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
       "write `n 1 prim +`, not `(n 1 prim +)`"),
+    ("vocab helper { : id (forall ρ; ρ -- ρ) ; }\nrecord R { x:Int }\nuse helper as R;",
+      "firth.name.duplicate-alias",
+      "The alias `R` is already taken.",
+      "or be the name of a vocabulary or a record"),
     -- Run 8 sample 2 used parentheses as a comment.
     (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  n (copy of n) ;",
       "firth.syntax.parenthesis-in-body",

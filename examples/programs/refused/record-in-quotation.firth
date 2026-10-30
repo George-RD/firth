@@ -1,0 +1,9 @@
+\ A quotation is checked before the stack it runs on is known, so it cannot
+\ take a record from that stack (`firth.type.composite-in-quotation`).
+record Stock { on-hand:Int reserved:Int }
+
+: via-quotation
+  (forall ρ; ρ s:Stock -- ρ n:Int)
+  [ Stock.reserved ] call ;
+
+: record-in-quotation ( -- ) ;

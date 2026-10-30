@@ -1,0 +1,11 @@
+\ Two records with the same layout are different types. The kernel would take
+\ a Pair where a Stock is wanted, since both are two Ints; the checker refuses
+\ it by name (`dec.typed-records-and-variants`).
+record Stock { on-hand:Int reserved:Int }
+record Pair { a:Int b:Int }
+
+: reserved
+  (forall ρ; ρ p:Pair -- ρ n:Int)
+  Stock.reserved ;
+
+: record-mismatch ( -- ) ;

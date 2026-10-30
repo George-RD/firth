@@ -126,8 +126,13 @@ private def collisions (loaded : List LoadedFile) : List (String × List ParseEr
   let step (done : List (String × List (String × String)) × List (String × List ParseError))
       (file : LoadedFile) :=
     let (closures, errors) := done
-    let own := match file.declarations with
-      | some declarations => collectWords declarations
+    -- A file's own keys are its words, its records and the operations its
+    -- records generate (`R.pack`, `R.f`), which are names like any other.
+    let own : List (String × Span) := match file.declarations with
+      | some declarations =>
+          (collectWords declarations).map (fun word => (word.name, word.span)) ++
+            (collectRecords declarations).flatMap fun entry =>
+              (entry.key, entry.decl.nameSpan) :: generatedKeys entry
       | none => []
     let (brought, found) := file.imports.foldl (init := (([] : List (String × String)), ([] : List ParseError)))
       fun (brought, found) (decl, path) =>
@@ -139,12 +144,12 @@ private def collisions (loaded : List LoadedFile) : List (String × List ParseEr
               else (brought, found ++ [{ code := "firth.name.duplicate-canonical", primary := decl.span
                                          actual := some key, cause := .validation, files := [other, source] }])
           | none => (brought ++ [(key, source)], found)
-    let found := found ++ own.filterMap fun word =>
-      (brought.find? (·.1 == word.name)).map fun (_, other) =>
-        { code := "firth.name.duplicate-canonical", primary := word.span, actual := some word.name
+    let found := found ++ own.filterMap fun (key, span) =>
+      (brought.find? (·.1 == key)).map fun (_, other) =>
+        { code := "firth.name.duplicate-canonical", primary := span, actual := some key
           cause := .validation, files := [other] }
-    let fresh := own.filter fun word => !brought.any (·.1 == word.name)
-    (closures ++ [(file.source.path, brought ++ fresh.map (·.name, file.source.path))],
+    let fresh := own.filter fun (key, _) => !brought.any (·.1 == key)
+    (closures ++ [(file.source.path, brought ++ fresh.map fun (key, _) => (key, file.source.path))],
       errors ++ [(file.source.path, found)])
   (loaded.foldl step ([], [])).2
 

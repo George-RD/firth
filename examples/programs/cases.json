@@ -182,6 +182,27 @@
     {"source": "nested-loop.firth", "entry": "count", "stack": [3000, 7], "expect": [3007]},
     {"source": "nested-loop.firth", "entry": "add-twice", "stack": [2, 3], "expect": [8]},
     {"source": "nested-loop.firth", "entry": "shadowed", "stack": [2, 3], "expect": [15]},
-    {"source": "nested-loop.firth", "entry": "rebound", "stack": [2, 3], "expect": [6]}
+    {"source": "nested-loop.firth", "entry": "rebound", "stack": [2, 3], "expect": [6]},
+    {"source": "records.firth", "entry": "demo-grant", "stack": [10, 3, 7, 5], "expect": [10, 8, 5]},
+    {"source": "records.firth", "entry": "demo-grant", "stack": [10, 8, 7, 5], "expect": [10, 10, 2]},
+    {"source": "records.firth", "entry": "demo-grant", "stack": [4, 4, 7, 3], "expect": [4, 4, 0]},
+    {"source": "records.firth", "entry": "demo-grant", "stack": [10, 3, 7, 0], "expect": [10, 3, 0]},
+    {"source": "records.firth", "entry": "demo-total", "stack": [1, 4, 25], "expect": [100]},
+    {"source": "records.firth", "entry": "demo-total", "stack": [9, 0, 25], "expect": [0]},
+    {"source": "records.firth", "entry": "order-id", "stack": [1, 4, 25], "expect": [1]},
+    {"source": "records.firth", "entry": "demo-rewrite", "stack": [1, 4, 25, 9, 2], "expect": [9, 2, 25]},
+    {"source": "records.firth", "entry": "swap-requests", "stack": [1, 2, 3, 4], "expect": [3, 4, 1, 2]},
+    {"source": "records.firth", "entry": "copy-request", "stack": [7, 9], "expect": [7, 9, 7, 9]},
+    {"source": "records.firth", "entry": "trio-first", "stack": [1, 2, 3], "expect": [1]},
+    {"source": "records.firth", "entry": "trio-copy-read-drop", "stack": [1, 2, 3], "expect": [1, 2, 3]},
+    {"source": "records.firth", "entry": "trio-dip", "stack": [1, 2, 3], "expect": [77, 1, 2, 3]},
+    {"source": "records.firth", "entry": "drop-request", "stack": [5, 7, 9], "expect": [5]},
+    {"source": "records.firth", "entry": "under-request", "stack": [7, 9], "expect": [100, 7, 9]},
+    {"source": "records.firth", "entry": "quoted-request", "stack": [7, 9], "expect": [7, 9]},
+    {"source": "refused/record-mismatch.firth", "entry": "record-mismatch", "stack": [], "expect_error": "firth.type.mismatch"},
+    {"source": "refused/record-flat-ints.firth", "entry": "record-flat-ints", "stack": [], "expect_error": "firth.type.mismatch"},
+    {"source": "refused/record-in-quotation.firth", "entry": "record-in-quotation", "stack": [], "expect_error": "firth.type.composite-in-quotation"},
+    {"source": "refused/record-linear-drop.firth", "entry": "record-linear-drop", "stack": [], "expect_error": "firth.type.record-drop-linear"},
+    {"source": "refused/record-recursive.firth", "entry": "record-recursive", "stack": [], "expect_error": "firth.type.recursive-type"}
   ]
 }

@@ -1,0 +1,98 @@
+\ Records (`dec.typed-records-and-variants`). A record is a surface type: the
+\ checker tracks it by name, and it erases to its fields on the stack, in
+\ declaration order. The words below take and leave those flat values, so
+\ `demo-grant` is called with `on res id qty` and leaves `on res granted`.
+
+record Stock { on-hand:Int reserved:Int }
+record Request { id:Int qty:Int }
+\ A record can hold a record: an Order is three stack slots.
+record Order { request:Request price:Int }
+
+\ Units not yet promised. `dup` copies the whole Stock, both slots; `swap`
+\ then moves the one-slot field below it as one value.
+: available
+  (forall ρ; ρ s:Stock -- ρ n:Int)
+  dup Stock.on-hand swap Stock.reserved prim - ;
+
+\ Promises as much of a request as is available and records it as reserved.
+\ A quotation cannot take a record from the stack, so the request is cut down
+\ to its quantity first, and `locals` binds the integers.
+: grant
+  (forall ρ; ρ s:Stock r:Request -- ρ s:Stock granted:Int)
+  Request.qty
+  locals { want } {
+    dup available
+    locals { free } {
+      free want prim < [ free ] [ want ] if
+      locals { g } {
+        dup Stock.reserved g prim + Stock.set-reserved g } } } ;
+
+\ `[ Stock.pack ]` takes the two integers below the request, and `dip` runs it
+\ beneath all two slots of the request.
+: demo-grant
+  (forall ρ; ρ on:Int res:Int id:Int qty:Int -- ρ on:Int res:Int granted:Int)
+  Request.pack [ Stock.pack ] dip grant
+  swap Stock.unpack
+  locals { g on res } { on res g } ;
+
+\ A record field that is itself a record moves whole.
+: order-total
+  (forall ρ; ρ o:Order -- ρ total:Int)
+  Order.unpack swap Request.qty prim * ;
+
+: demo-total
+  (forall ρ; ρ id:Int qty:Int price:Int -- ρ total:Int)
+  [ Request.pack ] dip Order.pack order-total ;
+
+: order-id
+  (forall ρ; ρ o:Order -- ρ id:Int)
+  Order.request Request.id ;
+
+\ Replaces the whole nested request of an order. The outer `dip` runs a
+\ quotation that builds the order beneath the new request, which is two slots
+\ wide.
+: demo-rewrite
+  (forall ρ; ρ id:Int qty:Int price:Int nid:Int nqty:Int -- ρ id:Int qty:Int price:Int)
+  Request.pack
+  [ [ Request.pack ] dip Order.pack ] dip
+  Order.set-request
+  Order.unpack swap Request.unpack
+  locals { p id qty } { id qty p } ;
+
+\ The structural atoms act on a whole record.
+: swap-requests
+  (forall ρ; ρ a:Request b:Request -- ρ b:Request a:Request)
+  swap ;
+
+: copy-request
+  (forall ρ; ρ r:Request -- ρ r:Request r:Request)
+  dup ;
+
+: drop-request
+  (forall ρ; ρ n:Int r:Request -- ρ n:Int)
+  drop ;
+
+: under-request
+  (forall ρ; ρ r:Request -- ρ n:Int r:Request)
+  [ 100 ] dip ;
+
+: quoted-request
+  (forall ρ; ρ r:Request -- ρ r:Request)
+  quote call ;
+
+\ Three words whose kernel cost is measured in
+\ `meta/decisions/typed-records-and-variants.md`: the first field of a three-slot
+\ record, a copy and read and drop, and a quotation run beneath the whole record.
+record Trio { a:Int b:Int c:Int }
+
+: trio-first
+  (forall ρ; ρ t:Trio -- ρ n:Int)
+  Trio.a ;
+
+: trio-copy-read-drop
+  (forall ρ; ρ t:Trio -- ρ t:Trio)
+  dup Trio.a drop ;
+
+: trio-dip
+  (forall ρ; ρ t:Trio -- ρ n:Int t:Trio)
+  [ 77 ] dip ;

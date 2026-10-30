@@ -1,0 +1,4 @@
+\ A record has a fixed number of stack slots, so it cannot contain itself.
+record Node { value:Int next:Node }
+
+: record-recursive ( -- ) ;
