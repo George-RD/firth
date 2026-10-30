@@ -278,6 +278,9 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
             (s!"{actual} cannot be exported: its stack effect names the record `{record}`, and a record cannot be exported yet.", hint)
         | none =>
             (s!"{actual} is a record, and a record cannot be exported yet: it is usable in the file that declares it.", hint)
+    | "firth.name.duplicate-alias" =>
+        (s!"The alias {actual} is already taken.",
+          "An alias must be new: it cannot repeat another alias or be the name of a vocabulary or a record. Choose another alias, as in `use helper as h;`.")
     | "firth.type.type-name-case" =>
         (s!"{actual} is not a type name: a record name starts with an upper-case letter.",
           "Write the name with a capital first letter, as in `record Request { id:Int qty:Int }`, so a type never reads as a word.")

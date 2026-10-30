@@ -206,6 +206,11 @@ def main : IO Unit := do
   reject "generated key collides with an import"
     (src "main.firth" "import \"packlib.firth\"; record R { x:Int }\n: f ( forall ρ; ρ n:Int -- ρ n:Int ) ;") [packLib]
     [("firth.name.duplicate-canonical", "main.firth", ["packlib.firth"])]
+  -- The record's own name is a key too: an imported word `R` and `record R`.
+  let nameLib := src "namelib.firth" "export R;\n: R ( forall ρ; ρ n:Int -- ρ n:Int ) ;"
+  reject "record name collides with an imported word"
+    (src "main.firth" "import \"namelib.firth\"; record R { x:Int }\n: f ( forall ρ; ρ n:Int -- ρ n:Int ) ;") [nameLib]
+    [("firth.name.duplicate-canonical", "main.firth", ["namelib.firth"])]
   accept "a record beside an import with other names"
     (src "main.firth" "import \"packlib.firth\"; record S { x:Int }\n: f ( forall ρ; ρ n:Int -- ρ n:Int ) ;") [packLib]
     [("packlib.firth", ["R.pack"]), ("main.firth", ["f"])]
