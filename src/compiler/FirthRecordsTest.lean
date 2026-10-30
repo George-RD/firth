@@ -262,6 +262,14 @@ def main : IO Unit := do
   refused "a record local that shadows a use alias, nested in a vocabulary"
     (stock ++ "vocab a { : f (forall ρ; ρ -- ρ) ; }\nvocab b { use a as s; : g (forall ρ; ρ s:Stock -- ρ n:Int) locals { s } { s.reserved } ; }")
     ["firth.name.local-shadows-prefix"]
+  accepted "a scalar local beside a vocabulary of the same name keeps its resolved call"
+    ("record R { x:Int }\nvocab s { : f (forall ρ; ρ -- ρ n:Int) 1 ; }\n: g (forall ρ; ρ s:Int -- ρ n:Int) locals { s } { s.f } ;")
+  refused "a record local rebound hides the outer record's fields"
+    ("record A { x:Int }\nrecord B { y:Int }\n: g (forall ρ; ρ a:A -- ρ n:Int) locals { r } { 1 B.pack locals { r } { r.x } } ;")
+    ["firth.name.unresolved"]
+  refused "a record local rebound to a scalar hides the outer record's fields"
+    ("record A { x:Int }\n: g (forall ρ; ρ a:A -- ρ n:Int) locals { r } { 1 locals { r } { r.x } } ;")
+    ["firth.name.unresolved"]
   accepted "a record local over a linear field, each linear slot used once"
     "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ h:Handle^linear n:Int) locals { b } { b.h b.n } ;"
   refused "a record local over a linear field left unused"

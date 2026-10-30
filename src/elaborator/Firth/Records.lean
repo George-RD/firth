@@ -462,7 +462,10 @@ private partial def lowerItem (ctx : Ctx) : Item → SimM (List Item)
         | _ =>
             slots := slots ++ [name]
             scope := (name.name, shape) :: scope
-      let lowered ← lowerItems { ctx with locals := scope ++ ctx.locals } items
+      -- A name bound again hides the earlier binding and every field path of it.
+      let outer := ctx.locals.filter fun (outerName, _) =>
+        !bound.any fun (name, _) => outerName == name.name || outerName.startsWith (name.name ++ ".")
+      let lowered ← lowerItems { ctx with locals := scope ++ outer } items
       pure [.locals slots lowered span]
   | .atom name span => lowerAtom ctx name span
   | .word name span => do
@@ -471,15 +474,16 @@ private partial def lowerItem (ctx : Ctx) : Item → SimM (List Item)
         match shape with
         | .record key => pure ((localSlots ctx name key).map fun slot => Item.word slot span)
         | _ => pure [.word name span]
-      else if (name.splitOn ".").length > 1 && ctx.locals.any (fun (binder, _) => (name.splitOn ".").head? == some binder) then
-        -- The resolver let a dotted name through because its first segment is
-        -- a local; it names no field of a record local.
-        refuse "firth.name.unresolved" span (some name)
       else match ctx.generated.lookup name with
         | some operation => lowerGenerated ctx operation span
         | none =>
           match ctx.word name with
-          | none => pure [.word name span]
+          | none =>
+              -- The resolver let a dotted name through because its first
+              -- segment is a local; it names no field of a record local.
+              if (name.splitOn ".").length > 1 && ctx.locals.any (fun (binder, _) => (name.splitOn ".").head? == some binder) then
+                refuse "firth.name.unresolved" span (some name)
+              else pure [.word name span]
           | some effect =>
               for shape in effect.input.reverse do popExpecting ctx span shape
               if !effect.keepsStack then modify fun state => { state with stack := [] }
