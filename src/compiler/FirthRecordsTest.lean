@@ -277,6 +277,8 @@ def main : IO Unit := do
     ["firth.name.local-shadows-prefix"]
   accepted "a scalar local beside a vocabulary of the same name keeps its resolved call"
     ("record R { x:Int }\nvocab s { : f (forall ρ; ρ -- ρ n:Int) 1 ; }\n: g (forall ρ; ρ s:Int -- ρ n:Int) locals { s } { s.f } ;")
+  accepted "a resolved call beside a scalar local does not send a scalar body through record lowering"
+    ("record R { x:Int }\nvocab s { : f (forall ρ; ρ -- ρ) ; }\n: g (forall ρ; ρ n:Int -- ρ m:Int) locals { s } { s.f } [ 1 ] [ call ] call ;")
   refused "a record local rebound hides the outer record's fields"
     ("record A { x:Int }\nrecord B { y:Int }\n: g (forall ρ; ρ a:A -- ρ n:Int) locals { r } { 1 B.pack locals { r } { r.x } } ;")
     ["firth.name.unresolved"]

@@ -591,12 +591,14 @@ private partial def lowerBody (ctx : Ctx) (items : List Item) : Except ParseErro
 end
 
 /-- Whether a body mentions a record, or reads a field of a local (`s.f`),
-which the resolver lets through for the lowering to resolve or refuse. -/
+which the resolver lets through for the lowering to resolve or refuse. A
+dotted name that is a word with a declared effect is a call, whatever the
+local beside it is called. -/
 private partial def mentionsRecord (ctx : Ctx) (binders : List String := []) : List Item → Bool
   | [] => false
   | .word name _ :: rest =>
       ctx.generated.any (·.1 == name) || (ctx.word name).any (·.hasRecord) ||
-        (name.splitOn ".").length > 1 && binders.contains ((name.splitOn ".").headD name) ||
+        ((ctx.word name).isNone && (name.splitOn ".").length > 1 && binders.contains ((name.splitOn ".").headD name)) ||
         mentionsRecord ctx binders rest
   | .quotation items _ :: rest => mentionsRecord ctx binders items || mentionsRecord ctx binders rest
   | .locals names items _ :: rest =>
