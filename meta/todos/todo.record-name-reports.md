@@ -7,9 +7,7 @@ created: 2026-10-30
 ## Goal
 
 A name clash that involves a record is reported once, at the record or the
-alias the author wrote, in the author's terms. Three reports were wrong.
-The first two are new with records; the third reproduced on main for aliases
-and was reached by a record now.
+alias the author wrote, in the author's terms. Two reports were wrong and one alias check refuses too much.
 
 ## Acceptance criteria
 
@@ -30,6 +28,14 @@ that fails without the change.
   `: f (forall ρ; ρ r:R -- ρ n:Int) R.y ;` is reported as
   `firth.type.unknown-type` ("`R` in the stack effect of `f` is not a type").
   `R` is a type and is ambiguous: report `firth.name.ambiguous-use`, as for words.
+- **An alias refused for a record it cannot see.** The bare-name check in
+  `badUse` (`Names.lean`) compares the alias with the last segment of every
+  record key in the file. `vocab other { record R { x:Int } }` beside
+  `vocab app { use helper as R; ... }` therefore refuses a valid program,
+  because `app` cannot see `other.R`. Check only the records visible from the
+  alias's scope. Add an accepted case beside the refused ones in
+  `FirthRecordsTest.lean`. Over-refusal, not unsoundness; found by CodeRabbit
+  on dc98102.
 
 ## Progress
 
