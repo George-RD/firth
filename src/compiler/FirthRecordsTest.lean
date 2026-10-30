@@ -303,6 +303,13 @@ def main : IO Unit := do
   refused "an opening block that swaps a scalar and a record input"
     ("record R { x:Int }\n: f (forall ρ; ρ n:Int r:R -- ρ m:Int) locals { r n } { r } ;")
     ["firth.name.locals-order"]
+  -- The neutral report: no edit is stated as checked for a word with records.
+  let swapped := "record R { x:Int }\n: f (forall ρ; ρ n:Int r:R -- ρ m:Int) locals { r n } { r } ;"
+  match elaborateWith config swapped with
+  | .failure [.parse error] =>
+      if error.localsBlocks.isEmpty || error.localsBlocks.any (·.checked) then
+        fail "the locals-order report on a word with records states a checked edit"
+  | _ => fail "the swapped opening block was not refused with one parse error"
   accepted "an opening block over a scalar and a record input in order"
     ("record R { x:Int }\n: f (forall ρ; ρ n:Int r:R -- ρ m:Int) locals { n r } { r.x } ;")
   accepted "a record local over a linear field, each linear slot used once"

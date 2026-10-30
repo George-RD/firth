@@ -36,6 +36,6 @@ not the `locals` blocks the elaborator emits for record operations.
 PRD G3, S7; `dec.typed-records-and-variants`.
 - 30 October 2026: the `firth.name.locals-order` report on a word with records
   (opening `locals` block over a scalar and a record input, checked against the
-  inputs as written) states its edit in the author's names, but the pipeline
-  does not apply that edit and re-check the word, so it is covered by the
-  third criterion above.
+  inputs as written) is the neutral report: its blocks stay unchecked, so it
+  names the block to write and states no edit as checked. Re-checking the edit
+  through `checkLocalsEdits` for such words is the third criterion above.

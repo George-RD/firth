@@ -629,9 +629,9 @@ def lowerWord (ctx : Ctx) (word : WordDefinition) : WordDefinition × Option Par
     else
     -- The opening block is checked against the inputs the author wrote: once
     -- records are flattened to field paths, a swap of a scalar and a record
-    -- no longer names a declared input. The edit the report states is in the
-    -- author's own names, but the pipeline does not apply it and re-check
-    -- the word as it does for other words (`todo.record-generated-code-reports`).
+    -- no longer names a declared input. The pipeline does not apply the
+    -- edit and re-check a word with records, so the report keeps every block
+    -- unchecked: it names the block to write but states no edit as checked.
     match checkInputLocals [word] with
     | .error fault => (flat, some fault)
     | .ok () =>
