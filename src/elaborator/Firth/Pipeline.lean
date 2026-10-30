@@ -1516,6 +1516,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
                 useNames file.declarations
               let ctx : Ctx :=
                 { table, generated := generatedOperations table, prefixes
+                  names := resolvedPlain.map (·.1.name) ++ (generatedOperations table).map (·.1)
                   word := fun name => match own.lookup name with
                     | some shape => some shape
                     | none => (config.erasureEnv.word name).map signatureShape

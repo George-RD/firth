@@ -32,6 +32,7 @@ private def codes (text : String) : List String :=
       -- named by the slot it refuses.
       | .erasure _ (.linearUnused name _) => "linear-unused:" ++ name
       | .erasure _ (.linearCopy name _ _) => "linear-copy:" ++ name
+      | .erasure _ (.duplicateLocal name _) => "duplicate-local:" ++ name
       | _ => "other"
 
 private def refused (name text : String) (expected : List String) : IO Unit := do
@@ -112,6 +113,18 @@ private def prefixCheckNeedsPrefixes (name text word : String) (prefixes : List 
   match loweredWith id text word [] with
   | .ok _ => pure ()
   | .error code => fail s!"{name}: without the prefixes the planted bug was still refused with {code}"
+
+/-- A file elaborated with `lib.f` imported from another file. -/
+private def importedCodes (text : String) (imported : List ImportedWord) : List String :=
+  match elaborateWith { config with imported } text with
+  | .success _ => []
+  | .failure diagnostics => diagnostics.map fun
+      | .parse error => error.code
+      | _ => "other"
+
+private def emptyEffect : StackEffect :=
+  { rowBinders := [], rows := [], input := [], output := []
+    span := { start := { offset := 0, line := 1, column := 1 }, stop := { offset := 0, line := 1, column := 1 } } }
 
 def main : IO Unit := do
   -- Lowerings, from the recipes of the decision.
@@ -270,6 +283,23 @@ def main : IO Unit := do
   refused "a record local rebound to a scalar hides the outer record's fields"
     ("record A { x:Int }\n: g (forall ρ; ρ a:A -- ρ n:Int) locals { r } { 1 locals { r } { r.x } } ;")
     ["firth.name.unresolved"]
+  refused "a record local that shadows a record's short name in its vocabulary"
+    "vocab v { record R { x:Int } : f (forall ρ; ρ a:R b:R -- ρ n:Int) locals { R } { R.x } ; }"
+    ["firth.name.local-shadows-prefix"]
+  refused "one name bound twice over records with different fields"
+    ("record A { x:Int }\nrecord B { y:Int }\n: f (forall ρ; ρ a:A b:B -- ρ n:Int) locals { r r } { r.x r.y prim + } ;")
+    ["duplicate-local:r"]
+  refused "a record local named like a record type"
+    ("record Stock { on-hand:Int reserved:Int }\n: f (forall ρ; ρ Stock:Stock -- ρ m:Int) locals { Stock } { Stock.on-hand } ;")
+    ["firth.name.local-shadows-prefix"]
+  -- The imported vocabulary's name is a prefix only because the import lists it:
+  -- the same file with no import is accepted, the planted bug.
+  let importedLocal := stock ++ ": g (forall ρ; ρ lib:Stock -- ρ n:Int) locals { lib } { lib.reserved } ;"
+  let libWord : ImportedWord := { name := "lib.f", effect := emptyEffect, exported := true, source := "lib.firth" }
+  if importedCodes importedLocal [libWord] != ["firth.name.local-shadows-prefix"] then
+    fail s!"a record local named like an imported vocabulary: got {importedCodes importedLocal [libWord]}"
+  if importedCodes importedLocal [] != [] then
+    fail s!"a record local with no import of that name: got {importedCodes importedLocal []}"
   accepted "a record local over a linear field, each linear slot used once"
     "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ h:Handle^linear n:Int) locals { b } { b.h b.n } ;"
   refused "a record local over a linear field left unused"

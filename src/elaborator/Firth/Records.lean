@@ -227,6 +227,9 @@ structure Ctx where
   /-- The leading segments of the qualified names in scope (vocabularies,
   aliases and record types), which a record local must not shadow. -/
   prefixes : List String := []
+  /-- Every canonical word and generated operation name, which a word finds
+  again by its short name inside its own vocabulary. -/
+  names : List String := []
 
 private structure Sim where
   stack : List Shape := []
@@ -450,14 +453,18 @@ private partial def lowerItem (ctx : Ctx) : Item → SimM (List Item)
         bound := (name, shape) :: bound
       -- A record local binds one local per flat slot (`s.on-hand`), in order,
       -- and the program names the whole record or a field by path.
+      -- A repeated name is left to the erasure's `firth.name.duplicate-local`,
+      -- which must not depend on the layouts of the records it binds.
+      let repeated := names.any fun name => (names.filter (·.name == name.name)).length > 1
       let mut slots : List LocatedName := []
       let mut scope : List (String × Shape) := []
       for (name, shape) in bound do
         match shape with
         | .record key =>
-            if ctx.prefixes.contains name.name then
+            if !repeated && ctx.prefixes.contains name.name then
               refuse "firth.name.local-shadows-prefix" name.span (some name.name)
-            slots := slots ++ (localSlots ctx name.name key).map fun slot => { name := slot, span := name.span }
+            slots := slots ++ (if repeated then [name] else
+              (localSlots ctx name.name key).map fun slot => { name := slot, span := name.span })
             scope := localScope ctx name.name key ++ scope
         | _ =>
             slots := slots ++ [name]
@@ -606,7 +613,18 @@ def lowerWord (ctx : Ctx) (word : WordDefinition) : WordDefinition × Option Par
   | some fault => (flat, some fault)
   | none =>
     let shape := effectShape ctx.table word.effect
-    let ctx := { ctx with closed := (itemRows word.effect.input).isEmpty }
+    -- Inside a vocabulary a word finds its neighbours by their short names, so
+    -- the first segment of such a name is a prefix a record local must not take.
+    let scope := (word.name.splitOn ".").dropLast
+    let scopeName := ".".intercalate scope
+    let neighbours := if scope.isEmpty then [] else
+      ctx.names.filterMap fun name =>
+        if name.startsWith (scopeName ++ ".") then
+          match (name.splitOn ".").drop scope.length with
+          | head :: _ :: _ => some head
+          | _ => none
+        else none
+    let ctx := { ctx with closed := (itemRows word.effect.input).isEmpty, prefixes := neighbours ++ ctx.prefixes }
     if !shape.hasRecord && !mentionsRecord ctx [] word.body then (flat, none)
     else
       let finish : SimM Unit := do
