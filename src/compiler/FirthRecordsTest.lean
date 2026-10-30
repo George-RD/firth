@@ -230,6 +230,15 @@ def main : IO Unit := do
     "export qty-of;\nrecord Request { id:Int qty:Int }\n: qty-of (forall ρ; ρ id:Int qty:Int -- ρ n:Int) Request.pack Request.qty ;"
   accepted "a word that takes a record, not exported"
     "record Request { id:Int qty:Int }\n: qty-of (forall ρ; ρ r:Request -- ρ n:Int) Request.qty ;"
+  -- An alias equal to a record's name would turn `R.pack` into another word.
+  refused "alias equal to a record name"
+    "vocab helper { : pack ( forall ρ; ρ -- ρ ) ; : unpack ( forall ρ; ρ -- ρ ) ; }\nrecord R { x:Int }\nuse helper as R;"
+    ["firth.name.duplicate-alias"]
+  refused "alias equal to a record name declared later"
+    "vocab helper { : pack ( forall ρ; ρ -- ρ ) ; : unpack ( forall ρ; ρ -- ρ ) ; }\nuse helper as R;\nrecord R { x:Int }"
+    ["firth.name.duplicate-alias"]
+  accepted "alias that is not a record name"
+    "vocab helper { : pack ( forall ρ; ρ -- ρ ) ; : unpack ( forall ρ; ρ -- ρ ) ; }\nrecord R { x:Int }\nuse helper as h;"
   -- `record` and `match` are ordinary names where no declaration may stand.
   accepted "a word named record"
     ": record (forall ρ; ρ -- ρ) ;\n: match (forall ρ; ρ -- ρ) ;\n: f (forall ρ; ρ -- ρ) record match ;"

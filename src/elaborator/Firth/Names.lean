@@ -217,13 +217,16 @@ private def withEffectNames (effect : StackEffect) (error : ParseError) : ParseE
 
 /-- A `use` declaration names a vocabulary the file does not declare and no
 directly imported file exports a word of, or an alias already taken. -/
-private def badUse (vocabularies : List String) (uses : List UseDecl) (use : UseDecl) :
+private def badUse (vocabularies types : List String) (uses : List UseDecl) (use : UseDecl) :
     Option ParseError :=
   if !vocabularies.contains use.name then some (nameError "firth.name.unresolved" use.name use.span)
   else match use.alias with
     | some alias =>
         if uses.any (fun prior => prior.alias == some alias) ||
-            vocabularies.any (fun name => (name.splitOn ".").head? == some alias) then
+            vocabularies.any (fun name => (name.splitOn ".").head? == some alias) ||
+            -- A leading alias is expanded first, so one equal to a record's
+            -- name would turn `R.pack` into another vocabulary's word.
+            types.any (fun key => (key.splitOn ".").head? == some alias) then
           some (nameError "firth.name.duplicate-alias" alias use.span)
         else none
     | none => none
@@ -239,7 +242,7 @@ private partial def resolveScope (keys vocabularies types : List String) (hidden
   | .import _ :: rest | .export _ _ :: rest | .record _ :: rest =>
       resolveScope keys vocabularies types hidden external scopeName uses rest
   | .use use :: rest =>
-      match badUse vocabularies uses use with
+      match badUse vocabularies types uses use with
       | some error => ([], some error)
       | none => resolveScope keys vocabularies types hidden external scopeName (uses ++ [use]) rest
   | .word word :: rest =>
