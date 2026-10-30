@@ -300,6 +300,11 @@ def main : IO Unit := do
     fail s!"a record local named like an imported vocabulary: got {importedCodes importedLocal [libWord]}"
   if importedCodes importedLocal [] != [] then
     fail s!"a record local with no import of that name: got {importedCodes importedLocal []}"
+  refused "an opening block that swaps a scalar and a record input"
+    ("record R { x:Int }\n: f (forall ρ; ρ n:Int r:R -- ρ m:Int) locals { r n } { r } ;")
+    ["firth.name.locals-order"]
+  accepted "an opening block over a scalar and a record input in order"
+    ("record R { x:Int }\n: f (forall ρ; ρ n:Int r:R -- ρ m:Int) locals { n r } { r.x } ;")
   accepted "a record local over a linear field, each linear slot used once"
     "record Box { h:Handle^linear n:Int }\n: f (forall ρ; ρ b:Box -- ρ h:Handle^linear n:Int) locals { b } { b.h b.n } ;"
   refused "a record local over a linear field left unused"

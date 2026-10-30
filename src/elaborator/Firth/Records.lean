@@ -627,6 +627,14 @@ def lowerWord (ctx : Ctx) (word : WordDefinition) : WordDefinition × Option Par
     let ctx := { ctx with closed := (itemRows word.effect.input).isEmpty, prefixes := neighbours ++ ctx.prefixes }
     if !shape.hasRecord && !mentionsRecord ctx [] word.body then (flat, none)
     else
+    -- The opening block is checked against the inputs the author wrote: once
+    -- records are flattened to field paths, a swap of a scalar and a record
+    -- no longer names a declared input. The edit the report states is in the
+    -- author's own names, but the pipeline does not apply it and re-check
+    -- the word as it does for other words (`todo.record-generated-code-reports`).
+    match checkInputLocals [word] with
+    | .error fault => (flat, some fault)
+    | .ok () =>
       let finish : SimM Unit := do
         for expected in shape.output.reverse do popExpecting ctx word.effect.span expected
       let run : Except ParseError (List Item) := do
